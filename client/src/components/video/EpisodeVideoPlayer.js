@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
 import ReactPlayer from 'react-player';
+import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import { LoadingSpinner } from '../../styles/GlobalStyles';
 import anilibriaV2Service from '../../services/anilibriaV2Service';
