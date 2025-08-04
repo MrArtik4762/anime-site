@@ -4,18 +4,15 @@
   "description": "Полнофункциональный аниме-сайт с современным адаптивным дизайном",
   "main": "server/server.js",
   "scripts": {
-    "dev": "concurrently \"npm run server\" \"npm run client\"",
-    "server": "cd server && npm run dev",
-    "client": "cd client && npm start",
-    "client:fix": "cd client && npm run fix-all",
-    "client:lint": "cd client && npm run lint",
-    "build": "cd client && npm run build",
-    "build:server": "cd server && npm run build",
-    "test": "concurrently \"cd server && npm test\" \"cd client && npm test\"",
-    "install:all": "cd server && npm install && cd ../client && npm install",
-    "fix-all": "npm run client:fix",
-    "precommit": "npm run fix-all"
-  },
+  "dev": "concurrently \"npm run server\" \"npm run client\"",
+  "server": "cd server && npm run dev",
+  "client": "cd client && npm start",
+  "build": "cd client && npm run build",
+  "build:server": "cd server && npm run build",
+  "test": "concurrently \"cd server && npm test\" \"cd client && npm test\"",
+  "install:all": "cd server && npm install && cd ../client && npm install",
+  "fix-all": "cd client && npm run fix-all"
+},
   "keywords": [
     "anime",
     "react",
@@ -27,14 +24,17 @@
   "author": "Anime Site Team",
   "license": "MIT",
   "devDependencies": {
-    "concurrently": "^7.6.0"
+    "concurrently": "^7.6.0",
+    "eslint": "^8.57.1",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^5.2.0"
   },
   "engines": {
     "node": ">=16.0.0",
     "npm": ">=8.0.0"
   },
   "dependencies": {
-    "eslint-plugin-jsx-a11y": "^6.10.2",
     "react-player": "^3.3.1"
   }
 }
