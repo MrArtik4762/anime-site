@@ -22,6 +22,7 @@ import AdminPage from './pages/AdminPage';
 import NotFoundPage from './pages/NotFoundPage';
 import VideoPlayerDemo from './pages/VideoPlayerDemo';
 import AnilibriaV2Test from './pages/AnilibriaV2Test';
+import VoiceSelectorTest from './pages/VoiceSelectorTest';
 
 // Компонент для динамических стилей Toast
 const ToastContainer = () => {
@@ -80,6 +81,7 @@ function App() {
                 <Route path="/watch/:animeId/:episodeId" element={<WatchPage />} />
                 <Route path="/demo/video-player" element={<VideoPlayerDemo />} />
                 <Route path="/test/anilibria-v2" element={<AnilibriaV2Test />} />
+                <Route path="/test/voice-selector" element={<VoiceSelectorTest />} />
 
                 {/* Защищенные маршруты */}
                 <Route path="/profile" element={

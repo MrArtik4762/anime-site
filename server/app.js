@@ -18,10 +18,7 @@ const commentRoutes = require('./routes/comments');
 const externalRoutes = require('./routes/external');
 const watchlistRoutes = require('./routes/watchlist');
 const anilibriaRoutes = require('./routes/anilibria');
-const anilibertyRoutes = require('./routes/aniliberty');
 const videoRoutes = require('./routes/video');
-const favoritesRoutes = require('./routes/favorites');
-const watchHistoryRoutes = require('./routes/watchHistory');
 // New AniLiberty API routes
 const apiRoutes = require('./routes/api');
 
@@ -151,11 +148,8 @@ app.use('/api/users', userRoutes);
 app.use('/api/comments', commentRoutes);
 app.use('/api/external', externalRoutes);
 app.use('/api/watchlist', watchlistRoutes);
-app.use('/api/aniliberty', anilibertyRoutes);
 app.use('/api/anilibria', anilibriaRoutes);
 app.use('/api/video', videoRoutes);
-app.use('/api/favorites', favoritesRoutes);
-app.use('/api/watch-history', watchHistoryRoutes);
 
 // Socket.io connection handling
 io.on('connection', (socket) => {
