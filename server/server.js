@@ -11,7 +11,7 @@ const startServer = async () => {
     await connectDB();
     
     // Start server
-    server.listen(PORT, () => {
+    server.listen(PORT, '0.0.0.0', () => {
       console.log(`
 🚀 Server is running!
 📍 Environment: ${process.env.NODE_ENV || 'development'}
