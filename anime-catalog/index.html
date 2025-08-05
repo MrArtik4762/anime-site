@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AniCatalog - Каталог аниме</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎌 AniCatalog</h1>
+            <p>Каталог аниме с AniLiberty API</p>
+        </header>
+
+        <div class="controls">
+            <div class="per-page-selector">
+                <label for="perPage">Показывать на странице:</label>
+                <select id="perPage" onchange="updatePerPage(this.value)">
+                    <option value="10" selected>10 аниме</option>
+                    <option value="25">25 аниме</option>
+                    <option value="50">50 аниме</option>
+                </select>
+            </div>
+            
+            <div class="search-section">
+                <div class="search-container">
+                    <div class="search-input-wrapper">
+                        <input type="text" id="searchInput" placeholder="Поиск аниме..." autocomplete="off">
+                        <div class="search-suggestions" id="searchSuggestions"></div>
+                        <div class="search-history" id="searchHistory" style="display: none;"></div>
+                    </div>
+                    <button onclick="clearSearch()">Очистить</button>
+                    <button class="filter-toggle" onclick="toggleFilters()">
+                        <span class="filter-icon">⚙️</span> Фильтры
+                    </button>
+                </div>
+                
+                <!-- Панель расширенных фильтров -->
+                <div class="filters-panel" id="filtersPanel" style="display: none;">
+                    <div class="filters-row">
+                        <div class="filter-group">
+                            <label>Сортировка:</label>
+                            <select id="sortBy">
+                                <option value="latest">Последние</option>
+                                <option value="popular">Популярные</option>
+                                <option value="rating">По рейтингу</option>
+                                <option value="alphabetical">По алфавиту</option>
+                                <option value="year">По году</option>
+                            </select>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label>Год выхода:</label>
+                            <select id="filterYear">
+                                <option value="">Любой год</option>
+                                <!-- Года будут заполнены динамически -->
+                            </select>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label>Тип:</label>
+                            <select id="filterType">
+                                <option value="">Любой тип</option>
+                                <option value="TV">TV сериал</option>
+                                <option value="MOVIE">Фильм</option>
+                                <option value="OVA">OVA</option>
+                                <option value="ONA">ONA</option>
+                                <option value="SPECIAL">Спешл</option>
+                            </select>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label>Статус:</label>
+                            <select id="filterStatus">
+                                <option value="">Любой статус</option>
+                                <option value="ongoing">Онгоинг</option>
+                                <option value="completed">Завершён</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="filters-row">
+                        <div class="filter-group genres-filter">
+                            <label>Жанры:</label>
+                            <div class="genres-container" id="genresContainer">
+                                <!-- Жанры будут заполнены динамически -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="filters-actions">
+                        <button class="apply-filters" onclick="applyFilters()">Применить фильтры</button>
+                        <button class="clear-filters" onclick="clearFilters()">Сбросить все</button>
+                        <span class="active-filters-count" id="activeFiltersCount"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="loading-indicator" id="loadingIndicator">
+            <div class="spinner"></div>
+            <p>Загрузка аниме...</p>
+        </div>
+
+        <div class="error-message" id="errorMessage" style="display: none;">
+            <p>Ошибка загрузки данных. Попробуйте перезагрузить страницу.</p>
+            <button onclick="loadAnime()">Повторить</button>
+        </div>
+
+        <div id="anime-container" class="anime-grid">
+            <!-- Карточки аниме будут вставлены здесь -->
+        </div>
+
+        <div class="pagination" id="pagination">
+            <button id="prevPage" onclick="changePage(-1)" disabled>← Предыдущая</button>
+            <div class="page-info">
+                <span id="currentPageInfo">Страница 1</span>
+            </div>
+            <button id="nextPage" onclick="changePage(1)">Следующая →</button>
+        </div>
+
+        <footer>
+            <p>Данные предоставлены <a href="https://aniliberty.top" target="_blank">AniLiberty API</a></p>
+        </footer>
+    </div>
+
+    <script src="js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Детали аниме - AniCatalog</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <nav class="breadcrumb">
+                <a href="index.html">← Вернуться к каталогу</a>
+            </nav>
+        </header>
+
+        <div class="loading-indicator" id="loadingIndicator">
+            <div class="spinner"></div>
+            <p>Загрузка информации об аниме...</p>
+        </div>
+
+        <div class="error-message" id="errorMessage" style="display: none;">
+            <p>Ошибка загрузки данных об аниме.</p>
+            <button onclick="loadAnimeDetails()">Повторить</button>
+        </div>
+
+        <div id="animeDetails" class="anime-details" style="display: none;">
+            <div class="anime-header">
+                <div class="anime-poster">
+                    <img id="anime-poster" src="" alt="Постер аниме">
+                </div>
+                <div class="anime-info">
+                    <h1 id="anime-title">Название аниме</h1>
+                    <div class="anime-meta">
+                        <div class="meta-item">
+                            <strong>Год:</strong> <span id="anime-year">-</span>
+                        </div>
+                        <div class="meta-item">
+                            <strong>Тип:</strong> <span id="anime-type">-</span>
+                        </div>
+                        <div class="meta-item">
+                            <strong>Статус:</strong> <span id="anime-status">-</span>
+                        </div>
+                        <div class="meta-item">
+                            <strong>Эпизодов:</strong> <span id="anime-episodes-total">-</span>
+                        </div>
+                        <div class="meta-item">
+                            <strong>Возрастной рейтинг:</strong> <span id="anime-age-rating">-</span>
+                        </div>
+                        <div class="meta-item">
+                            <strong>Сезон:</strong> <span id="anime-season">-</span>
+                        </div>
+                    </div>
+                    <div class="anime-genres" id="anime-genres">
+                        <!-- Жанры будут добавлены здесь -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="anime-description">
+                <h2>Описание</h2>
+                <div id="anime-description-text">
+                    <!-- Описание будет вставлено здесь -->
+                </div>
+            </div>
+
+            <div class="anime-episodes" id="anime-episodes-section" style="display: none;">
+                <h2>Эпизоды</h2>
+                <div id="anime-episodes-list" class="episodes-list">
+                    <!-- Список эпизодов будет добавлен здесь -->
+                </div>
+            </div>
+
+            <div class="anime-stats">
+                <h2>Статистика</h2>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <span class="stat-label">В избранном</span>
+                        <span class="stat-value" id="anime-favorites">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Просмотрено</span>
+                        <span class="stat-value" id="anime-watched">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Смотрят</span>
+                        <span class="stat-value" id="anime-watching">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">В планах</span>
+                        <span class="stat-value" id="anime-planned">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/details.js"></script>
+</body>
+</html>

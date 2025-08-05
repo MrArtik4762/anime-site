@@ -17,7 +17,7 @@ import RegisterPage from './pages/RegisterPage';
 import AnimePage from './pages/AnimePage';
 import WatchPage from './pages/WatchPage';
 import ProfilePage from './pages/ProfilePage';
-import CatalogPage from './pages/CatalogPage';
+import CatalogPageV2 from './pages/CatalogPageV2';
 import AdminPage from './pages/AdminPage';
 import NotFoundPage from './pages/NotFoundPage';
 import VideoPlayerDemo from './pages/VideoPlayerDemo';
@@ -72,9 +72,9 @@ function App() {
                 <Route path="/" element={<HomePage />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
-                <Route path="/catalog" element={<CatalogPage />} />
-                <Route path="/popular" element={<CatalogPage filter="popular" />} />
-                <Route path="/latest" element={<CatalogPage filter="latest" />} />
+                <Route path="/catalog" element={<CatalogPageV2 />} />
+                <Route path="/popular" element={<CatalogPageV2 filter="popular" />} />
+                <Route path="/latest" element={<CatalogPageV2 filter="latest" />} />
                 <Route path="/anime/:id" element={<AnimePage />} />
                 <Route path="/watch/:episodeId" element={<WatchPage />} />
                 {/* Обратная совместимость со старым форматом */}
