@@ -331,6 +331,9 @@ const AdvancedFilterPanel = ({ filters, onFilterChange, resultCount = 0 }) => {
     episodesTo: '',
     sortBy: 'rating',
     sortOrder: 'desc',
+    // Добавляем параметры языка по умолчанию
+    language: 'ru',
+    voice: 'ru',
     ...filters,
   });
 
@@ -386,6 +389,9 @@ const AdvancedFilterPanel = ({ filters, onFilterChange, resultCount = 0 }) => {
       episodesTo: '',
       sortBy: 'rating',
       sortOrder: 'desc',
+      // Явно сохраняем настройку языка на русский при сбросе
+      language: 'ru',
+      voice: 'ru'
     };
     setLocalFilters(resetFilters);
     onFilterChange(resetFilters);

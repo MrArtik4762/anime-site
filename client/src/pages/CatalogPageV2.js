@@ -150,11 +150,47 @@ const Select = styled.select`
   font-size: 0.875rem;
 `;
 
-const LoadingContainer = styled.div`
+const LoadMoreSection = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 200px;
+  padding: 40px 20px;
+  margin-top: 40px;
+`;
+
+const LoadMoreButton = styled.button`
+  background: ${props => props.theme.colors.primary};
+  color: white;
+  border: none;
+  padding: 12px 32px;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  
+  &:hover {
+    background: ${props => props.theme.colors.primaryDark || props.theme.colors.primary};
+    transform: translateY(-2px);
+  }
+  
+  &:disabled {
+    background: ${props => props.theme.colors.border};
+    cursor: not-allowed;
+    transform: none;
+  }
+  
+  .spinner {
+    animation: spin 1s linear infinite;
+  }
+  
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
 `;
 
 const ErrorMessage = styled.div`
@@ -165,6 +201,13 @@ const ErrorMessage = styled.div`
   border-radius: 12px;
   background: ${props => props.theme.colors.error}10;
   border: 1px solid ${props => props.theme.colors.error}30;
+`;
+
+const LoadingContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
 `;
 
 const EmptyState = styled.div`
@@ -233,17 +276,17 @@ const fallbackAnime = [
 
 const CatalogPageV2 = ({ filter }) => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const navigate = useNavigate();
   
   const [animeList, setAnimeList] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [viewMode, setViewMode] = useState('grid');
-  const [itemsPerPage, setItemsPerPage] = useState(parseInt(searchParams.get('limit')) || 24);
+  const [itemsPerPage, setItemsPerPage] = useState(parseInt(searchParams.get('limit')) || 100);
   const [currentPage, setCurrentPage] = useState(parseInt(searchParams.get('page')) || 1);
   const [totalCount, setTotalCount] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
+  const [hasMorePages, setHasMorePages] = useState(true);
   
   const [filters, setFilters] = useState({
     genre: searchParams.get('genres')?.split(',') || [],
@@ -260,6 +303,9 @@ const CatalogPageV2 = ({ filter }) => {
     episodesTo: searchParams.get('episodesTo') || '',
     sortBy: searchParams.get('sortBy') || 'rating',
     sortOrder: searchParams.get('sortOrder') || 'desc',
+    // Устанавливаем русский язык по умолчанию
+    language: 'ru',
+    voice: 'ru',
   });
 
   // Обновление URL при изменении параметров
@@ -280,13 +326,20 @@ const CatalogPageV2 = ({ filter }) => {
   }, [setSearchParams]);
 
   // Загрузка аниме
-  const loadAnime = useCallback(async (forceReset = false) => {
+  const loadAnime = useCallback(async (forceReset = false, appendMode = false) => {
+    const targetPage = forceReset ? 1 : currentPage;
+    
     if (forceReset) {
       setCurrentPage(1);
+      setAnimeList([]);
     }
     
     try {
-      setLoading(true);
+      if (!appendMode) {
+        setLoading(true);
+      } else {
+        setLoadingMore(true);
+      }
       setError(null);
       let list = [];
       let count = 0;
@@ -296,30 +349,45 @@ const CatalogPageV2 = ({ filter }) => {
         ...filters,
         search: searchQuery,
         limit: itemsPerPage,
-        page: forceReset ? 1 : currentPage,
+        page: targetPage,
+        // Принудительно устанавливаем русский язык
+        language: 'ru',
+        voice: 'ru'
       };
 
       // Обновляем URL
-      updateURL({
-        q: searchQuery,
-        ...filters,
-        limit: itemsPerPage,
-        page: forceReset ? 1 : currentPage,
-      });
+      if (!appendMode) {
+        updateURL({
+          q: searchQuery,
+          ...filters,
+          limit: itemsPerPage,
+          page: targetPage,
+        });
+      }
 
-      // Пробуем загрузить из AniLiberty V2
+      // Пробуем загрузить из AniLiberty V2 с поддержкой больших объемов данных
       if (searchQuery || Object.values(filters).some(v => v && v.length > 0)) {
         try {
           if (searchQuery) {
-            list = await anilibriaV2Service.searchAnime(searchQuery, searchParams);
+            list = await anilibriaV2Service.searchAnime(searchQuery, {
+              ...searchParams,
+              perPage: itemsPerPage
+            });
           } else {
-            list = await anilibriaV2Service.getPopularAnime(searchParams);
+            list = await anilibriaV2Service.getPopularAnime({
+              ...searchParams,
+              perPage: itemsPerPage
+            });
           }
           
-          // Конвертируем данные в единый формат
+          // Конвертируем данные в единый формат с русскими названиями
           list = list.map(item => anilibriaV2Service.convertAnimeToFormat(item));
-          count = list.length;
-          pages = Math.ceil(count / itemsPerPage);
+          count = appendMode ? totalCount + list.length : list.length;
+          
+          // Определяем есть ли еще страницы (примерно)
+          const hasMore = list.length >= itemsPerPage && targetPage < 20; // максимум 20 страниц
+          setHasMorePages(hasMore);
+          const pages = Math.min(20, Math.ceil(count / itemsPerPage));
         } catch (e) {
           console.warn('AniLiberty V2 error:', e);
         }
@@ -331,7 +399,8 @@ const CatalogPageV2 = ({ filter }) => {
           const response = await animeService.getAnimeList(searchParams);
           list = (response?.data?.anime) || [];
           count = response?.data?.pagination?.totalItems || 0;
-          pages = response?.data?.pagination?.totalPages || 1;
+          const pages = response?.data?.pagination?.totalPages || 1;
+          setHasMorePages(pages > targetPage);
         } catch (e) {
           console.warn('Local DB error:', e);
         }
@@ -345,8 +414,8 @@ const CatalogPageV2 = ({ filter }) => {
             list = anilibriaResult.data.data.map(title => 
               anilibriaService.formatAnimeData(title)
             );
-            count = list.length;
-            pages = 1;
+            count = appendMode ? totalCount + list.length : list.length;
+            setHasMorePages(false); // старый API не поддерживает пагинацию
           }
         } catch (e) {
           console.warn('AniLibria error:', e);
@@ -359,8 +428,8 @@ const CatalogPageV2 = ({ filter }) => {
           const jikanResult = await jikanService.getPopularAnime(itemsPerPage);
           if (jikanResult.success) {
             list = jikanResult.data;
-            count = list.length;
-            pages = 1;
+            count = appendMode ? totalCount + list.length : list.length;
+            setHasMorePages(false);
           }
         } catch (e) {
           console.warn('Jikan error:', e);
@@ -370,29 +439,36 @@ const CatalogPageV2 = ({ filter }) => {
       // В крайнем случае используем fallback
       if (!list.length) {
         list = fallbackAnime;
-        count = fallbackAnime.length;
-        pages = 1;
+        count = appendMode ? totalCount + fallbackAnime.length : fallbackAnime.length;
+        setHasMorePages(false);
       }
 
-      setAnimeList(list);
+      if (appendMode) {
+        setAnimeList(prevList => [...prevList, ...list]);
+      } else {
+        setAnimeList(list);
+      }
+      
       setTotalCount(count);
-      setTotalPages(pages);
       setError(null);
     } catch (err) {
       console.error('Catalog error:', err);
-      setAnimeList(fallbackAnime);
-      setTotalCount(fallbackAnime.length);
-      setTotalPages(1);
-      setError('Ошибка загрузки данных. Показаны примеры аниме.');
+      if (!appendMode) {
+        setAnimeList(fallbackAnime);
+        setTotalCount(fallbackAnime.length);
+        setError('Ошибка загрузки данных. Показаны примеры аниме.');
+      }
+      setHasMorePages(false);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
-  }, [filters, searchQuery, itemsPerPage, currentPage, updateURL]);
+  }, [filters, searchQuery, itemsPerPage, currentPage, totalCount, updateURL]);
 
   // Загрузка при изменении фильтров
   useEffect(() => {
     loadAnime();
-  }, [filter]); // Только при изменении filter prop
+  }, [filter, loadAnime]); // Добавляем loadAnime в зависимости
 
   // Обработчики
   const handleSearch = (query) => {
@@ -424,10 +500,15 @@ const CatalogPageV2 = ({ filter }) => {
     loadAnime(true);
   };
 
-  const handlePageChange = (newPage) => {
-    setCurrentPage(newPage);
-    loadAnime(false);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  const handleLoadMore = () => {
+    setCurrentPage(prevPage => {
+      const newPage = prevPage + 1;
+      // Используем setTimeout чтобы обновление currentPage сработало до вызова loadAnime
+      setTimeout(() => {
+        loadAnime(false, true); // appendMode = true
+      }, 0);
+      return newPage;
+    });
   };
 
   const handleItemsPerPageChange = (newLimit) => {
@@ -436,13 +517,13 @@ const CatalogPageV2 = ({ filter }) => {
     loadAnime(true);
   };
 
-  // Мемоизированные вычисления
-  const activeFiltersCount = useMemo(() => {
-    return Object.entries(filters).filter(([key, value]) => {
-      if (Array.isArray(value)) return value.length > 0;
-      return value !== '' && value !== undefined && value !== null;
-    }).length + (searchQuery ? 1 : 0);
-  }, [filters, searchQuery]);
+  // Мемоизированные вычисления для активных фильтров (не используется в JSX, убираем)
+  // const activeFiltersCount = useMemo(() => {
+  //   return Object.entries(filters).filter(([key, value]) => {
+  //     if (Array.isArray(value)) return value.length > 0;
+  //     return value !== '' && value !== undefined && value !== null;
+  //   }).length + (searchQuery ? 1 : 0);
+  // }, [filters, searchQuery]);
 
   // Простые функции вместо useCallback для избежания ошибок
   const getFilterLabel = (key) => {
@@ -609,11 +690,56 @@ const CatalogPageV2 = ({ filter }) => {
             <LoadingSpinner size="48px" />
           </LoadingContainer>
         ) : animeList.length > 0 ? (
-          <Grid>
-            {animeList.map((anime) => (
-              <AnimeCard key={anime._id || anime.id} anime={anime} />
-            ))}
-          </Grid>
+          <>
+            <Grid>
+              {animeList.map((anime) => (
+                <AnimeCard key={anime._id || anime.id} anime={anime} />
+              ))}
+            </Grid>
+            
+            {hasMorePages && !loading && (
+              <div style={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                padding: '40px 20px',
+                marginTop: '40px'
+              }}>
+                <button
+                  onClick={handleLoadMore}
+                  disabled={loadingMore}
+                  style={{
+                    background: loadingMore ? '#ddd' : '#007bff',
+                    color: 'white',
+                    border: 'none',
+                    padding: '12px 32px',
+                    borderRadius: '8px',
+                    fontSize: '1rem',
+                    fontWeight: '600',
+                    cursor: loadingMore ? 'not-allowed' : 'pointer',
+                    transition: 'all 0.3s ease',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}
+                >
+                  {loadingMore ? (
+                    <>
+                      <span style={{animation: 'spin 1s linear infinite'}}>⟳</span>
+                      Загрузка...
+                    </>
+                  ) : (
+                    <>
+                      📈 Показать больше аниме
+                      <small style={{ fontSize: '0.8rem', opacity: 0.8 }}>
+                        ({totalCount} из 1000+)
+                      </small>
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+          </>
         ) : (
           <EmptyState>
             <div className="icon">😔</div>
