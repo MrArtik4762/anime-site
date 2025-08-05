@@ -1,8 +1,26 @@
 const axios = require('axios');
 
+/**
+ * Сервис для работы с AniLiberty API
+ * Обеспечивает получение данных об аниме, эпизодах, поиск и другие операции
+ * @class AnilibertyService
+ */
 class AnilibertyService {
+  /**
+   * Создает экземпляр AnilibertyService
+   * @constructor
+   */
   constructor() {
+    /**
+     * Базовый URL для AniLiberty API
+     * @type {string}
+     */
     this.baseURL = process.env.ANILIBERTY_API_BASE || 'https://aniliberty.top/api/v1';
+
+    /**
+     * HTTP клиент для запросов к API
+     * @type {axios.AxiosInstance}
+     */
     this.client = axios.create({
       baseURL: this.baseURL,
       timeout: 15000,
@@ -18,13 +36,13 @@ class AnilibertyService {
       response => response,
       async error => {
         console.error('AniLiberty API Error:', error.message);
-        
+
         // Логирование для отладки
         if (error.response) {
           console.error('Response status:', error.response.status);
           console.error('Response data:', error.response.data);
         }
-        
+
         return Promise.reject(error);
       }
     );
@@ -33,7 +51,10 @@ class AnilibertyService {
   /**
    * Получение популярных аниме
    * @param {number} limit - количество результатов (по умолчанию 10)
-   * @returns {Promise<Object>} - список популярных аниме
+   * @returns {Promise<Object>} объект с результатами
+   * @returns {Promise<Object>} объект.success - статус успешности операции
+   * @returns {Promise<Array>} объект.data - массив популярных аниме
+   * @returns {Promise<Object>} объект.pagination - информация о пагинации
    */
   async getPopularAnime(limit = 10) {
     try {
@@ -44,7 +65,7 @@ class AnilibertyService {
           sort: 'desc'
         }
       });
-      
+
       return {
         success: true,
         data: response.data?.data || [],
@@ -59,7 +80,10 @@ class AnilibertyService {
   /**
    * Получение новых эпизодов
    * @param {number} limit - количество результатов (по умолчанию 15)
-   * @returns {Promise<Object>} - список новых эпизодов
+   * @returns {Promise<Object>} объект с результатами
+   * @returns {Promise<boolean>} объект.success - статус успешности операции
+   * @returns {Promise<Array>} объект.data - массив новых эпизодов
+   * @returns {Promise<Object>} объект.pagination - информация о пагинации
    */
   async getNewEpisodes(limit = 15) {
     try {
@@ -70,7 +94,7 @@ class AnilibertyService {
           sort: 'desc'
         }
       });
-      
+
       return {
         success: true,
         data: response.data?.data || [],
@@ -84,13 +108,15 @@ class AnilibertyService {
 
   /**
    * Получение информации о конкретном аниме
-   * @param {number} id - ID аниме
-   * @returns {Promise<Object>} - детали аниме
+   * @param {number} id - ID аниме в системе AniLiberty
+   * @returns {Promise<Object>} объект с результатами
+   * @returns {Promise<boolean>} объект.success - статус успешности операции
+   * @returns {Promise<Object|null>} объект.data - данные аниме или null если не найдено
    */
   async getAnimeDetails(id) {
     try {
       const response = await this.client.get(`/releases/${id}`);
-      
+
       return {
         success: true,
         data: response.data || null
@@ -103,13 +129,15 @@ class AnilibertyService {
 
   /**
    * Получение данных эпизода
-   * @param {number} episodeId - ID эпизода
-   * @returns {Promise<Object>} - данные эпизода включая видео и субтитры
+   * @param {number} episodeId - ID эпизода в системе AniLiberty
+   * @returns {Promise<Object>} объект с результатами
+   * @returns {Promise<boolean>} объект.success - статус успешности операции
+   * @returns {Promise<Object|null>} объект.data - данные эпизода включая видео и субтитры
    */
   async getEpisodeData(episodeId) {
     try {
       const response = await this.client.get(`/episodes/${episodeId}`);
-      
+
       return {
         success: true,
         data: response.data || null
@@ -121,10 +149,13 @@ class AnilibertyService {
   }
 
   /**
-   * Поиск аниме
-   * @param {string} query - поисковый запрос
-   * @param {number} limit - количество результатов
-   * @returns {Promise<Object>} - результаты поиска
+   * Поиск аниме по названию
+   * @param {string} query - поисковый запрос (название аниме)
+   * @param {number} limit - количество результатов (по умолчанию 20)
+   * @returns {Promise<Object>} объект с результатами поиска
+   * @returns {Promise<boolean>} объект.success - статус успешности операции
+   * @returns {Promise<Array>} объект.data - массив найденных аниме
+   * @returns {Promise<Object>} объект.pagination - информация о пагинации
    */
   async searchAnime(query, limit = 20) {
     try {
@@ -134,7 +165,7 @@ class AnilibertyService {
           perPage: limit
         }
       });
-      
+
       return {
         success: true,
         data: response.data?.data || [],
@@ -147,13 +178,15 @@ class AnilibertyService {
   }
 
   /**
-   * Получение жанров
-   * @returns {Promise<Object>} - список жанров
+   * Получение списка доступных жанров
+   * @returns {Promise<Object>} объект с результатами
+   * @returns {Promise<boolean>} объект.success - статус успешности операции
+   * @returns {Promise<Array>} объект.data - массив жанров
    */
   async getGenres() {
     try {
       const response = await this.client.get('/genres');
-      
+
       return {
         success: true,
         data: response.data || []
@@ -167,7 +200,19 @@ class AnilibertyService {
   /**
    * Получение каталога аниме с фильтрацией
    * @param {Object} params - параметры фильтрации
-   * @returns {Promise<Object>} - каталог аниме
+   * @param {number} [params.page=1] - номер страницы
+   * @param {number} [params.perPage=20] - количество элементов на странице
+   * @param {Array|string} [params.genres] - фильтр по жанрам
+   * @param {number} [params.year] - фильтр по году выпуска
+   * @param {string} [params.season] - фильтр по сезону
+   * @param {string} [params.status] - фильтр по статусу
+   * @param {string} [params.type] - фильтр по типу
+   * @param {string} [params.orderBy='updated_at'] - поле для сортировки
+   * @param {string} [params.sort='desc'] - направление сортировки
+   * @returns {Promise<Object>} объект с результатами каталога
+   * @returns {Promise<boolean>} объект.success - статус успешности операции
+   * @returns {Promise<Array>} объект.data - массив аниме
+   * @returns {Promise<Object>} объект.pagination - информация о пагинации
    */
   async getCatalog(params = {}) {
     try {
@@ -199,7 +244,7 @@ class AnilibertyService {
       if (type) queryParams.type = type;
 
       const response = await this.client.get('/catalog', { params: queryParams });
-      
+
       return {
         success: true,
         data: response.data?.data || [],
@@ -213,12 +258,14 @@ class AnilibertyService {
 
   /**
    * Получение расписания релизов
-   * @returns {Promise<Object>} - расписание релизов
+   * @returns {Promise<Object>} объект с результатами
+   * @returns {Promise<boolean>} объект.success - статус успешности операции
+   * @returns {Promise<Array>} объект.data - массив релизов в расписании
    */
   async getSchedule() {
     try {
       const response = await this.client.get('/schedule');
-      
+
       return {
         success: true,
         data: response.data || []
@@ -231,8 +278,21 @@ class AnilibertyService {
 
   /**
    * Конвертация данных AniLiberty в формат нашей модели
-   * @param {Object} anilibertyData - данные от AniLiberty
-   * @returns {Object} - конвертированные данные
+   * @param {Object} anilibertyData - сырые данные от AniLiberty API
+   * @param {number} anilibertyData.id - ID аниме в AniLiberty
+   * @param {Object} anilibertyData.title - объект с названиями
+   * @param {string} anilibertyData.description - описание аниме
+   * @param {string} anilibertyData.type - тип аниме (TV, Movie, etc.)
+   * @param {string} anilibertyData.status - статус аниме
+   * @param {Array} anilibertyData.genres - массив жанров
+   * @param {number} anilibertyData.year - год выпуска
+   * @param {string} anilibertyData.season - сезон
+   * @param {Object} anilibertyData.poster - объект с постерами
+   * @param {Object} anilibertyData.episodes - информация об эпизодах
+   * @param {string} anilibertyData.updated_at - дата последнего обновления
+   * @param {Object} anilibertyData.rating - рейтинг аниме
+   * @returns {Object} конвертированные данные в формате нашей модели
+   * @throws {Error} если произошла ошибка конвертации
    */
   convertToAnimeModel(anilibertyData) {
     try {
@@ -254,7 +314,7 @@ class AnilibertyService {
       return {
         // Внешние идентификаторы
         anilibertyId: id,
-        
+
         // Основная информация
         title: {
           english: title?.en || '',
@@ -262,23 +322,23 @@ class AnilibertyService {
           romaji: title?.romaji || '',
           synonyms: title?.synonyms || []
         },
-        
+
         synopsis: description || '',
-        
+
         // Классификация
         type: type || 'TV',
         status: status || 'Unknown',
-        
+
         // Временные характеристики
         episodes: episodes?.total || 0,
-        
+
         // Даты
         year: year || new Date().getFullYear(),
         season: season || 'Unknown',
-        
+
         // Жанры
         genres: genres || [],
-        
+
         // Изображения
         images: {
           poster: {
@@ -287,18 +347,18 @@ class AnilibertyService {
             large: poster?.large || null
           }
         },
-        
+
         // Рейтинг
         rating: {
           average: rating?.average || 0,
           count: rating?.count || 0
         },
-        
+
         // Метаданные
         source: 'aniliberty',
         lastSynced: new Date(),
         updated_at: updated_at ? new Date(updated_at) : new Date(),
-        
+
         // Кеширование
         cached: true,
         approved: true,
@@ -311,9 +371,12 @@ class AnilibertyService {
   }
 
   /**
-   * Обработка ошибок
-   * @param {string} message - сообщение об ошибке
-   * @returns {Object} - объект ошибки
+   * Обработка ошибок API
+   * @param {string} message - сообщение об ошибке для пользователя
+   * @returns {Object} стандартизированный объект ошибки
+   * @returns {boolean} объект.success - всегда false для ошибок
+   * @returns {string} объект.error - сообщение об ошибке
+   * @returns {Array} объект.data - пустой массив данных
    */
   handleError(message) {
     return {
@@ -324,13 +387,15 @@ class AnilibertyService {
   }
 
   /**
-   * Проверка статуса API
-   * @returns {Promise<Object>} - статус API
+   * Проверка статуса AniLiberty API
+   * @returns {Promise<Object>} объект с результатами проверки
+   * @returns {Promise<boolean>} объект.success - статус успешности операции
+   * @returns {Promise<Object>} объект.data - данные о статусе API
    */
   async checkStatus() {
     try {
       const response = await this.client.get('/status');
-      
+
       return {
         success: true,
         data: response.data || { status: 'unknown' }

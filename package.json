@@ -4,15 +4,15 @@
   "description": "Полнофункциональный аниме-сайт с современным адаптивным дизайном",
   "main": "server/server.js",
   "scripts": {
-  "dev": "concurrently \"npm run server\" \"npm run client\"",
-  "server": "cd server && npm run dev",
-  "client": "cd client && npm start",
-  "build": "cd client && npm run build",
-  "build:server": "cd server && npm run build",
-  "test": "concurrently \"cd server && npm test\" \"cd client && npm test\"",
-  "install:all": "cd server && npm install && cd ../client && npm install",
-  "fix-all": "cd client && npm run fix-all"
-},
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "cd server && npm run dev",
+    "client": "cd client && npm start",
+    "build": "cd client && npm run build",
+    "build:server": "cd server && npm run build",
+    "test": "concurrently \"cd server && npm test\" \"cd client && npm test\"",
+    "install:all": "cd server && npm install && cd ../client && npm install",
+    "fix-all": "cd client && npm run fix-all"
+  },
   "keywords": [
     "anime",
     "react",

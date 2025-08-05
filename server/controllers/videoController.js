@@ -3,6 +3,7 @@ const { promisify } = require('util');
 const redis = require('../config/redis');
 const { createError } = require('../utils/errors');
 const { metrics } = require('../utils/metrics');
+const { HTTP_STATUS, ERROR_MESSAGES } = require('../../shared/constants/constants');
 
 const CACHE_TTL = 3600; // 1 час
 const get = promisify(redis.get).bind(redis);
@@ -11,16 +12,41 @@ const set = promisify(redis.set).bind(redis);
 const ANICLI_API_URL = process.env.ANICLI_API_URL || 'http://anicli_api:8000';
 const PYTHON_SERVICE_URL = process.env.PYTHON_SERVICE_URL || 'http://python-service:8000';
 
+/**
+ * Контроллер для работы с видео контентом
+ * Обеспечивает получение видео потоков, качеств, озвучек и субтитров
+ */
+
+/**
+ * Получение видео потока
+ * @param {Object} req - объект запроса Express
+ * @param {Object} res - объект ответа Express
+ * @returns {Promise<void>}
+ */
 exports.getVideoStream = async (req, res) => {
   const { anime_id, episode, quality = 'auto', voice = 0 } = req.query;
   const userId = req.user?.id;
 
   try {
+    if (!anime_id || !episode) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
+        success: false,
+        error: {
+          message: 'Параметры anime_id и episode обязательны'
+        }
+      });
+    }
+
     metrics.videoRequests.inc({ anime_id, quality });
 
     // Проверяем права доступа
     if (!await checkVideoAccess(userId, anime_id)) {
-      throw createError(403, 'Нет доступа к видео');
+      return res.status(HTTP_STATUS.FORBIDDEN).json({
+        success: false,
+        error: {
+          message: 'Нет доступа к видео'
+        }
+      });
     }
 
     // Сначала пробуем получить через Python сервис (AniLiberty)
@@ -59,19 +85,36 @@ exports.getVideoStream = async (req, res) => {
   } catch (error) {
     console.error('Video streaming error:', error);
     metrics.videoErrors.inc({ anime_id, error: error.code });
-    
-    res.status(error.response?.status || 500).json({
+
+    res.status(error.response?.status || HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
-      error: error.message || 'Ошибка получения видео'
+      error: {
+        message: error.message || ERROR_MESSAGES.SERVER_ERROR
+      }
     });
   }
 };
 
+/**
+ * Получение доступных качеств видео
+ * @param {Object} req - объект запроса Express
+ * @param {Object} res - объект ответа Express
+ * @returns {Promise<void>}
+ */
 exports.getAvailableQualities = async (req, res) => {
   const { anime_id, episode } = req.query;
   const cacheKey = `qualities:${anime_id}:${episode}`;
 
   try {
+    if (!anime_id || !episode) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
+        success: false,
+        error: {
+          message: 'Параметры anime_id и episode обязательны'
+        }
+      });
+    }
+
     // Проверяем кэш
     const cached = await get(cacheKey);
     if (cached) {
@@ -116,19 +159,35 @@ exports.getAvailableQualities = async (req, res) => {
     res.json(result);
   } catch (error) {
     console.error('Get qualities error:', error);
-    res.status(error.response?.status || 500).json({
+    res.status(error.response?.status || HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
-      error: error.message || 'Ошибка получения качеств видео'
+      error: {
+        message: error.message || ERROR_MESSAGES.SERVER_ERROR
+      }
     });
   }
 };
 
-// Новый endpoint для получения доступных озвучек
+/**
+ * Получение доступных озвучек
+ * @param {Object} req - объект запроса Express
+ * @param {Object} res - объект ответа Express
+ * @returns {Promise<void>}
+ */
 exports.getAvailableVoices = async (req, res) => {
   const { anime_id, episode } = req.query;
   const cacheKey = `voices:${anime_id}:${episode}`;
 
   try {
+    if (!anime_id || !episode) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
+        success: false,
+        error: {
+          message: 'Параметры anime_id и episode обязательны'
+        }
+      });
+    }
+
     // Проверяем кэш
     const cached = await get(cacheKey);
     if (cached) {
@@ -199,19 +258,35 @@ exports.getAvailableVoices = async (req, res) => {
 
   } catch (error) {
     console.error('Get voices error:', error);
-    res.status(500).json({
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
-      error: error.message || 'Ошибка получения озвучек'
+      error: {
+        message: error.message || ERROR_MESSAGES.SERVER_ERROR
+      }
     });
   }
 };
 
-// Новый endpoint для получения субтитров
+/**
+ * Получение субтитров
+ * @param {Object} req - объект запроса Express
+ * @param {Object} res - объект ответа Express
+ * @returns {Promise<void>}
+ */
 exports.getSubtitles = async (req, res) => {
   const { anime_id, episode, language = 'ru' } = req.query;
   const cacheKey = `subtitles:${anime_id}:${episode}:${language}`;
 
   try {
+    if (!anime_id || !episode) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
+        success: false,
+        error: {
+          message: 'Параметры anime_id и episode обязательны'
+        }
+      });
+    }
+
     // Проверяем кэш
     const cached = await get(cacheKey);
     if (cached) {
@@ -250,18 +325,35 @@ exports.getSubtitles = async (req, res) => {
 
   } catch (error) {
     console.error('Get subtitles error:', error);
-    res.status(500).json({
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
-      error: error.message || 'Ошибка получения субтитров'
+      error: {
+        message: error.message || ERROR_MESSAGES.SERVER_ERROR
+      }
     });
   }
 };
 
+/**
+ * Проверка доступности видео
+ * @param {Object} req - объект запроса Express
+ * @param {Object} res - объект ответа Express
+ * @returns {Promise<void>}
+ */
 exports.checkVideoAvailability = async (req, res) => {
   const { anime_id, episode } = req.query;
   const cacheKey = `video-availability:${anime_id}:${episode}`;
 
   try {
+    if (!anime_id || !episode) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
+        success: false,
+        error: {
+          message: 'Параметры anime_id и episode обязательны'
+        }
+      });
+    }
+
     // Проверяем кэш
     const cached = await get(cacheKey);
     if (cached) {
@@ -278,17 +370,34 @@ exports.checkVideoAvailability = async (req, res) => {
     res.json(response.data);
   } catch (error) {
     console.error('Check availability error:', error);
-    res.status(error.response?.status || 500).json({
+    res.status(error.response?.status || HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
-      error: error.message || 'Ошибка проверки доступности видео'
+      error: {
+        message: error.message || ERROR_MESSAGES.SERVER_ERROR
+      }
     });
   }
 };
 
+/**
+ * Обработчик получения видео (альтернативный метод)
+ * @param {Object} req - объект запроса Express
+ * @param {Object} res - объект ответа Express
+ * @returns {Promise<void>}
+ */
 exports.getVideoHandler = async (req, res) => {
   const { anime_id, episode } = req.query;
 
   try {
+    if (!anime_id || !episode) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
+        success: false,
+        error: {
+          message: 'Параметры anime_id и episode обязательны'
+        }
+      });
+    }
+
     // Запрос к Python-микросервису
     const response = await axios.get('http://anicli_api:8000/video', {
       params: { anime_id, episode },
@@ -298,14 +407,22 @@ exports.getVideoHandler = async (req, res) => {
     // Пересылка видео потока
     response.data.pipe(res);
   } catch (error) {
-    res.status(500).json({
+    console.error('Video handler error:', error);
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
-      error: 'Ошибка получения видео'
+      error: {
+        message: ERROR_MESSAGES.SERVER_ERROR
+      }
     });
   }
 };
 
-// Вспомогательные функции
+/**
+ * Проверка прав доступа к видео
+ * @param {string} userId - ID пользователя
+ * @param {string} animeId - ID аниме
+ * @returns {Promise<boolean>} - результат проверки доступа
+ */
 async function checkVideoAccess(userId, animeId) {
   // Здесь реализуйте проверку прав доступа к видео
   // Например, проверка подписки, возрастных ограничений и т.д.

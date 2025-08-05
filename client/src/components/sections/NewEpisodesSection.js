@@ -23,7 +23,7 @@ const EpisodeGrid = styled(motion.div)`
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 25px;
-  
+
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
     gap: 20px;
@@ -36,7 +36,7 @@ const EpisodeCard = styled(motion.div)`
   overflow: hidden;
   box-shadow: 0 4px 20px ${props => props.theme.colors.shadow};
   transition: all 0.3s ease;
-  
+
   &:hover {
     transform: translateY(-4px);
     box-shadow: 0 8px 30px ${props => props.theme.colors.shadowMedium};
@@ -49,14 +49,14 @@ const EpisodeImage = styled.div`
   height: 180px;
   background: ${props => props.theme.colors.gradientPrimary};
   overflow: hidden;
-  
+
   img {
     width: 100%;
     height: 100%;
     object-fit: cover;
     transition: transform 0.3s ease;
   }
-  
+
   &:hover img {
     transform: scale(1.05);
   }
@@ -79,11 +79,11 @@ const PlayButton = styled.div`
   opacity: 0;
   transition: opacity 0.3s ease;
   cursor: pointer;
-  
+
   ${EpisodeCard}:hover & {
     opacity: 1;
   }
-  
+
   &::before {
     content: '▶️';
   }
@@ -148,7 +148,7 @@ const WatchButton = styled(Link)`
   font-weight: 600;
   font-size: 0.875rem;
   transition: background-color 0.3s ease;
-  
+
   &:hover {
     background: ${props => props.theme.colors.primaryDark || props.theme.colors.primary};
   }
@@ -175,13 +175,13 @@ const EmptyState = styled.div`
   text-align: center;
   color: ${props => props.theme.colors.textSecondary};
   padding: 60px 20px;
-  
+
   .icon {
     font-size: 3rem;
     margin-bottom: 20px;
     display: block;
   }
-  
+
   h3 {
     font-size: 1.3rem;
     margin-bottom: 10px;
@@ -191,23 +191,23 @@ const EmptyState = styled.div`
 
 const formatDate = (dateString) => {
   if (!dateString) return '';
-  
+
   const date = new Date(dateString);
   const now = new Date();
   const diffInHours = Math.floor((now - date) / (1000 * 60 * 60));
-  
+
   if (diffInHours < 1) return 'Только что';
   if (diffInHours < 24) return `${diffInHours} ч. назад`;
-  
+
   const diffInDays = Math.floor(diffInHours / 24);
   if (diffInDays < 7) return `${diffInDays} дн. назад`;
-  
+
   return date.toLocaleDateString('ru-RU');
 };
 
-const NewEpisodesSection = ({ 
-  limit = 10, 
-  showTitle = true, 
+const NewEpisodesSection = ({
+  limit = 10,
+  showTitle = true,
   title = "🆕 Новые эпизоды"
 }) => {
   const [episodes, setEpisodes] = useState([]);
@@ -224,14 +224,14 @@ const NewEpisodesSection = ({
       setError(null);
 
       console.log('🚀 Загрузка новых эпизодов...');
-      
+
       const response = await anilibriaV2Service.getNewEpisodes({
         perPage: limit,
         page: 1
       });
 
       let episodesList = [];
-      
+
       if (response?.data && Array.isArray(response.data)) {
         episodesList = response.data;
       } else if (response && Array.isArray(response)) {
@@ -271,7 +271,7 @@ const NewEpisodesSection = ({
         <ErrorMessage>
           {error}
           <br />
-          <button 
+          <button
             onClick={handleRetry}
             style={{
               marginTop: '15px',
@@ -313,9 +313,19 @@ const NewEpisodesSection = ({
       >
         {episodes.map((episode, index) => {
           const animeTitle = episode.name?.main || episode.title || 'Без названия';
-          const episodeTitle = episode.name || `Эпизод ${episode.ordinal || episode.number || index + 1}`;
+
+          // ИСПРАВЛЕНИЕ: Правильно извлекаем название эпизода из объекта
+          let episodeTitle;
+          if (episode.name && typeof episode.name === 'object') {
+            episodeTitle = episode.name.main || episode.name.english || episode.name.alternative || `Эпизод ${episode.ordinal || episode.number || index + 1}`;
+          } else if (typeof episode.name === 'string') {
+            episodeTitle = episode.name;
+          } else {
+            episodeTitle = `Эпизод ${episode.ordinal || episode.number || index + 1}`;
+          }
+
           const posterUrl = anilibriaV2Service.getOptimizedImageUrl(episode.poster);
-          
+
           return (
             <motion.div
               key={episode.id || index}
@@ -326,8 +336,8 @@ const NewEpisodesSection = ({
               <EpisodeCard>
                 <EpisodeImage>
                   {posterUrl ? (
-                    <img 
-                      src={posterUrl} 
+                    <img
+                      src={posterUrl}
                       alt={animeTitle}
                       onError={(e) => {
                         e.target.style.display = 'none';
@@ -345,25 +355,25 @@ const NewEpisodesSection = ({
                       🎭
                     </div>
                   )}
-                  
+
                   <EpisodeBadge>
                     Эп. {episode.ordinal || episode.number || index + 1}
                   </EpisodeBadge>
-                  
+
                   <PlayButton />
                 </EpisodeImage>
 
                 <EpisodeContent>
                   <AnimeTitle>{animeTitle}</AnimeTitle>
                   <EpisodeTitle>{episodeTitle}</EpisodeTitle>
-                  
+
                   <EpisodeMeta>
                     <span>{formatDate(episode.updated_at || episode.created_at)}</span>
                     <span>
                       {episode.duration ? `${Math.round(episode.duration / 60)} мин` : '~24 мин'}
                     </span>
                   </EpisodeMeta>
-                  
+
                   <WatchButton to={`/anime/${episode.id}`}>
                     Смотреть аниме
                   </WatchButton>

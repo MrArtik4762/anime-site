@@ -15,7 +15,7 @@ const AnimeHeader = styled.div`
   display: flex;
   gap: 40px;
   margin-bottom: 60px;
-  
+
   @media (max-width: 768px) {
     flex-direction: column;
     gap: 30px;
@@ -25,7 +25,7 @@ const AnimeHeader = styled.div`
 const PosterContainer = styled.div`
   flex-shrink: 0;
   width: 300px;
-  
+
   @media (max-width: 768px) {
     width: 100%;
     max-width: 300px;
@@ -63,7 +63,7 @@ const AnimeTitle = styled.h1`
   margin-bottom: 10px;
   color: ${props => props.theme.colors.text};
   line-height: 1.2;
-  
+
   @media (max-width: 768px) {
     font-size: 2rem;
   }
@@ -91,7 +91,7 @@ const MetaItem = styled.div`
     margin-bottom: 5px;
     font-weight: 500;
   }
-  
+
   .value {
     font-size: 1.1rem;
     color: ${props => props.theme.colors.text};
@@ -142,12 +142,12 @@ const WatchButton = styled(Link)`
   font-weight: 600;
   font-size: 1.1rem;
   transition: all 0.3s ease;
-  
+
   &:hover {
     background: ${props => props.theme.colors.primaryDark || props.theme.colors.primary};
     transform: translateY(-2px);
   }
-  
+
   &::before {
     content: '▶️';
     font-size: 1.2rem;
@@ -167,7 +167,7 @@ const SecondaryButton = styled.button`
   font-size: 1.1rem;
   cursor: pointer;
   transition: all 0.3s ease;
-  
+
   &:hover {
     border-color: ${props => props.theme.colors.primary};
     color: ${props => props.theme.colors.primary};
@@ -198,7 +198,7 @@ const EpisodeCard = styled(motion.div)`
   box-shadow: 0 4px 20px ${props => props.theme.colors.shadow};
   transition: all 0.3s ease;
   cursor: pointer;
-  
+
   &:hover {
     transform: translateY(-4px);
     box-shadow: 0 8px 30px ${props => props.theme.colors.shadowMedium};
@@ -215,7 +215,7 @@ const EpisodeImage = styled.div`
   justify-content: center;
   color: white;
   font-size: 2rem;
-  
+
   img {
     width: 100%;
     height: 100%;
@@ -269,7 +269,7 @@ const BackButton = styled(Button)`
   background: transparent;
   color: ${props => props.theme.colors.text};
   border: 1px solid ${props => props.theme.colors.border};
-  
+
   &:hover {
     border-color: ${props => props.theme.colors.primary};
     color: ${props => props.theme.colors.primary};
@@ -294,19 +294,19 @@ const AnimePage = () => {
     try {
       setLoading(true);
       setError(null);
-      
+
       console.log(`🎬 Загрузка аниме ${id}...`);
-      
+
       // Загружаем информацию об аниме
       const animeData = await anilibriaV2Service.getAnimeById(id);
       const convertedAnime = anilibriaV2Service.convertAnimeToFormat(animeData);
-      
+
       setAnime(convertedAnime);
       console.log(`✅ Аниме загружено:`, convertedAnime.title);
-      
+
       // Загружаем эпизоды
       loadEpisodes(id);
-      
+
     } catch (err) {
       console.error('Ошибка загрузки аниме:', err);
       setError(`Не удалось загрузить информацию об аниме: ${err.message}`);
@@ -318,19 +318,19 @@ const AnimePage = () => {
   const loadEpisodes = async (animeId) => {
     try {
       setEpisodesLoading(true);
-      
+
       console.log(`📺 Загрузка эпизодов для аниме ${animeId}...`);
-      
+
       const episodesData = await anilibriaV2Service.getAnimeEpisodes(animeId);
-      
+
       if (Array.isArray(episodesData)) {
-        const convertedEpisodes = episodesData.map(ep => 
+        const convertedEpisodes = episodesData.map(ep =>
           anilibriaV2Service.convertEpisodeToFormat(ep)
         );
         setEpisodes(convertedEpisodes);
         console.log(`✅ Загружено ${convertedEpisodes.length} эпизодов`);
       }
-      
+
     } catch (err) {
       console.warn('Не удалось загрузить эпизоды:', err);
       setEpisodes([]);
@@ -366,7 +366,7 @@ const AnimePage = () => {
           <ErrorMessage>
             {error}
             <br />
-            <button 
+            <button
               onClick={loadAnime}
               style={{
                 marginTop: '15px',
@@ -411,8 +411,8 @@ const AnimePage = () => {
         <AnimeHeader>
           <PosterContainer>
             {anime.poster ? (
-              <Poster 
-                src={anime.poster} 
+              <Poster
+                src={anime.poster}
                 alt={anime.title}
                 onError={(e) => {
                   e.target.style.display = 'none';
@@ -484,11 +484,11 @@ const AnimePage = () => {
                   Эпизоды недоступны
                 </SecondaryButton>
               )}
-              
+
               <SecondaryButton>
                 ❤️ В избранное
               </SecondaryButton>
-              
+
               <SecondaryButton>
                 📝 В планы
               </SecondaryButton>
@@ -501,7 +501,7 @@ const AnimePage = () => {
           <SectionTitle>
             Эпизоды {episodesLoading && '(загрузка...)'}
           </SectionTitle>
-          
+
           {episodesLoading ? (
             <LoadingContainer>
               <LoadingSpinner size="32px" />
@@ -523,8 +523,8 @@ const AnimePage = () => {
                       Эп. {episode.number || index + 1}
                     </EpisodeNumber>
                     {episode.preview ? (
-                      <img 
-                        src={episode.preview} 
+                      <img
+                        src={episode.preview}
                         alt={episode.title}
                         onError={(e) => {
                           e.target.style.display = 'none';
@@ -534,10 +534,12 @@ const AnimePage = () => {
                       <span>🎬</span>
                     )}
                   </EpisodeImage>
-                  
+
                   <EpisodeInfo>
                     <EpisodeTitle>
-                      {episode.title || `Эпизод ${episode.number || index + 1}`}
+                      {(episode.title && typeof episode.title === 'object')
+                        ? (episode.title.main || episode.title.english || episode.title.alternative || `Эпизод ${episode.number || index + 1}`)
+                        : (episode.title || `Эпизод ${episode.number || index + 1}`)}
                     </EpisodeTitle>
                     {episode.duration && (
                       <div style={{

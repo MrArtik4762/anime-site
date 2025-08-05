@@ -4,6 +4,14 @@ import styled from 'styled-components';
 import { LoadingSpinner } from '../../styles/GlobalStyles';
 import anilibriaV2Service from '../../services/anilibriaV2Service';
 
+// Диагностическое логирование для отладки
+console.log('🔍 EpisodeVideoPlayer: Модуль загружается...');
+console.log('🔍 ReactPlayer доступен:', !!ReactPlayer);
+console.log('🔍 React доступен:', !!React);
+console.log('🔍 styled-components доступен:', !!styled);
+console.log('🔍 LoadingSpinner доступен:', !!LoadingSpinner);
+console.log('🔍 anilibriaV2Service доступен:', !!anilibriaV2Service);
+
 const PlayerContainer = styled.div`
   position: relative;
   width: 100%;
@@ -43,11 +51,11 @@ const EpisodeDropdown = styled.select`
   font-size: 14px;
   cursor: pointer;
   outline: none;
-  
+
   &:focus {
     border-color: ${props => props.theme?.colors?.primary || '#FF6B6B'};
   }
-  
+
   option {
     background: #333;
     color: white;
@@ -63,11 +71,11 @@ const QualitySelector = styled.select`
   font-size: 14px;
   cursor: pointer;
   outline: none;
-  
+
   &:focus {
     border-color: ${props => props.theme?.colors?.primary || '#FF6B6B'};
   }
-  
+
   option {
     background: #333;
     color: white;
@@ -152,7 +160,7 @@ const ProgressInfo = styled.div`
     border-radius: 2px;
     overflow: hidden;
     margin-bottom: 8px;
-    
+
     .progress-fill {
       height: 100%;
       background: ${props => props.theme?.colors?.primary || '#FF6B6B'};
@@ -169,13 +177,19 @@ const ProgressInfo = styled.div`
   }
 `;
 
-const EpisodeVideoPlayer = ({ 
+const EpisodeVideoPlayer = ({
   episodeId,
   animeId,
   autoPlay = false,
   onEpisodeChange,
   onProgress: onProgressCallback
 }) => {
+  console.log('🎬 EpisodeVideoPlayer: Компонент инициализируется с props:', {
+    episodeId,
+    animeId,
+    autoPlay
+  });
+
   const [episode, setEpisode] = useState(null);
   const [allEpisodes, setAllEpisodes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -186,8 +200,22 @@ const EpisodeVideoPlayer = ({
   const [progress, setProgress] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  
+
   const playerRef = useRef(null);
+
+  // Проверка доступности ReactPlayer при рендере
+  useEffect(() => {
+    console.log('🔍 EpisodeVideoPlayer: useEffect - проверка ReactPlayer');
+    console.log('🔍 ReactPlayer тип:', typeof ReactPlayer);
+    console.log('🔍 ReactPlayer.canPlay доступен:', typeof ReactPlayer?.canPlay);
+
+    if (!ReactPlayer) {
+      console.error('❌ ReactPlayer не доступен!');
+      setError('ReactPlayer не загружен. Проверьте зависимости.');
+    } else {
+      console.log('✅ ReactPlayer успешно загружен');
+    }
+  }, []);
 
   useEffect(() => {
     if (episodeId) {
@@ -205,28 +233,28 @@ const EpisodeVideoPlayer = ({
     try {
       setLoading(true);
       setError(null);
-      
+
       console.log(`🎬 Загрузка эпизода ${episodeId}...`);
-      
+
       const episodeData = await anilibriaV2Service.getEpisodeById(episodeId);
       const convertedEpisode = anilibriaV2Service.convertEpisodeToFormat(episodeData);
-      
+
       setEpisode(convertedEpisode);
-      
+
       // Получаем доступные качества
       const availableQualities = anilibriaV2Service.getAvailableQualities(episodeData);
       setQualities(availableQualities);
-      
+
       // Устанавливаем видео URL
       const videoUrl = anilibriaV2Service.getVideoUrl(episodeData, selectedQuality);
       setVideoUrl(videoUrl);
-      
+
       console.log(`✅ Эпизод загружен:`, {
         title: convertedEpisode.title,
         videoUrl,
         qualities: availableQualities.length
       });
-      
+
     } catch (err) {
       console.error('Ошибка загрузки эпизода:', err);
       setError(`Не удалось загрузить эпизод: ${err.message}`);
@@ -238,17 +266,17 @@ const EpisodeVideoPlayer = ({
   const loadAllEpisodes = async () => {
     try {
       console.log(`📝 Загрузка списка эпизодов для аниме ${animeId}...`);
-      
+
       const episodesData = await anilibriaV2Service.getAnimeEpisodes(animeId);
-      
+
       if (Array.isArray(episodesData)) {
-        const convertedEpisodes = episodesData.map(ep => 
+        const convertedEpisodes = episodesData.map(ep =>
           anilibriaV2Service.convertEpisodeToFormat(ep)
         );
         setAllEpisodes(convertedEpisodes);
         console.log(`✅ Загружено ${convertedEpisodes.length} эпизодов`);
       }
-      
+
     } catch (err) {
       console.warn('Не удалось загрузить список эпизодов:', err);
     }
@@ -257,7 +285,7 @@ const EpisodeVideoPlayer = ({
   const handleQualityChange = (quality) => {
     if (episode) {
       setSelectedQuality(quality);
-      
+
       // Находим URL для выбранного качества
       const qualityItem = qualities.find(q => q.label === quality);
       if (qualityItem) {
@@ -277,7 +305,7 @@ const EpisodeVideoPlayer = ({
     const { played, playedSeconds, loaded, loadedSeconds } = progressData;
     setProgress(played * 100);
     setCurrentTime(playedSeconds);
-    
+
     onProgressCallback?.({
       played,
       playedSeconds,
@@ -294,11 +322,11 @@ const EpisodeVideoPlayer = ({
 
   const formatTime = (seconds) => {
     if (isNaN(seconds)) return '0:00';
-    
+
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     const secs = Math.floor(seconds % 60);
-    
+
     if (hours > 0) {
       return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     }
@@ -360,7 +388,7 @@ const EpisodeVideoPlayer = ({
             ))}
           </EpisodeDropdown>
         )}
-        
+
         {qualities.length > 1 && (
           <QualitySelector
             value={selectedQuality}
