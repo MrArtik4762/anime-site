@@ -1,12 +1,12 @@
-const Anime = require('../models/Anime');
+﻿const Anime = require('../models/Anime');
 const WatchList = require('../models/WatchList');
 const Comment = require('../models/Comment');
-const { HTTP_STATUS, ERROR_MESSAGES } = require('../../shared/constants/constants');
+const { HTTP_STATUS, ERROR_MESSAGES } = require('/app/shared/constants/constants');
 const mongoose = require('mongoose');
 const anilibriaService = require('../services/anilibriaService');
 
 class AnimeController {
-  // Получение списка аниме с фильтрацией и пагинацией
+  // РџРѕР»СѓС‡РµРЅРёРµ СЃРїРёСЃРєР° Р°РЅРёРјРµ СЃ С„РёР»СЊС‚СЂР°С†РёРµР№ Рё РїР°РіРёРЅР°С†РёРµР№
   async getAnimeList(req, res) {
     try {
       const {
@@ -23,7 +23,7 @@ class AnimeController {
         search
       } = req.query;
 
-      // Построение фильтра - упрощенная версия для тестирования
+      // РџРѕСЃС‚СЂРѕРµРЅРёРµ С„РёР»СЊС‚СЂР° - СѓРїСЂРѕС‰РµРЅРЅР°СЏ РІРµСЂСЃРёСЏ РґР»СЏ С‚РµСЃС‚РёСЂРѕРІР°РЅРёСЏ
       const filter = {};
 
       if (genres) {
@@ -51,14 +51,14 @@ class AnimeController {
         ];
       }
 
-      // Построение сортировки - упрощенная версия
-      const finalSortBy = 'rating'; // упрощено
+      // РџРѕСЃС‚СЂРѕРµРЅРёРµ СЃРѕСЂС‚РёСЂРѕРІРєРё - СѓРїСЂРѕС‰РµРЅРЅР°СЏ РІРµСЂСЃРёСЏ
+      const finalSortBy = 'rating'; // СѓРїСЂРѕС‰РµРЅРѕ
       const finalSortOrder = sortOrder || order;
       const sortOrderValue = finalSortOrder === 'desc' ? -1 : 1;
       const sortObj = {};
       sortObj[finalSortBy] = sortOrderValue;
 
-      // Выполнение запроса
+      // Р’С‹РїРѕР»РЅРµРЅРёРµ Р·Р°РїСЂРѕСЃР°
       const skip = (parseInt(page) - 1) * parseInt(limit);
       const [anime, total] = await Promise.all([
         Anime.find(filter)
@@ -69,7 +69,7 @@ class AnimeController {
         Anime.countDocuments(filter)
       ]);
 
-      // Fallback на AniLibria если база пуста
+      // Fallback РЅР° AniLibria РµСЃР»Рё Р±Р°Р·Р° РїСѓСЃС‚Р°
       if ((!anime || anime.length === 0) && !search) {
         try {
           const anilibriaResult = await anilibriaService.getPopular({ items_per_page: parseInt(limit), page: parseInt(page) });
@@ -89,7 +89,7 @@ class AnimeController {
             }
           });
         } catch (e) {
-          // Если и AniLibria не доступен — возвращаем ошибку
+          // Р•СЃР»Рё Рё AniLibria РЅРµ РґРѕСЃС‚СѓРїРµРЅ вЂ” РІРѕР·РІСЂР°С‰Р°РµРј РѕС€РёР±РєСѓ
         }
       }
 
@@ -121,7 +121,7 @@ class AnimeController {
     }
   }
 
-  // Получение популярного аниме
+  // РџРѕР»СѓС‡РµРЅРёРµ РїРѕРїСѓР»СЏСЂРЅРѕРіРѕ Р°РЅРёРјРµ
   async getPopularAnime(req, res) {
     try {
       const { limit = 50 } = req.query;
@@ -146,7 +146,7 @@ class AnimeController {
     }
   }
 
-  // Получение топ рейтингового аниме
+  // РџРѕР»СѓС‡РµРЅРёРµ С‚РѕРї СЂРµР№С‚РёРЅРіРѕРІРѕРіРѕ Р°РЅРёРјРµ
   async getTopRatedAnime(req, res) {
     try {
       const { limit = 50 } = req.query;
@@ -171,7 +171,7 @@ class AnimeController {
     }
   }
 
-  // Получение недавно добавленного аниме
+  // РџРѕР»СѓС‡РµРЅРёРµ РЅРµРґР°РІРЅРѕ РґРѕР±Р°РІР»РµРЅРЅРѕРіРѕ Р°РЅРёРјРµ
   async getRecentAnime(req, res) {
     try {
       const { limit = 50 } = req.query;
@@ -196,7 +196,7 @@ class AnimeController {
     }
   }
 
-  // Поиск аниме
+  // РџРѕРёСЃРє Р°РЅРёРјРµ
   async searchAnime(req, res) {
     try {
       const { q, limit = 20, page = 1 } = req.query;
@@ -205,7 +205,7 @@ class AnimeController {
         return res.status(HTTP_STATUS.BAD_REQUEST).json({
           success: false,
           error: {
-            message: 'Поисковый запрос должен содержать минимум 2 символа'
+            message: 'РџРѕРёСЃРєРѕРІС‹Р№ Р·Р°РїСЂРѕСЃ РґРѕР»Р¶РµРЅ СЃРѕРґРµСЂР¶Р°С‚СЊ РјРёРЅРёРјСѓРј 2 СЃРёРјРІРѕР»Р°'
           }
         });
       }
@@ -236,7 +236,7 @@ class AnimeController {
     }
   }
 
-  // Получение деталей аниме
+  // РџРѕР»СѓС‡РµРЅРёРµ РґРµС‚Р°Р»РµР№ Р°РЅРёРјРµ
   async getAnimeDetails(req, res) {
     try {
       const { id } = req.params;
@@ -245,7 +245,7 @@ class AnimeController {
         return res.status(HTTP_STATUS.BAD_REQUEST).json({
           success: false,
           error: {
-            message: 'Неверный ID аниме'
+            message: 'РќРµРІРµСЂРЅС‹Р№ ID Р°РЅРёРјРµ'
           }
         });
       }
@@ -258,18 +258,18 @@ class AnimeController {
         return res.status(HTTP_STATUS.NOT_FOUND).json({
           success: false,
           error: {
-            message: 'Аниме не найдено'
+            message: 'РђРЅРёРјРµ РЅРµ РЅР°Р№РґРµРЅРѕ'
           }
         });
       }
 
-      // Получаем статистику пользователя для этого аниме (если авторизован)
+      // РџРѕР»СѓС‡Р°РµРј СЃС‚Р°С‚РёСЃС‚РёРєСѓ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РґР»СЏ СЌС‚РѕРіРѕ Р°РЅРёРјРµ (РµСЃР»Рё Р°РІС‚РѕСЂРёР·РѕРІР°РЅ)
       let userStats = null;
       if (req.user) {
         userStats = await WatchList.findUserEntry(req.user.id, id);
       }
 
-      // Получаем количество комментариев
+      // РџРѕР»СѓС‡Р°РµРј РєРѕР»РёС‡РµСЃС‚РІРѕ РєРѕРјРјРµРЅС‚Р°СЂРёРµРІ
       const commentsCount = await Comment.countDocuments({
         animeId: id,
         status: 'approved'
@@ -295,7 +295,7 @@ class AnimeController {
     }
   }
 
-  // Получение эпизода по ID
+  // РџРѕР»СѓС‡РµРЅРёРµ СЌРїРёР·РѕРґР° РїРѕ ID
   async getEpisodeById(req, res) {
     try {
       const { id, episodeId } = req.params;
@@ -304,7 +304,7 @@ class AnimeController {
         return res.status(HTTP_STATUS.BAD_REQUEST).json({
           success: false,
           error: {
-            message: 'Неверный ID аниме'
+            message: 'РќРµРІРµСЂРЅС‹Р№ ID Р°РЅРёРјРµ'
           }
         });
       }
@@ -317,19 +317,19 @@ class AnimeController {
         return res.status(HTTP_STATUS.NOT_FOUND).json({
           success: false,
           error: {
-            message: 'Аниме не найдено'
+            message: 'РђРЅРёРјРµ РЅРµ РЅР°Р№РґРµРЅРѕ'
           }
         });
       }
 
-      // Находим эпизод
+      // РќР°С…РѕРґРёРј СЌРїРёР·РѕРґ
       const episode = anime.videos.find(video => video.episode === parseInt(episodeId));
 
       if (!episode) {
         return res.status(HTTP_STATUS.NOT_FOUND).json({
           success: false,
           error: {
-            message: 'Эпизод не найден'
+            message: 'Р­РїРёР·РѕРґ РЅРµ РЅР°Р№РґРµРЅ'
           }
         });
       }
@@ -362,7 +362,7 @@ class AnimeController {
     }
   }
 
-  // Получение эпизодов аниме
+  // РџРѕР»СѓС‡РµРЅРёРµ СЌРїРёР·РѕРґРѕРІ Р°РЅРёРјРµ
   async getAnimeEpisodes(req, res) {
     try {
       const { id } = req.params;
@@ -371,7 +371,7 @@ class AnimeController {
         return res.status(HTTP_STATUS.BAD_REQUEST).json({
           success: false,
           error: {
-            message: 'Неверный ID аниме'
+            message: 'РќРµРІРµСЂРЅС‹Р№ ID Р°РЅРёРјРµ'
           }
         });
       }
@@ -384,12 +384,12 @@ class AnimeController {
         return res.status(HTTP_STATUS.NOT_FOUND).json({
           success: false,
           error: {
-            message: 'Аниме не найдено'
+            message: 'РђРЅРёРјРµ РЅРµ РЅР°Р№РґРµРЅРѕ'
           }
         });
       }
 
-      // Сортируем эпизоды по номеру
+      // РЎРѕСЂС‚РёСЂСѓРµРј СЌРїРёР·РѕРґС‹ РїРѕ РЅРѕРјРµСЂСѓ
       const episodes = anime.videos.sort((a, b) => a.episode - b.episode);
 
       res.json({
@@ -420,7 +420,7 @@ class AnimeController {
     }
   }
 
-  // Получение связанного аниме
+  // РџРѕР»СѓС‡РµРЅРёРµ СЃРІСЏР·Р°РЅРЅРѕРіРѕ Р°РЅРёРјРµ
   async getRelatedAnime(req, res) {
     try {
       const { id } = req.params;
@@ -429,7 +429,7 @@ class AnimeController {
         return res.status(HTTP_STATUS.BAD_REQUEST).json({
           success: false,
           error: {
-            message: 'Неверный ID аниме'
+            message: 'РќРµРІРµСЂРЅС‹Р№ ID Р°РЅРёРјРµ'
           }
         });
       }
@@ -443,12 +443,12 @@ class AnimeController {
         return res.status(HTTP_STATUS.NOT_FOUND).json({
           success: false,
           error: {
-            message: 'Аниме не найдено'
+            message: 'РђРЅРёРјРµ РЅРµ РЅР°Р№РґРµРЅРѕ'
           }
         });
       }
 
-      // Фильтруем только активные и одобренные связанные аниме
+      // Р¤РёР»СЊС‚СЂСѓРµРј С‚РѕР»СЊРєРѕ Р°РєС‚РёРІРЅС‹Рµ Рё РѕРґРѕР±СЂРµРЅРЅС‹Рµ СЃРІСЏР·Р°РЅРЅС‹Рµ Р°РЅРёРјРµ
       const relatedAnime = anime.relations.filter(relation => 
         relation.animeId && relation.animeId.isActive && relation.animeId.approved
       );
@@ -471,7 +471,7 @@ class AnimeController {
     }
   }
 
-  // Получение рекомендаций
+  // РџРѕР»СѓС‡РµРЅРёРµ СЂРµРєРѕРјРµРЅРґР°С†РёР№
   async getRecommendations(req, res) {
     try {
       const { id } = req.params;
@@ -481,7 +481,7 @@ class AnimeController {
         return res.status(HTTP_STATUS.BAD_REQUEST).json({
           success: false,
           error: {
-            message: 'Неверный ID аниме'
+            message: 'РќРµРІРµСЂРЅС‹Р№ ID Р°РЅРёРјРµ'
           }
         });
       }
@@ -495,18 +495,18 @@ class AnimeController {
         return res.status(HTTP_STATUS.NOT_FOUND).json({
           success: false,
           error: {
-            message: 'Аниме не найдено'
+            message: 'РђРЅРёРјРµ РЅРµ РЅР°Р№РґРµРЅРѕ'
           }
         });
       }
 
-      // Получаем рекомендации из базы
+      // РџРѕР»СѓС‡Р°РµРј СЂРµРєРѕРјРµРЅРґР°С†РёРё РёР· Р±Р°Р·С‹
       let recommendations = anime.recommendations
         .filter(rec => rec.animeId && rec.animeId.isActive && rec.animeId.approved)
         .sort((a, b) => b.votes - a.votes)
         .slice(0, parseInt(limit));
 
-      // Если рекомендаций мало, добавляем похожие по жанрам
+      // Р•СЃР»Рё СЂРµРєРѕРјРµРЅРґР°С†РёР№ РјР°Р»Рѕ, РґРѕР±Р°РІР»СЏРµРј РїРѕС…РѕР¶РёРµ РїРѕ Р¶Р°РЅСЂР°Рј
       if (recommendations.length < parseInt(limit) && anime.genres.length > 0) {
         const additionalCount = parseInt(limit) - recommendations.length;
         const existingIds = [id, ...recommendations.map(r => r.animeId._id)];
@@ -521,7 +521,7 @@ class AnimeController {
         .sort({ 'rating.score': -1 })
         .limit(additionalCount);
 
-        // Добавляем похожие аниме как рекомендации
+        // Р”РѕР±Р°РІР»СЏРµРј РїРѕС…РѕР¶РёРµ Р°РЅРёРјРµ РєР°Рє СЂРµРєРѕРјРµРЅРґР°С†РёРё
         const additionalRecs = similarAnime.map(similar => ({
           animeId: similar,
           votes: 0,
@@ -549,7 +549,7 @@ class AnimeController {
     }
   }
 
-  // Оценка аниме пользователем
+  // РћС†РµРЅРєР° Р°РЅРёРјРµ РїРѕР»СЊР·РѕРІР°С‚РµР»РµРј
   async rateAnime(req, res) {
     try {
       const { id } = req.params;
@@ -560,7 +560,7 @@ class AnimeController {
         return res.status(HTTP_STATUS.BAD_REQUEST).json({
           success: false,
           error: {
-            message: 'Неверный ID аниме'
+            message: 'РќРµРІРµСЂРЅС‹Р№ ID Р°РЅРёРјРµ'
           }
         });
       }
@@ -569,23 +569,23 @@ class AnimeController {
         return res.status(HTTP_STATUS.BAD_REQUEST).json({
           success: false,
           error: {
-            message: 'Рейтинг должен быть целым числом от 1 до 10'
+            message: 'Р РµР№С‚РёРЅРі РґРѕР»Р¶РµРЅ Р±С‹С‚СЊ С†РµР»С‹Рј С‡РёСЃР»РѕРј РѕС‚ 1 РґРѕ 10'
           }
         });
       }
 
-      // Проверяем существование аниме
+      // РџСЂРѕРІРµСЂСЏРµРј СЃСѓС‰РµСЃС‚РІРѕРІР°РЅРёРµ Р°РЅРёРјРµ
       const anime = await Anime.findById(id).where({ isActive: true, approved: true });
       if (!anime) {
         return res.status(HTTP_STATUS.NOT_FOUND).json({
           success: false,
           error: {
-            message: 'Аниме не найдено'
+            message: 'РђРЅРёРјРµ РЅРµ РЅР°Р№РґРµРЅРѕ'
           }
         });
       }
 
-      // Обновляем или создаем запись в списке просмотра
+      // РћР±РЅРѕРІР»СЏРµРј РёР»Рё СЃРѕР·РґР°РµРј Р·Р°РїРёСЃСЊ РІ СЃРїРёСЃРєРµ РїСЂРѕСЃРјРѕС‚СЂР°
       let watchListEntry = await WatchList.findOne({ userId, animeId: id });
       
       if (watchListEntry) {
@@ -601,7 +601,7 @@ class AnimeController {
         await watchListEntry.save();
       }
 
-      // Обновляем статистику аниме
+      // РћР±РЅРѕРІР»СЏРµРј СЃС‚Р°С‚РёСЃС‚РёРєСѓ Р°РЅРёРјРµ
       await anime.updateStatistics();
 
       res.json({
@@ -610,7 +610,7 @@ class AnimeController {
           rating,
           watchListEntry
         },
-        message: 'Оценка успешно сохранена'
+        message: 'РћС†РµРЅРєР° СѓСЃРїРµС€РЅРѕ СЃРѕС…СЂР°РЅРµРЅР°'
       });
 
     } catch (error) {
@@ -624,7 +624,7 @@ class AnimeController {
     }
   }
 
-  // Получение жанров
+  // РџРѕР»СѓС‡РµРЅРёРµ Р¶Р°РЅСЂРѕРІ
   async getGenres(req, res) {
     try {
       const genres = await Anime.distinct('genres', { 
@@ -632,7 +632,7 @@ class AnimeController {
         approved: true 
       });
 
-      // Подсчитываем количество аниме для каждого жанра
+      // РџРѕРґСЃС‡РёС‚С‹РІР°РµРј РєРѕР»РёС‡РµСЃС‚РІРѕ Р°РЅРёРјРµ РґР»СЏ РєР°Р¶РґРѕРіРѕ Р¶Р°РЅСЂР°
       const genresWithCount = await Promise.all(
         genres.map(async (genre) => {
           const count = await Anime.countDocuments({
@@ -644,7 +644,7 @@ class AnimeController {
         })
       );
 
-      // Сортируем по популярности
+      // РЎРѕСЂС‚РёСЂСѓРµРј РїРѕ РїРѕРїСѓР»СЏСЂРЅРѕСЃС‚Рё
       genresWithCount.sort((a, b) => b.count - a.count);
 
       res.json({
@@ -665,7 +665,7 @@ class AnimeController {
     }
   }
 
-  // Импорт популярных аниме из AniLibria
+  // РРјРїРѕСЂС‚ РїРѕРїСѓР»СЏСЂРЅС‹С… Р°РЅРёРјРµ РёР· AniLibria
   async importFromAnilibria(req, res) {
     try {
       const { limit = 50 } = req.query;

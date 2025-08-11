@@ -1,45 +1,45 @@
-const User = require('../models/User');
+﻿const User = require('../models/User');
 const { generateToken, generateRefreshToken } = require('../middleware/auth');
-const { HTTP_STATUS, ERROR_MESSAGES } = require('../../shared/constants/constants');
+const { HTTP_STATUS, ERROR_MESSAGES } = require('/app/shared/constants/constants');
 const crypto = require('crypto');
 
 class AuthController {
-  // Регистрация нового пользователя
+  // Р РµРіРёСЃС‚СЂР°С†РёСЏ РЅРѕРІРѕРіРѕ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
   async register(req, res) {
     try {
       const { username, email, password } = req.body;
 
-      // Проверяем, существует ли пользователь
+      // РџСЂРѕРІРµСЂСЏРµРј, СЃСѓС‰РµСЃС‚РІСѓРµС‚ Р»Рё РїРѕР»СЊР·РѕРІР°С‚РµР»СЊ
       const existingUser = await User.findByEmailOrUsername(email);
       if (existingUser) {
         return res.status(HTTP_STATUS.BAD_REQUEST).json({
           success: false,
           error: {
-            message: 'Пользователь с таким email или именем уже существует'
+            message: 'РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ СЃ С‚Р°РєРёРј email РёР»Рё РёРјРµРЅРµРј СѓР¶Рµ СЃСѓС‰РµСЃС‚РІСѓРµС‚'
           }
         });
       }
 
-      // Создаем нового пользователя
+      // РЎРѕР·РґР°РµРј РЅРѕРІРѕРіРѕ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
       const user = new User({
         username,
         email,
         password
       });
 
-      // Создаем токен верификации email
+      // РЎРѕР·РґР°РµРј С‚РѕРєРµРЅ РІРµСЂРёС„РёРєР°С†РёРё email
       const verificationToken = user.createEmailVerificationToken();
       await user.save();
 
-      // Генерируем JWT токены
+      // Р“РµРЅРµСЂРёСЂСѓРµРј JWT С‚РѕРєРµРЅС‹
       const accessToken = generateToken(user._id);
       const refreshToken = generateRefreshToken(user._id);
 
-      // Сохраняем refresh токен в базе (можно использовать отдельную коллекцию)
+      // РЎРѕС…СЂР°РЅСЏРµРј refresh С‚РѕРєРµРЅ РІ Р±Р°Р·Рµ (РјРѕР¶РЅРѕ РёСЃРїРѕР»СЊР·РѕРІР°С‚СЊ РѕС‚РґРµР»СЊРЅСѓСЋ РєРѕР»Р»РµРєС†РёСЋ)
       user.refreshToken = refreshToken;
       await user.save();
 
-      // Отправляем email верификации (заглушка)
+      // РћС‚РїСЂР°РІР»СЏРµРј email РІРµСЂРёС„РёРєР°С†РёРё (Р·Р°РіР»СѓС€РєР°)
       // await emailService.sendVerificationEmail(user.email, verificationToken);
 
       res.status(HTTP_STATUS.CREATED).json({
@@ -58,7 +58,7 @@ class AuthController {
             refreshToken
           }
         },
-        message: 'Пользователь успешно зарегистрирован'
+        message: 'РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ СѓСЃРїРµС€РЅРѕ Р·Р°СЂРµРіРёСЃС‚СЂРёСЂРѕРІР°РЅ'
       });
 
     } catch (error) {
@@ -72,21 +72,21 @@ class AuthController {
     }
   }
 
-  // Вход в систему
+  // Р’С…РѕРґ РІ СЃРёСЃС‚РµРјСѓ
   async login(req, res) {
     try {
-      console.log('🔍 LOGIN DEBUG - Request body:', req.body);
-      console.log('🔍 LOGIN DEBUG - Request headers:', req.headers);
+      console.log('рџ”Ќ LOGIN DEBUG - Request body:', req.body);
+      console.log('рџ”Ќ LOGIN DEBUG - Request headers:', req.headers);
       
       const { email, password } = req.body;
-      console.log('🔍 LOGIN DEBUG - Extracted email:', email);
-      console.log('🔍 LOGIN DEBUG - Password provided:', !!password);
+      console.log('рџ”Ќ LOGIN DEBUG - Extracted email:', email);
+      console.log('рџ”Ќ LOGIN DEBUG - Password provided:', !!password);
 
-      // Находим пользователя по email или username
+      // РќР°С…РѕРґРёРј РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РїРѕ email РёР»Рё username
       const user = await User.findByEmailOrUsername(email);
-      console.log('🔍 LOGIN DEBUG - User found:', !!user);
+      console.log('рџ”Ќ LOGIN DEBUG - User found:', !!user);
       if (user) {
-        console.log('🔍 LOGIN DEBUG - User details:', {
+        console.log('рџ”Ќ LOGIN DEBUG - User details:', {
           id: user._id,
           username: user.username,
           email: user.email,
@@ -97,37 +97,37 @@ class AuthController {
         return res.status(HTTP_STATUS.UNAUTHORIZED).json({
           success: false,
           error: {
-            message: 'Неверные учетные данные'
+            message: 'РќРµРІРµСЂРЅС‹Рµ СѓС‡РµС‚РЅС‹Рµ РґР°РЅРЅС‹Рµ'
           }
         });
       }
 
-      // Проверяем пароль
+      // РџСЂРѕРІРµСЂСЏРµРј РїР°СЂРѕР»СЊ
       const isPasswordValid = await user.comparePassword(password);
       if (!isPasswordValid) {
         return res.status(HTTP_STATUS.UNAUTHORIZED).json({
           success: false,
           error: {
-            message: 'Неверные учетные данные'
+            message: 'РќРµРІРµСЂРЅС‹Рµ СѓС‡РµС‚РЅС‹Рµ РґР°РЅРЅС‹Рµ'
           }
         });
       }
 
-      // Проверяем активность пользователя
+      // РџСЂРѕРІРµСЂСЏРµРј Р°РєС‚РёРІРЅРѕСЃС‚СЊ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
       if (!user.isUserActive()) {
         return res.status(HTTP_STATUS.FORBIDDEN).json({
           success: false,
           error: {
-            message: 'Аккаунт заблокирован или неактивен'
+            message: 'РђРєРєР°СѓРЅС‚ Р·Р°Р±Р»РѕРєРёСЂРѕРІР°РЅ РёР»Рё РЅРµР°РєС‚РёРІРµРЅ'
           }
         });
       }
 
-      // Генерируем новые токены
+      // Р“РµРЅРµСЂРёСЂСѓРµРј РЅРѕРІС‹Рµ С‚РѕРєРµРЅС‹
       const accessToken = generateToken(user._id);
       const refreshToken = generateRefreshToken(user._id);
 
-      // Обновляем refresh токен и время последнего входа
+      // РћР±РЅРѕРІР»СЏРµРј refresh С‚РѕРєРµРЅ Рё РІСЂРµРјСЏ РїРѕСЃР»РµРґРЅРµРіРѕ РІС…РѕРґР°
       user.refreshToken = refreshToken;
       user.lastLogin = new Date();
       await user.save();
@@ -149,7 +149,7 @@ class AuthController {
             refreshToken
           }
         },
-        message: 'Успешный вход в систему'
+        message: 'РЈСЃРїРµС€РЅС‹Р№ РІС…РѕРґ РІ СЃРёСЃС‚РµРјСѓ'
       });
 
     } catch (error) {
@@ -163,7 +163,7 @@ class AuthController {
     }
   }
 
-  // Обновление токена
+  // РћР±РЅРѕРІР»РµРЅРёРµ С‚РѕРєРµРЅР°
   async refreshToken(req, res) {
     try {
       const { refreshToken } = req.body;
@@ -172,37 +172,37 @@ class AuthController {
         return res.status(HTTP_STATUS.UNAUTHORIZED).json({
           success: false,
           error: {
-            message: 'Refresh токен не предоставлен'
+            message: 'Refresh С‚РѕРєРµРЅ РЅРµ РїСЂРµРґРѕСЃС‚Р°РІР»РµРЅ'
           }
         });
       }
 
-      // Находим пользователя с данным refresh токеном
+      // РќР°С…РѕРґРёРј РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ СЃ РґР°РЅРЅС‹Рј refresh С‚РѕРєРµРЅРѕРј
       const user = await User.findOne({ refreshToken });
       if (!user) {
         return res.status(HTTP_STATUS.UNAUTHORIZED).json({
           success: false,
           error: {
-            message: 'Недействительный refresh токен'
+            message: 'РќРµРґРµР№СЃС‚РІРёС‚РµР»СЊРЅС‹Р№ refresh С‚РѕРєРµРЅ'
           }
         });
       }
 
-      // Проверяем активность пользователя
+      // РџСЂРѕРІРµСЂСЏРµРј Р°РєС‚РёРІРЅРѕСЃС‚СЊ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
       if (!user.isUserActive()) {
         return res.status(HTTP_STATUS.FORBIDDEN).json({
           success: false,
           error: {
-            message: 'Аккаунт заблокирован или неактивен'
+            message: 'РђРєРєР°СѓРЅС‚ Р·Р°Р±Р»РѕРєРёСЂРѕРІР°РЅ РёР»Рё РЅРµР°РєС‚РёРІРµРЅ'
           }
         });
       }
 
-      // Генерируем новые токены
+      // Р“РµРЅРµСЂРёСЂСѓРµРј РЅРѕРІС‹Рµ С‚РѕРєРµРЅС‹
       const newAccessToken = generateToken(user._id);
       const newRefreshToken = generateRefreshToken(user._id);
 
-      // Обновляем refresh токен
+      // РћР±РЅРѕРІР»СЏРµРј refresh С‚РѕРєРµРЅ
       user.refreshToken = newRefreshToken;
       await user.save();
 
@@ -227,19 +227,19 @@ class AuthController {
     }
   }
 
-  // Выход из системы
+  // Р’С‹С…РѕРґ РёР· СЃРёСЃС‚РµРјС‹
   async logout(req, res) {
     try {
       const user = await User.findById(req.user.id);
       if (user) {
-        // Удаляем refresh токен
+        // РЈРґР°Р»СЏРµРј refresh С‚РѕРєРµРЅ
         user.refreshToken = undefined;
         await user.save();
       }
 
       res.json({
         success: true,
-        message: 'Успешный выход из системы'
+        message: 'РЈСЃРїРµС€РЅС‹Р№ РІС‹С…РѕРґ РёР· СЃРёСЃС‚РµРјС‹'
       });
 
     } catch (error) {
@@ -253,7 +253,7 @@ class AuthController {
     }
   }
 
-  // Получение текущего пользователя
+  // РџРѕР»СѓС‡РµРЅРёРµ С‚РµРєСѓС‰РµРіРѕ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
   async getMe(req, res) {
     try {
       const user = await User.findById(req.user.id)
@@ -287,30 +287,30 @@ class AuthController {
     }
   }
 
-  // Забыли пароль
+  // Р—Р°Р±С‹Р»Рё РїР°СЂРѕР»СЊ
   async forgotPassword(req, res) {
     try {
       const { email } = req.body;
 
       const user = await User.findOne({ email });
       if (!user) {
-        // Не раскрываем, существует ли пользователь
+        // РќРµ СЂР°СЃРєСЂС‹РІР°РµРј, СЃСѓС‰РµСЃС‚РІСѓРµС‚ Р»Рё РїРѕР»СЊР·РѕРІР°С‚РµР»СЊ
         return res.json({
           success: true,
-          message: 'Если пользователь с таким email существует, инструкции отправлены на почту'
+          message: 'Р•СЃР»Рё РїРѕР»СЊР·РѕРІР°С‚РµР»СЊ СЃ С‚Р°РєРёРј email СЃСѓС‰РµСЃС‚РІСѓРµС‚, РёРЅСЃС‚СЂСѓРєС†РёРё РѕС‚РїСЂР°РІР»РµРЅС‹ РЅР° РїРѕС‡С‚Сѓ'
         });
       }
 
-      // Создаем токен сброса пароля
+      // РЎРѕР·РґР°РµРј С‚РѕРєРµРЅ СЃР±СЂРѕСЃР° РїР°СЂРѕР»СЏ
       const resetToken = user.createPasswordResetToken();
       await user.save();
 
-      // Отправляем email с инструкциями (заглушка)
+      // РћС‚РїСЂР°РІР»СЏРµРј email СЃ РёРЅСЃС‚СЂСѓРєС†РёСЏРјРё (Р·Р°РіР»СѓС€РєР°)
       // await emailService.sendPasswordResetEmail(user.email, resetToken);
 
       res.json({
         success: true,
-        message: 'Если пользователь с таким email существует, инструкции отправлены на почту'
+        message: 'Р•СЃР»Рё РїРѕР»СЊР·РѕРІР°С‚РµР»СЊ СЃ С‚Р°РєРёРј email СЃСѓС‰РµСЃС‚РІСѓРµС‚, РёРЅСЃС‚СЂСѓРєС†РёРё РѕС‚РїСЂР°РІР»РµРЅС‹ РЅР° РїРѕС‡С‚Сѓ'
       });
 
     } catch (error) {
@@ -324,18 +324,18 @@ class AuthController {
     }
   }
 
-  // Сброс пароля
+  // РЎР±СЂРѕСЃ РїР°СЂРѕР»СЏ
   async resetPassword(req, res) {
     try {
       const { token, password } = req.body;
 
-      // Хешируем токен для поиска
+      // РҐРµС€РёСЂСѓРµРј С‚РѕРєРµРЅ РґР»СЏ РїРѕРёСЃРєР°
       const hashedToken = crypto
         .createHash('sha256')
         .update(token)
         .digest('hex');
 
-      // Находим пользователя с действующим токеном
+      // РќР°С…РѕРґРёРј РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ СЃ РґРµР№СЃС‚РІСѓСЋС‰РёРј С‚РѕРєРµРЅРѕРј
       const user = await User.findOne({
         passwordResetToken: hashedToken,
         passwordResetExpires: { $gt: Date.now() }
@@ -345,18 +345,18 @@ class AuthController {
         return res.status(HTTP_STATUS.BAD_REQUEST).json({
           success: false,
           error: {
-            message: 'Недействительный или истекший токен'
+            message: 'РќРµРґРµР№СЃС‚РІРёС‚РµР»СЊРЅС‹Р№ РёР»Рё РёСЃС‚РµРєС€РёР№ С‚РѕРєРµРЅ'
           }
         });
       }
 
-      // Обновляем пароль
+      // РћР±РЅРѕРІР»СЏРµРј РїР°СЂРѕР»СЊ
       user.password = password;
       user.passwordResetToken = undefined;
       user.passwordResetExpires = undefined;
       await user.save();
 
-      // Генерируем новые токены
+      // Р“РµРЅРµСЂРёСЂСѓРµРј РЅРѕРІС‹Рµ С‚РѕРєРµРЅС‹
       const accessToken = generateToken(user._id);
       const refreshToken = generateRefreshToken(user._id);
 
@@ -371,7 +371,7 @@ class AuthController {
             refreshToken
           }
         },
-        message: 'Пароль успешно изменен'
+        message: 'РџР°СЂРѕР»СЊ СѓСЃРїРµС€РЅРѕ РёР·РјРµРЅРµРЅ'
       });
 
     } catch (error) {
@@ -385,18 +385,18 @@ class AuthController {
     }
   }
 
-  // Верификация email
+  // Р’РµСЂРёС„РёРєР°С†РёСЏ email
   async verifyEmail(req, res) {
     try {
       const { token } = req.params;
 
-      // Хешируем токен для поиска
+      // РҐРµС€РёСЂСѓРµРј С‚РѕРєРµРЅ РґР»СЏ РїРѕРёСЃРєР°
       const hashedToken = crypto
         .createHash('sha256')
         .update(token)
         .digest('hex');
 
-      // Находим пользователя с действующим токеном
+      // РќР°С…РѕРґРёРј РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ СЃ РґРµР№СЃС‚РІСѓСЋС‰РёРј С‚РѕРєРµРЅРѕРј
       const user = await User.findOne({
         emailVerificationToken: hashedToken,
         emailVerificationExpires: { $gt: Date.now() }
@@ -406,12 +406,12 @@ class AuthController {
         return res.status(HTTP_STATUS.BAD_REQUEST).json({
           success: false,
           error: {
-            message: 'Недействительный или истекший токен верификации'
+            message: 'РќРµРґРµР№СЃС‚РІРёС‚РµР»СЊРЅС‹Р№ РёР»Рё РёСЃС‚РµРєС€РёР№ С‚РѕРєРµРЅ РІРµСЂРёС„РёРєР°С†РёРё'
           }
         });
       }
 
-      // Подтверждаем email
+      // РџРѕРґС‚РІРµСЂР¶РґР°РµРј email
       user.isEmailVerified = true;
       user.emailVerificationToken = undefined;
       user.emailVerificationExpires = undefined;
@@ -419,7 +419,7 @@ class AuthController {
 
       res.json({
         success: true,
-        message: 'Email успешно подтвержден'
+        message: 'Email СѓСЃРїРµС€РЅРѕ РїРѕРґС‚РІРµСЂР¶РґРµРЅ'
       });
 
     } catch (error) {
@@ -435,3 +435,4 @@ class AuthController {
 }
 
 module.exports = new AuthController();
+

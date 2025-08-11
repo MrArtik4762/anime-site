@@ -1,11 +1,12 @@
-const { HTTP_STATUS, ERROR_MESSAGES } = require('../../shared/constants');
+const { HTTP_STATUS, ERROR_MESSAGES } = require('/app/shared/constants/constants');
 
 const errorHandler = (err, req, res, next) => {
   let error = { ...err };
   error.message = err.message;
 
   // Log error
-  console.error('Error:', err);
+  console.error('Error:', err?.stack || err);
+
 
   // Mongoose bad ObjectId
   if (err.name === 'CastError') {

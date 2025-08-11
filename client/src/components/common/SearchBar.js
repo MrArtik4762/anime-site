@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import styled from 'styled-components';
+import styled, { keyframes } from 'styled-components';
 import { motion } from 'framer-motion';
 import debounce from 'lodash.debounce';
 
@@ -31,6 +31,11 @@ const SearchInput = styled.input`
   }
 `;
 
+const spin = keyframes`
+  0% { transform: translateY(-50%) rotate(0deg); }
+  100% { transform: translateY(-50%) rotate(360deg); }
+`;
+
 const SearchIcon = styled.div`
   position: absolute;
   left: 18px;
@@ -39,6 +44,9 @@ const SearchIcon = styled.div`
   color: ${props => props.theme.colors.textSecondary};
   font-size: 1.2rem;
   pointer-events: none;
+  ${props => props.isLoading && `
+    animation: ${spin} 1s linear infinite;
+  `}
 `;
 
 const ClearButton = styled.button`
@@ -131,7 +139,7 @@ const SearchBar = ({
         onSearch(searchQuery);
       }
       setIsLoading(false);
-    }, 300),
+    }, 500),
     [onSearch],
   );
 
@@ -198,7 +206,7 @@ const SearchBar = ({
 
   return (
     <SearchContainer>
-      <SearchIcon>
+      <SearchIcon isLoading={isLoading}>
         {isLoading ? '⏳' : '🔍'}
       </SearchIcon>
 

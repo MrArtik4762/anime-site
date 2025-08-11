@@ -1,18 +1,17 @@
-const jwt = require('jsonwebtoken');
+﻿const jwt = require('jsonwebtoken');
 const User = require('../models/User');
-const { HTTP_STATUS, ERROR_MESSAGES } = require('../../shared/constants/constants');
-
-// Middleware для проверки JWT токена
+const { HTTP_STATUS, ERROR_MESSAGES } = require('/app/shared/constants/constants');
+// Middleware РґР»СЏ РїСЂРѕРІРµСЂРєРё JWT С‚РѕРєРµРЅР°
 const authenticate = async (req, res, next) => {
   try {
     let token;
 
-    // Получаем токен из заголовка Authorization
+    // РџРѕР»СѓС‡Р°РµРј С‚РѕРєРµРЅ РёР· Р·Р°РіРѕР»РѕРІРєР° Authorization
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
       token = req.headers.authorization.split(' ')[1];
     }
 
-    // Проверяем наличие токена
+    // РџСЂРѕРІРµСЂСЏРµРј РЅР°Р»РёС‡РёРµ С‚РѕРєРµРЅР°
     if (!token) {
       return res.status(HTTP_STATUS.UNAUTHORIZED).json({
         success: false,
@@ -23,10 +22,10 @@ const authenticate = async (req, res, next) => {
     }
 
     try {
-      // Верифицируем токен
+      // Р’РµСЂРёС„РёС†РёСЂСѓРµРј С‚РѕРєРµРЅ
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-      // Получаем пользователя из базы данных
+      // РџРѕР»СѓС‡Р°РµРј РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РёР· Р±Р°Р·С‹ РґР°РЅРЅС‹С…
       const user = await User.findById(decoded.id).select('-password');
 
       if (!user) {
@@ -38,17 +37,17 @@ const authenticate = async (req, res, next) => {
         });
       }
 
-      // Проверяем активность пользователя
+      // РџСЂРѕРІРµСЂСЏРµРј Р°РєС‚РёРІРЅРѕСЃС‚СЊ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
       if (!user.isUserActive()) {
         return res.status(HTTP_STATUS.FORBIDDEN).json({
           success: false,
           error: {
-            message: 'Аккаунт заблокирован или неактивен'
+            message: 'РђРєРєР°СѓРЅС‚ Р·Р°Р±Р»РѕРєРёСЂРѕРІР°РЅ РёР»Рё РЅРµР°РєС‚РёРІРµРЅ'
           }
         });
       }
 
-      // Добавляем пользователя в объект запроса
+      // Р”РѕР±Р°РІР»СЏРµРј РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РІ РѕР±СЉРµРєС‚ Р·Р°РїСЂРѕСЃР°
       req.user = user;
       next();
 
@@ -72,7 +71,7 @@ const authenticate = async (req, res, next) => {
   }
 };
 
-// Middleware для проверки ролей пользователя
+// Middleware РґР»СЏ РїСЂРѕРІРµСЂРєРё СЂРѕР»РµР№ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
 const authorize = (...roles) => {
   return (req, res, next) => {
     if (!req.user) {
@@ -88,7 +87,7 @@ const authorize = (...roles) => {
       return res.status(HTTP_STATUS.FORBIDDEN).json({
         success: false,
         error: {
-          message: 'Недостаточно прав для выполнения этого действия'
+          message: 'РќРµРґРѕСЃС‚Р°С‚РѕС‡РЅРѕ РїСЂР°РІ РґР»СЏ РІС‹РїРѕР»РЅРµРЅРёСЏ СЌС‚РѕРіРѕ РґРµР№СЃС‚РІРёСЏ'
         }
       });
     }
@@ -97,27 +96,27 @@ const authorize = (...roles) => {
   };
 };
 
-// Middleware для опциональной аутентификации (не обязательная)
+// Middleware РґР»СЏ РѕРїС†РёРѕРЅР°Р»СЊРЅРѕР№ Р°СѓС‚РµРЅС‚РёС„РёРєР°С†РёРё (РЅРµ РѕР±СЏР·Р°С‚РµР»СЊРЅР°СЏ)
 const optionalAuth = async (req, res, next) => {
   try {
     let token;
 
-    // Получаем токен из заголовка Authorization
+    // РџРѕР»СѓС‡Р°РµРј С‚РѕРєРµРЅ РёР· Р·Р°РіРѕР»РѕРІРєР° Authorization
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
       token = req.headers.authorization.split(' ')[1];
     }
 
-    // Если токена нет, продолжаем без аутентификации
+    // Р•СЃР»Рё С‚РѕРєРµРЅР° РЅРµС‚, РїСЂРѕРґРѕР»Р¶Р°РµРј Р±РµР· Р°СѓС‚РµРЅС‚РёС„РёРєР°С†РёРё
     if (!token) {
       req.user = null;
       return next();
     }
 
     try {
-      // Верифицируем токен
+      // Р’РµСЂРёС„РёС†РёСЂСѓРµРј С‚РѕРєРµРЅ
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-      // Получаем пользователя из базы данных
+      // РџРѕР»СѓС‡Р°РµРј РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РёР· Р±Р°Р·С‹ РґР°РЅРЅС‹С…
       const user = await User.findById(decoded.id).select('-password');
 
       if (user && user.isUserActive()) {
@@ -127,7 +126,7 @@ const optionalAuth = async (req, res, next) => {
       }
 
     } catch (error) {
-      // Если токен невалидный, просто продолжаем без пользователя
+      // Р•СЃР»Рё С‚РѕРєРµРЅ РЅРµРІР°Р»РёРґРЅС‹Р№, РїСЂРѕСЃС‚Рѕ РїСЂРѕРґРѕР»Р¶Р°РµРј Р±РµР· РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
       req.user = null;
     }
 
@@ -140,7 +139,7 @@ const optionalAuth = async (req, res, next) => {
   }
 };
 
-// Middleware для проверки владельца ресурса
+// Middleware РґР»СЏ РїСЂРѕРІРµСЂРєРё РІР»Р°РґРµР»СЊС†Р° СЂРµСЃСѓСЂСЃР°
 const checkOwnership = (resourceModel, resourceIdParam = 'id') => {
   return async (req, res, next) => {
     try {
@@ -151,12 +150,12 @@ const checkOwnership = (resourceModel, resourceIdParam = 'id') => {
         return res.status(HTTP_STATUS.NOT_FOUND).json({
           success: false,
           error: {
-            message: 'Ресурс не найден'
+            message: 'Р РµСЃСѓСЂСЃ РЅРµ РЅР°Р№РґРµРЅ'
           }
         });
       }
 
-      // Проверяем, является ли пользователь владельцем ресурса
+      // РџСЂРѕРІРµСЂСЏРµРј, СЏРІР»СЏРµС‚СЃСЏ Р»Рё РїРѕР»СЊР·РѕРІР°С‚РµР»СЊ РІР»Р°РґРµР»СЊС†РµРј СЂРµСЃСѓСЂСЃР°
       const isOwner = resource.userId && resource.userId.toString() === req.user._id.toString();
       const isAdmin = req.user.role === 'admin';
       const isModerator = req.user.role === 'moderator';
@@ -170,7 +169,7 @@ const checkOwnership = (resourceModel, resourceIdParam = 'id') => {
         });
       }
 
-      // Добавляем ресурс в объект запроса
+      // Р”РѕР±Р°РІР»СЏРµРј СЂРµСЃСѓСЂСЃ РІ РѕР±СЉРµРєС‚ Р·Р°РїСЂРѕСЃР°
       req.resource = resource;
       req.isOwner = isOwner;
       next();
@@ -187,7 +186,7 @@ const checkOwnership = (resourceModel, resourceIdParam = 'id') => {
   };
 };
 
-// Middleware для проверки самого себя или админа
+// Middleware РґР»СЏ РїСЂРѕРІРµСЂРєРё СЃР°РјРѕРіРѕ СЃРµР±СЏ РёР»Рё Р°РґРјРёРЅР°
 const checkSelfOrAdmin = (userIdParam = 'userId') => {
   return (req, res, next) => {
     const targetUserId = req.params[userIdParam];
@@ -207,7 +206,7 @@ const checkSelfOrAdmin = (userIdParam = 'userId') => {
   };
 };
 
-// Utility функция для генерации JWT токена
+// Utility С„СѓРЅРєС†РёСЏ РґР»СЏ РіРµРЅРµСЂР°С†РёРё JWT С‚РѕРєРµРЅР°
 const generateToken = (userId) => {
   return jwt.sign(
     { id: userId },
@@ -216,7 +215,7 @@ const generateToken = (userId) => {
   );
 };
 
-// Utility функция для генерации refresh токена
+// Utility С„СѓРЅРєС†РёСЏ РґР»СЏ РіРµРЅРµСЂР°С†РёРё refresh С‚РѕРєРµРЅР°
 const generateRefreshToken = (userId) => {
   return jwt.sign(
     { id: userId, type: 'refresh' },
@@ -234,3 +233,4 @@ module.exports = {
   generateToken,
   generateRefreshToken
 };
+

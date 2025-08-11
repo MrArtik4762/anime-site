@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { animeService } from '../services/animeService';
 import anilibriaService from '../services/anilibriaService';
@@ -67,6 +68,29 @@ const EmptyState = styled.div`
   color: ${props => props.theme.colors.textSecondary};
 `;
 
+const LoadMoreButton = styled.button`
+  display: block;
+  margin: 20px auto;
+  padding: 12px 24px;
+  background: ${props => props.theme.colors.primary};
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  
+  &:hover {
+    background: ${props => props.theme.colors.primaryDark};
+  }
+  
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+`;
+
 const fallbackAnime = [
   {
     _id: 'mock1',
@@ -93,8 +117,11 @@ const fallbackAnime = [
 ];
 
 const CatalogPage = ({ filter }) => {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [animeList, setAnimeList] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false); // Для отслеживания загрузки следующей страницы
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState({
@@ -106,25 +133,60 @@ const CatalogPage = ({ filter }) => {
     sortOrder: 'desc',
   });
   const [totalCount, setTotalCount] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1); // Текущая страница
+  const [hasMore, setHasMore] = useState(true); // Есть ли еще страницы для загрузки
 
+  // Инициализация фильтров из URL при монтировании компонента
   useEffect(() => {
-    loadAnime();
-    // eslint-disable-next-line
-  }, [filter, filters]);
+    const searchParams = new URLSearchParams(location.search);
+    const query = searchParams.get('search') || '';
+    const page = parseInt(searchParams.get('page')) || 1;
+    
+    // Инициализация фильтров из URL
+    const urlFilters = {
+      genre: searchParams.get('genre') ? searchParams.get('genre').split(',') : [],
+      year: searchParams.get('year') || '',
+      status: searchParams.get('status') || '',
+      rating: searchParams.get('rating') || '',
+      sortBy: searchParams.get('sortBy') || 'rating',
+      sortOrder: searchParams.get('sortOrder') || 'desc',
+    };
+    
+    setSearchQuery(query);
+    setCurrentPage(page);
+    setFilters(urlFilters);
+  }, [location.search]);
 
-  const loadAnime = async () => {
+  // Сброс к первой странице при изменении фильтров или поиска
+  useEffect(() => {
+    setCurrentPage(1);
+    setAnimeList([]);
+    setHasMore(true);
+    updateUrl(1, searchQuery, filters);
+    loadAnime(1);
+    // eslint-disable-next-line
+  }, [filter, filters, searchQuery]);
+
+  const loadAnime = async (page = currentPage) => {
     try {
-      setLoading(true);
+      // Если это не первая страница, устанавливаем loadingMore в true
+      if (page > 1) {
+        setLoadingMore(true);
+      } else {
+        setLoading(true);
+      }
       setError(null);
       let list = [];
       let count = 0;
+      const perPage = 100; // Максимальное количество элементов на странице
 
       // Пробуем загрузить из локальной базы
       try {
         const response = await animeService.getAnimeList({
           ...filters,
           search: searchQuery,
-          limit: 50,
+          limit: perPage,
+          page: page,
         });
         list = (response?.data?.anime) || [];
         count = response?.data?.pagination?.totalItems || 0;
@@ -135,47 +197,126 @@ const CatalogPage = ({ filter }) => {
       // Если локальная база пуста - пробуем AniLibria
       if (!list.length) {
         try {
-          const anilibriaResult = await anilibriaService.getPopular(50);
-          if (anilibriaResult?.success && anilibriaResult.data?.data) {
-            list = anilibriaResult.data.data.map(title => 
-              anilibriaService.formatAnimeData(title)
+          // Используем anilibriaV2Service для работы с AniLiberty API
+          const anilibriaResult = await anilibriaV2Service.searchAnime(searchQuery, {
+            ...filters,
+            perPage: perPage,
+            page: page,
+          });
+          
+          if (Array.isArray(anilibriaResult)) {
+            list = anilibriaResult.map(title =>
+              anilibriaV2Service.convertAnimeToFormat(title)
             );
+            // Для AniLiberty API мы не получаем общее количество, поэтому будем проверять по количеству полученных элементов
             count = list.length;
           }
         } catch (e) {
-          console.warn('AniLibria error:', e);
+          console.warn('AniLiberty error:', e);
         }
       }
 
-      // Если и AniLibria не сработала - берем данные из Jikan
+      // Если и AniLiberty не сработала - берем данные из Jikan
       if (!list.length) {
         try {
-          const jikanResult = await jikanService.getPopularAnime(50);
-          if (jikanResult.success) {
-            list = jikanResult.data;
-            count = list.length;
+          // Jikan API не поддерживает пагинацию в текущей реализации, поэтому загружаем только для первой страницы
+          if (page === 1) {
+            const jikanResult = await jikanService.getPopularAnime(perPage);
+            if (jikanResult.success) {
+              list = jikanResult.data;
+              count = list.length;
+            }
           }
         } catch (e) {
           console.warn('Jikan error:', e);
         }
       }
 
-      // В крайнем случае используем fallback
-      if (!list.length) {
+      // В крайнем случае используем fallback только для первой страницы
+      if (!list.length && page === 1) {
         list = fallbackAnime;
         count = fallbackAnime.length;
       }
 
-      setAnimeList(list);
+      // Если это первая страница, заменяем список, иначе добавляем к существующему
+      if (page === 1) {
+        setAnimeList(list);
+      } else {
+        setAnimeList(prevList => [...prevList, ...list]);
+      }
+      
       setTotalCount(count);
       setError(null);
+      
+      // Проверяем, есть ли еще страницы для загрузки
+      if (list.length < perPage) {
+        setHasMore(false);
+      } else {
+        setHasMore(true);
+      }
+      
+      // Обновляем текущую страницу
+      if (page > 1) {
+        setCurrentPage(page);
+      }
     } catch (err) {
       console.error('Catalog error:', err);
-      setAnimeList(fallbackAnime);
-      setTotalCount(fallbackAnime.length);
+      // Устанавливаем fallback только для первой страницы
+      if (currentPage === 1) {
+        setAnimeList(fallbackAnime);
+        setTotalCount(fallbackAnime.length);
+      }
     } finally {
-      setLoading(false);
+      if (page > 1) {
+        setLoadingMore(false);
+      } else {
+        setLoading(false);
+      }
     }
+  };
+
+  // Функция для обновления URL при изменении параметров
+  const updateUrl = (page, query, filterValues) => {
+    const searchParams = new URLSearchParams();
+    
+    // Добавляем параметры поиска
+    if (query) {
+      searchParams.set('search', query);
+    }
+    
+    // Добавляем параметры пагинации
+    if (page > 1) {
+      searchParams.set('page', page.toString());
+    }
+    
+    // Добавляем параметры фильтров
+    if (filterValues.genre && filterValues.genre.length > 0) {
+      searchParams.set('genre', filterValues.genre.join(','));
+    }
+    if (filterValues.year) {
+      searchParams.set('year', filterValues.year);
+    }
+    if (filterValues.status) {
+      searchParams.set('status', filterValues.status);
+    }
+    if (filterValues.rating) {
+      searchParams.set('rating', filterValues.rating);
+    }
+    if (filterValues.sortBy && filterValues.sortBy !== 'rating') {
+      searchParams.set('sortBy', filterValues.sortBy);
+    }
+    if (filterValues.sortOrder && filterValues.sortOrder !== 'desc') {
+      searchParams.set('sortOrder', filterValues.sortOrder);
+    }
+    
+    // Сохраняем параметр voice если он есть
+    const currentParams = new URLSearchParams(location.search);
+    if (currentParams.get('voice')) {
+      searchParams.set('voice', currentParams.get('voice'));
+    }
+    
+    const newUrl = `${location.pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
+    navigate(newUrl, { replace: true });
   };
 
   const handleSearch = async (query) => {
@@ -216,6 +357,7 @@ const CatalogPage = ({ filter }) => {
 
         setAnimeList(list);
         setTotalCount(count);
+        updateUrl(1, query, filters); // Обновляем URL при поиске
       } catch (err) {
         setAnimeList(fallbackAnime);
         setTotalCount(fallbackAnime.length);
@@ -228,6 +370,7 @@ const CatalogPage = ({ filter }) => {
 
   const handleFilterChange = (newFilters) => {
     setFilters(newFilters);
+    updateUrl(1, searchQuery, newFilters); // Обновляем URL при изменении фильтров
   };
 
   const getPageTitle = () => {
@@ -288,7 +431,7 @@ const CatalogPage = ({ filter }) => {
             <LoadingSpinner size="48px" />
           </LoadingContainer>
         ) : animeList.length > 0 ? (
-          <Grid>
+          <Grid minWidth="250px" gap="20px">
             {animeList.map((anime) => (
               <AnimeCard key={anime._id} anime={anime} />
             ))}
@@ -298,6 +441,12 @@ const CatalogPage = ({ filter }) => {
             <h3>Ничего не найдено</h3>
             <p>Попробуйте изменить параметры поиска или фильтры</p>
           </EmptyState>
+        )}
+        
+        {!loading && hasMore && animeList.length > 0 && (
+          <LoadMoreButton onClick={() => loadAnime(currentPage + 1)} disabled={loadingMore}>
+            {loadingMore ? 'Загрузка...' : 'Загрузить еще'}
+          </LoadMoreButton>
         )}
       </Container>
     </CatalogContainer>

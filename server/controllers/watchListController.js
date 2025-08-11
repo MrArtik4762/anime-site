@@ -1,27 +1,27 @@
-const WatchList = require('../models/WatchList');
+﻿const WatchList = require('../models/WatchList');
 const Anime = require('../models/Anime');
-const { HTTP_STATUS, ERROR_MESSAGES } = require('../../shared/constants/constants');
+const { HTTP_STATUS, ERROR_MESSAGES } = require('/app/shared/constants/constants');
 const mongoose = require('mongoose');
 
 class WatchListController {
-  // Получение списка просмотра пользователя
+  // РџРѕР»СѓС‡РµРЅРёРµ СЃРїРёСЃРєР° РїСЂРѕСЃРјРѕС‚СЂР° РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
   async getWatchList(req, res) {
     try {
       const { status, page = 1, limit = 20, sort = 'lastWatched', order = 'desc' } = req.query;
       const userId = req.user.id;
 
-      // Построение фильтра
+      // РџРѕСЃС‚СЂРѕРµРЅРёРµ С„РёР»СЊС‚СЂР°
       const filter = { userId };
       if (status) {
         filter.status = status;
       }
 
-      // Построение сортировки
+      // РџРѕСЃС‚СЂРѕРµРЅРёРµ СЃРѕСЂС‚РёСЂРѕРІРєРё
       const sortOrder = order === 'desc' ? -1 : 1;
       const sortObj = {};
       sortObj[sort] = sortOrder;
 
-      // Выполнение запроса
+      // Р’С‹РїРѕР»РЅРµРЅРёРµ Р·Р°РїСЂРѕСЃР°
       const skip = (parseInt(page) - 1) * parseInt(limit);
       
       const [watchList, total] = await Promise.all([
@@ -61,7 +61,7 @@ class WatchListController {
     }
   }
 
-  // Добавление аниме в список просмотра
+  // Р”РѕР±Р°РІР»РµРЅРёРµ Р°РЅРёРјРµ РІ СЃРїРёСЃРѕРє РїСЂРѕСЃРјРѕС‚СЂР°
   async addToWatchList(req, res) {
     try {
       const { animeId } = req.params;
@@ -72,34 +72,34 @@ class WatchListController {
         return res.status(HTTP_STATUS.BAD_REQUEST).json({
           success: false,
           error: {
-            message: 'Неверный ID аниме'
+            message: 'РќРµРІРµСЂРЅС‹Р№ ID Р°РЅРёРјРµ'
           }
         });
       }
 
-      // Проверяем существование аниме
+      // РџСЂРѕРІРµСЂСЏРµРј СЃСѓС‰РµСЃС‚РІРѕРІР°РЅРёРµ Р°РЅРёРјРµ
       const anime = await Anime.findById(animeId).where({ isActive: true, approved: true });
       if (!anime) {
         return res.status(HTTP_STATUS.NOT_FOUND).json({
           success: false,
           error: {
-            message: 'Аниме не найдено'
+            message: 'РђРЅРёРјРµ РЅРµ РЅР°Р№РґРµРЅРѕ'
           }
         });
       }
 
-      // Проверяем, не добавлено ли уже аниме в список
+      // РџСЂРѕРІРµСЂСЏРµРј, РЅРµ РґРѕР±Р°РІР»РµРЅРѕ Р»Рё СѓР¶Рµ Р°РЅРёРјРµ РІ СЃРїРёСЃРѕРє
       const existingEntry = await WatchList.findOne({ userId, animeId });
       if (existingEntry) {
         return res.status(HTTP_STATUS.BAD_REQUEST).json({
           success: false,
           error: {
-            message: 'Аниме уже добавлено в список просмотра'
+            message: 'РђРЅРёРјРµ СѓР¶Рµ РґРѕР±Р°РІР»РµРЅРѕ РІ СЃРїРёСЃРѕРє РїСЂРѕСЃРјРѕС‚СЂР°'
           }
         });
       }
 
-      // Создаем новую запись
+      // РЎРѕР·РґР°РµРј РЅРѕРІСѓСЋ Р·Р°РїРёСЃСЊ
       const watchListEntry = new WatchList({
         userId,
         animeId,
@@ -113,7 +113,7 @@ class WatchListController {
 
       await watchListEntry.save();
 
-      // Заполняем данные аниме для ответа
+      // Р—Р°РїРѕР»РЅСЏРµРј РґР°РЅРЅС‹Рµ Р°РЅРёРјРµ РґР»СЏ РѕС‚РІРµС‚Р°
       await watchListEntry.populate('animeId', 'title images rating episodes status type');
 
       res.status(HTTP_STATUS.CREATED).json({
@@ -121,7 +121,7 @@ class WatchListController {
         data: {
           watchListEntry
         },
-        message: 'Аниме добавлено в список просмотра'
+        message: 'РђРЅРёРјРµ РґРѕР±Р°РІР»РµРЅРѕ РІ СЃРїРёСЃРѕРє РїСЂРѕСЃРјРѕС‚СЂР°'
       });
 
     } catch (error) {
@@ -131,7 +131,7 @@ class WatchListController {
         return res.status(HTTP_STATUS.BAD_REQUEST).json({
           success: false,
           error: {
-            message: 'Ошибка валидации данных',
+            message: 'РћС€РёР±РєР° РІР°Р»РёРґР°С†РёРё РґР°РЅРЅС‹С…',
             details: Object.values(error.errors).map(err => err.message)
           }
         });
@@ -146,7 +146,7 @@ class WatchListController {
     }
   }
 
-  // Обновление записи в списке просмотра
+  // РћР±РЅРѕРІР»РµРЅРёРµ Р·Р°РїРёСЃРё РІ СЃРїРёСЃРєРµ РїСЂРѕСЃРјРѕС‚СЂР°
   async updateWatchListEntry(req, res) {
     try {
       const { id } = req.params;
@@ -157,28 +157,28 @@ class WatchListController {
         return res.status(HTTP_STATUS.BAD_REQUEST).json({
           success: false,
           error: {
-            message: 'Неверный ID записи'
+            message: 'РќРµРІРµСЂРЅС‹Р№ ID Р·Р°РїРёСЃРё'
           }
         });
       }
 
-      // Находим запись
+      // РќР°С…РѕРґРёРј Р·Р°РїРёСЃСЊ
       const watchListEntry = await WatchList.findOne({ _id: id, userId });
       if (!watchListEntry) {
         return res.status(HTTP_STATUS.NOT_FOUND).json({
           success: false,
           error: {
-            message: 'Запись не найдена'
+            message: 'Р—Р°РїРёСЃСЊ РЅРµ РЅР°Р№РґРµРЅР°'
           }
         });
       }
 
-      // Обновляем поля
+      // РћР±РЅРѕРІР»СЏРµРј РїРѕР»СЏ
       const updateData = {};
       if (status !== undefined) {
         updateData.status = status;
         
-        // Автоматически устанавливаем даты
+        // РђРІС‚РѕРјР°С‚РёС‡РµСЃРєРё СѓСЃС‚Р°РЅР°РІР»РёРІР°РµРј РґР°С‚С‹
         if (status === 'watching' && !watchListEntry.startDate) {
           updateData.startDate = new Date();
         }
@@ -203,7 +203,7 @@ class WatchListController {
         data: {
           watchListEntry: updatedEntry
         },
-        message: 'Запись успешно обновлена'
+        message: 'Р—Р°РїРёСЃСЊ СѓСЃРїРµС€РЅРѕ РѕР±РЅРѕРІР»РµРЅР°'
       });
 
     } catch (error) {
@@ -213,7 +213,7 @@ class WatchListController {
         return res.status(HTTP_STATUS.BAD_REQUEST).json({
           success: false,
           error: {
-            message: 'Ошибка валидации данных',
+            message: 'РћС€РёР±РєР° РІР°Р»РёРґР°С†РёРё РґР°РЅРЅС‹С…',
             details: Object.values(error.errors).map(err => err.message)
           }
         });
@@ -228,7 +228,7 @@ class WatchListController {
     }
   }
 
-  // Удаление из списка просмотра
+  // РЈРґР°Р»РµРЅРёРµ РёР· СЃРїРёСЃРєР° РїСЂРѕСЃРјРѕС‚СЂР°
   async removeFromWatchList(req, res) {
     try {
       const { id } = req.params;
@@ -238,25 +238,25 @@ class WatchListController {
         return res.status(HTTP_STATUS.BAD_REQUEST).json({
           success: false,
           error: {
-            message: 'Неверный ID записи'
+            message: 'РќРµРІРµСЂРЅС‹Р№ ID Р·Р°РїРёСЃРё'
           }
         });
       }
 
-      // Находим и удаляем запись
+      // РќР°С…РѕРґРёРј Рё СѓРґР°Р»СЏРµРј Р·Р°РїРёСЃСЊ
       const watchListEntry = await WatchList.findOneAndDelete({ _id: id, userId });
       if (!watchListEntry) {
         return res.status(HTTP_STATUS.NOT_FOUND).json({
           success: false,
           error: {
-            message: 'Запись не найдена'
+            message: 'Р—Р°РїРёСЃСЊ РЅРµ РЅР°Р№РґРµРЅР°'
           }
         });
       }
 
       res.json({
         success: true,
-        message: 'Аниме удалено из списка просмотра'
+        message: 'РђРЅРёРјРµ СѓРґР°Р»РµРЅРѕ РёР· СЃРїРёСЃРєР° РїСЂРѕСЃРјРѕС‚СЂР°'
       });
 
     } catch (error) {
@@ -270,7 +270,7 @@ class WatchListController {
     }
   }
 
-  // Обновление прогресса просмотра
+  // РћР±РЅРѕРІР»РµРЅРёРµ РїСЂРѕРіСЂРµСЃСЃР° РїСЂРѕСЃРјРѕС‚СЂР°
   async updateProgress(req, res) {
     try {
       const { id } = req.params;
@@ -281,12 +281,12 @@ class WatchListController {
         return res.status(HTTP_STATUS.BAD_REQUEST).json({
           success: false,
           error: {
-            message: 'Неверный ID записи'
+            message: 'РќРµРІРµСЂРЅС‹Р№ ID Р·Р°РїРёСЃРё'
           }
         });
       }
 
-      // Находим запись
+      // РќР°С…РѕРґРёРј Р·Р°РїРёСЃСЊ
       const watchListEntry = await WatchList.findOne({ _id: id, userId })
         .populate('animeId', 'episodes');
         
@@ -294,12 +294,12 @@ class WatchListController {
         return res.status(HTTP_STATUS.NOT_FOUND).json({
           success: false,
           error: {
-            message: 'Запись не найдена'
+            message: 'Р—Р°РїРёСЃСЊ РЅРµ РЅР°Р№РґРµРЅР°'
           }
         });
       }
 
-      // Обновляем прогресс
+      // РћР±РЅРѕРІР»СЏРµРј РїСЂРѕРіСЂРµСЃСЃ
       await watchListEntry.updateProgress(episodesWatched, timeWatched);
 
       res.json({
@@ -307,7 +307,7 @@ class WatchListController {
         data: {
           watchListEntry
         },
-        message: 'Прогресс обновлен'
+        message: 'РџСЂРѕРіСЂРµСЃСЃ РѕР±РЅРѕРІР»РµРЅ'
       });
 
     } catch (error) {
@@ -321,7 +321,7 @@ class WatchListController {
     }
   }
 
-  // Получение статистики списка просмотра
+  // РџРѕР»СѓС‡РµРЅРёРµ СЃС‚Р°С‚РёСЃС‚РёРєРё СЃРїРёСЃРєР° РїСЂРѕСЃРјРѕС‚СЂР°
   async getWatchListStats(req, res) {
     try {
       const userId = req.user.id;
@@ -346,7 +346,7 @@ class WatchListController {
     }
   }
 
-  // Получение записи по аниме
+  // РџРѕР»СѓС‡РµРЅРёРµ Р·Р°РїРёСЃРё РїРѕ Р°РЅРёРјРµ
   async getWatchListEntry(req, res) {
     try {
       const { animeId } = req.params;
@@ -356,7 +356,7 @@ class WatchListController {
         return res.status(HTTP_STATUS.BAD_REQUEST).json({
           success: false,
           error: {
-            message: 'Неверный ID аниме'
+            message: 'РќРµРІРµСЂРЅС‹Р№ ID Р°РЅРёРјРµ'
           }
         });
       }
@@ -367,7 +367,7 @@ class WatchListController {
         return res.status(HTTP_STATUS.NOT_FOUND).json({
           success: false,
           error: {
-            message: 'Запись не найдена'
+            message: 'Р—Р°РїРёСЃСЊ РЅРµ РЅР°Р№РґРµРЅР°'
           }
         });
       }
@@ -390,7 +390,7 @@ class WatchListController {
     }
   }
 
-  // Массовое обновление статуса
+  // РњР°СЃСЃРѕРІРѕРµ РѕР±РЅРѕРІР»РµРЅРёРµ СЃС‚Р°С‚СѓСЃР°
   async bulkUpdateStatus(req, res) {
     try {
       const { entryIds, status } = req.body;
@@ -400,23 +400,23 @@ class WatchListController {
         return res.status(HTTP_STATUS.BAD_REQUEST).json({
           success: false,
           error: {
-            message: 'Необходимо указать ID записей'
+            message: 'РќРµРѕР±С…РѕРґРёРјРѕ СѓРєР°Р·Р°С‚СЊ ID Р·Р°РїРёСЃРµР№'
           }
         });
       }
 
-      // Проверяем валидность ID
+      // РџСЂРѕРІРµСЂСЏРµРј РІР°Р»РёРґРЅРѕСЃС‚СЊ ID
       const validIds = entryIds.filter(id => mongoose.Types.ObjectId.isValid(id));
       if (validIds.length !== entryIds.length) {
         return res.status(HTTP_STATUS.BAD_REQUEST).json({
           success: false,
           error: {
-            message: 'Некорректные ID записей'
+            message: 'РќРµРєРѕСЂСЂРµРєС‚РЅС‹Рµ ID Р·Р°РїРёСЃРµР№'
           }
         });
       }
 
-      // Обновляем записи
+      // РћР±РЅРѕРІР»СЏРµРј Р·Р°РїРёСЃРё
       const updateData = { status };
       if (status === 'watching') {
         updateData.startDate = new Date();
@@ -437,7 +437,7 @@ class WatchListController {
         data: {
           updatedCount: result.modifiedCount
         },
-        message: `Обновлено записей: ${result.modifiedCount}`
+        message: `РћР±РЅРѕРІР»РµРЅРѕ Р·Р°РїРёСЃРµР№: ${result.modifiedCount}`
       });
 
     } catch (error) {
@@ -451,7 +451,7 @@ class WatchListController {
     }
   }
 
-  // Экспорт списка просмотра
+  // Р­РєСЃРїРѕСЂС‚ СЃРїРёСЃРєР° РїСЂРѕСЃРјРѕС‚СЂР°
   async exportWatchList(req, res) {
     try {
       const userId = req.user.id;
@@ -462,7 +462,7 @@ class WatchListController {
         .sort({ updatedAt: -1 });
 
       if (format === 'csv') {
-        // Генерируем CSV
+        // Р“РµРЅРµСЂРёСЂСѓРµРј CSV
         const csvHeader = 'Title,Status,Rating,Episodes Watched,Start Date,Finish Date,Notes\n';
         const csvRows = watchList.map(entry => {
           const anime = entry.animeId;
@@ -483,7 +483,7 @@ class WatchListController {
         res.setHeader('Content-Disposition', 'attachment; filename="watchlist.csv"');
         res.send(csvContent);
       } else {
-        // JSON формат
+        // JSON С„РѕСЂРјР°С‚
         res.json({
           success: true,
           data: {

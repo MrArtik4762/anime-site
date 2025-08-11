@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
+import { useRouter } from 'next/router';
 import { useAuth } from '../../context/AuthContext';
 import { animeService } from '../../services/animeService';
 import { videoService } from '../../services/videoService';
@@ -318,8 +318,11 @@ const getAnimeId = (anime) => {
 const AnimeCard = ({ anime }) => {
   const [isFavorite, setIsFavorite] = useState(anime.isFavorite || false);
   const [isInWatchlist, setIsInWatchlist] = useState(anime.isInWatchlist || false);
+  const [isFavoriteLoading, setIsFavoriteLoading] = useState(false);
+  const [isWatchlistLoading, setIsWatchlistLoading] = useState(false);
   const [imageError, setImageError] = useState(false);
   const { isAuthenticated } = useAuth();
+  const router = useRouter();
 
   const animeId = getAnimeId(anime);
   const title = getAnimeTitle(anime);
@@ -342,12 +345,15 @@ const AnimeCard = ({ anime }) => {
       return;
     }
 
+    setIsFavoriteLoading(true);
     try {
       await animeService.toggleFavorite(animeId);
       setIsFavorite(!isFavorite);
       toast.success(isFavorite ? 'Удалено из избранного' : 'Добавлено в избранное');
     } catch (error) {
       toast.error('Ошибка при добавлении в избранное');
+    } finally {
+      setIsFavoriteLoading(false);
     }
   };
 
@@ -360,25 +366,20 @@ const AnimeCard = ({ anime }) => {
       return;
     }
 
+    setIsWatchlistLoading(true);
     try {
       // Здесь будет вызов API для добавления в watchlist
       setIsInWatchlist(!isInWatchlist);
       toast.success(isInWatchlist ? 'Удалено из списка' : 'Добавлено в список');
     } catch (error) {
       toast.error('Ошибка при добавлении в список');
+    } finally {
+      setIsWatchlistLoading(false);
     }
   };
 
-  // Функция для обработки просмотра видео согласно спецификации
-  const handleWatch = async () => {
-    try {
-      const videoData = await videoService.getVideoStream(animeId, 1);
-      // Логика открытия плеера с полученным видео
-      console.log('Video data received:', videoData);
-      // Здесь можно добавить навигацию к плееру или открытие модального окна
-    } catch (error) {
-      toast.error('Ошибка загрузки видео');
-    }
+  const handleClick = () => {
+    router.push(`/anime/${animeId}`);
   };
 
   return (
@@ -387,6 +388,8 @@ const AnimeCard = ({ anime }) => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
       whileHover={{ y: -4 }}
+      onClick={handleClick}
+      style={{ cursor: 'pointer' }}
     >
       <ImageContainer>
         {poster && !imageError ? (
@@ -426,16 +429,18 @@ const AnimeCard = ({ anime }) => {
             className={isFavorite ? 'active' : ''}
             onClick={handleFavoriteToggle}
             title={isFavorite ? 'Удалить из избранного' : 'Добавить в избранное'}
+            disabled={isFavoriteLoading}
           >
-            {isFavorite ? '❤️' : '🤍'}
+            {isFavoriteLoading ? '⏳' : (isFavorite ? '❤️' : '🤍')}
           </ActionButton>
 
           <ActionButton
             className={isInWatchlist ? 'active' : ''}
             onClick={handleWatchlistToggle}
             title={isInWatchlist ? 'Удалить из списка' : 'Добавить в список'}
+            disabled={isWatchlistLoading}
           >
-            {isInWatchlist ? '📋' : '📝'}
+            {isWatchlistLoading ? '⏳' : (isInWatchlist ? '📋' : '📝')}
           </ActionButton>
         </ActionButtons>
       </ImageContainer>
@@ -467,9 +472,6 @@ const AnimeCard = ({ anime }) => {
           </Genres>
         )}
 
-        <WatchButton onClick={handleWatch}>
-          Смотреть
-        </WatchButton>
       </CardContent>
     </CardContainer>
   );

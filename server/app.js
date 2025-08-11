@@ -1,4 +1,4 @@
-const express = require('express');
+﻿const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -8,6 +8,7 @@ const rateLimit = require('express-rate-limit');
 const { createServer } = require('http');
 const { Server } = require('socket.io');
 require('dotenv').config();
+const { HTTP_STATUS } = require('/app/shared/constants/constants');
 
 // Import routes
 const authRoutes = require('./routes/auth');
@@ -88,16 +89,16 @@ app.use(cors(corsOptions));
 // Rate limiting
 const limiter = rateLimit({
   windowMs: (process.env.RATE_LIMIT_WINDOW || 15) * 60 * 1000, // 15 minutes
-  max: process.env.RATE_LIMIT_MAX_REQUESTS || 1000, // Увеличено для разработки
+  max: process.env.RATE_LIMIT_MAX_REQUESTS || 1000, // РЈРІРµР»РёС‡РµРЅРѕ РґР»СЏ СЂР°Р·СЂР°Р±РѕС‚РєРё
   message: {
-    error: 'Слишком много запросов с этого IP, попробуйте позже.'
+    error: 'РЎР»РёС€РєРѕРј РјРЅРѕРіРѕ Р·Р°РїСЂРѕСЃРѕРІ СЃ СЌС‚РѕРіРѕ IP, РїРѕРїСЂРѕР±СѓР№С‚Рµ РїРѕР·Р¶Рµ.'
   },
   standardHeaders: true,
   legacyHeaders: false,
   skip: (req) => {
     // Skip rate limiting for most routes in development
     if (process.env.NODE_ENV === 'development') {
-      return true; // Отключаем rate limiting в разработке
+      return true; // РћС‚РєР»СЋС‡Р°РµРј rate limiting РІ СЂР°Р·СЂР°Р±РѕС‚РєРµ
     }
     return false;
   }
@@ -139,7 +140,7 @@ app.get('/health', (req, res) => {
 });
 
 // API routes  
-// AniLiberty API routes (должны быть первыми)
+// AniLiberty API routes (РґРѕР»Р¶РЅС‹ Р±С‹С‚СЊ РїРµСЂРІС‹РјРё)
 app.use('/api', apiRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/anime', animeRoutes);

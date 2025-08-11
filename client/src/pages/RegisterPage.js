@@ -147,11 +147,14 @@ const RegisterPage = () => {
   const password = watch('password');
 
   const onSubmit = async (data) => {
+    console.log('🔍 REGISTER PAGE DEBUG - Form data:', data);
     setIsLoading(true);
 
     try {
       const { confirmPassword, terms, ...userData } = data;
+      console.log('🔍 REGISTER PAGE DEBUG - User data to send:', userData);
       const result = await registerUser(userData);
+      console.log('🔍 REGISTER PAGE DEBUG - Register result:', result);
 
       if (result.success) {
         toast.success('Регистрация успешна! Добро пожаловать!');
@@ -160,6 +163,7 @@ const RegisterPage = () => {
         toast.error(result.error || 'Ошибка регистрации');
       }
     } catch (error) {
+      console.log('🔍 REGISTER PAGE DEBUG - Catch error:', error);
       toast.error('Произошла ошибка. Попробуйте снова.');
     } finally {
       setIsLoading(false);

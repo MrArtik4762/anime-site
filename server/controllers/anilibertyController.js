@@ -1,27 +1,27 @@
-const AnimeLiberty = require('../models/AnimeLiberty');
+﻿const AnimeLiberty = require('../models/AnimeLiberty');
 const anilibertyService = require('../services/anilibertyService');
-const { HTTP_STATUS, ERROR_MESSAGES } = require('../../shared/constants/constants');
+const { HTTP_STATUS, ERROR_MESSAGES } = require('/app/shared/constants/constants');
 
 /**
- * Контроллер для работы с AniLiberty API
- * Обеспечивает получение данных об аниме через AniLiberty сервис
- * с кэшированием в локальной базе данных
+ * РљРѕРЅС‚СЂРѕР»Р»РµСЂ РґР»СЏ СЂР°Р±РѕС‚С‹ СЃ AniLiberty API
+ * РћР±РµСЃРїРµС‡РёРІР°РµС‚ РїРѕР»СѓС‡РµРЅРёРµ РґР°РЅРЅС‹С… РѕР± Р°РЅРёРјРµ С‡РµСЂРµР· AniLiberty СЃРµСЂРІРёСЃ
+ * СЃ РєСЌС€РёСЂРѕРІР°РЅРёРµРј РІ Р»РѕРєР°Р»СЊРЅРѕР№ Р±Р°Р·Рµ РґР°РЅРЅС‹С…
  * @class AnilibertyController
  */
 class AnilibertyController {
   /**
-   * Получение популярных аниме
-   * @param {Object} req - объект запроса Express
-   * @param {Object} req.query - параметры запроса
-   * @param {number} [req.query.limit=10] - количество результатов
-   * @param {Object} res - объект ответа Express
+   * РџРѕР»СѓС‡РµРЅРёРµ РїРѕРїСѓР»СЏСЂРЅС‹С… Р°РЅРёРјРµ
+   * @param {Object} req - РѕР±СЉРµРєС‚ Р·Р°РїСЂРѕСЃР° Express
+   * @param {Object} req.query - РїР°СЂР°РјРµС‚СЂС‹ Р·Р°РїСЂРѕСЃР°
+   * @param {number} [req.query.limit=10] - РєРѕР»РёС‡РµСЃС‚РІРѕ СЂРµР·СѓР»СЊС‚Р°С‚РѕРІ
+   * @param {Object} res - РѕР±СЉРµРєС‚ РѕС‚РІРµС‚Р° Express
    * @returns {Promise<void>}
    */
   async getPopularAnime(req, res) {
     try {
       const limit = parseInt(req.query.limit) || 10;
 
-      // Сначала пытаемся получить из локальной базы данных
+      // РЎРЅР°С‡Р°Р»Р° РїС‹С‚Р°РµРјСЃСЏ РїРѕР»СѓС‡РёС‚СЊ РёР· Р»РѕРєР°Р»СЊРЅРѕР№ Р±Р°Р·С‹ РґР°РЅРЅС‹С…
       console.log('Fetching popular anime from cache...');
       const cachedAnime = await AnimeLiberty.getPopular(limit);
       console.log('Cached anime count:', cachedAnime ? cachedAnime.length : 0);
@@ -39,13 +39,13 @@ class AnilibertyController {
         });
       }
 
-      // Если кеша нет, пытаемся получить от AniLiberty API
+      // Р•СЃР»Рё РєРµС€Р° РЅРµС‚, РїС‹С‚Р°РµРјСЃСЏ РїРѕР»СѓС‡РёС‚СЊ РѕС‚ AniLiberty API
       console.log('Fetching from AniLiberty API...');
       const result = await anilibertyService.getPopularAnime(limit);
       console.log('API result:', result);
 
       if (result.success && result.data && result.data.length > 0) {
-        // Сохраняем в кеш
+        // РЎРѕС…СЂР°РЅСЏРµРј РІ РєРµС€
         const savedAnime = await this.cacheAnimeList(result.data);
 
         return res.json({
@@ -56,12 +56,12 @@ class AnilibertyController {
         });
       }
 
-      // Возвращаем пустой массив, если данных нет
+      // Р’РѕР·РІСЂР°С‰Р°РµРј РїСѓСЃС‚РѕР№ РјР°СЃСЃРёРІ, РµСЃР»Рё РґР°РЅРЅС‹С… РЅРµС‚
       return res.json({
         success: true,
         data: [],
         source: 'empty',
-        message: 'Нет доступных данных',
+        message: 'РќРµС‚ РґРѕСЃС‚СѓРїРЅС‹С… РґР°РЅРЅС‹С…',
         pagination: {
           total: 0,
           page: 1,
@@ -75,25 +75,25 @@ class AnilibertyController {
         success: false,
         error: {
           message: ERROR_MESSAGES.SERVER_ERROR,
-          details: 'Ошибка получения популярных аниме'
+          details: 'РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РїРѕРїСѓР»СЏСЂРЅС‹С… Р°РЅРёРјРµ'
         }
       });
     }
   }
 
   /**
-   * Получение новых эпизодов
-   * @param {Object} req - объект запроса Express
-   * @param {Object} req.query - параметры запроса
-   * @param {number} [req.query.limit=15] - количество результатов
-   * @param {Object} res - объект ответа Express
+   * РџРѕР»СѓС‡РµРЅРёРµ РЅРѕРІС‹С… СЌРїРёР·РѕРґРѕРІ
+   * @param {Object} req - РѕР±СЉРµРєС‚ Р·Р°РїСЂРѕСЃР° Express
+   * @param {Object} req.query - РїР°СЂР°РјРµС‚СЂС‹ Р·Р°РїСЂРѕСЃР°
+   * @param {number} [req.query.limit=15] - РєРѕР»РёС‡РµСЃС‚РІРѕ СЂРµР·СѓР»СЊС‚Р°С‚РѕРІ
+   * @param {Object} res - РѕР±СЉРµРєС‚ РѕС‚РІРµС‚Р° Express
    * @returns {Promise<void>}
    */
   async getNewEpisodes(req, res) {
     try {
       const limit = parseInt(req.query.limit) || 15;
 
-      // Сначала пытаемся получить из локальной базы данных
+      // РЎРЅР°С‡Р°Р»Р° РїС‹С‚Р°РµРјСЃСЏ РїРѕР»СѓС‡РёС‚СЊ РёР· Р»РѕРєР°Р»СЊРЅРѕР№ Р±Р°Р·С‹ РґР°РЅРЅС‹С…
       const cachedAnime = await AnimeLiberty.getNewEpisodes(limit);
 
       if (cachedAnime && cachedAnime.length > 0) {
@@ -109,11 +109,11 @@ class AnilibertyController {
         });
       }
 
-      // Если кеша нет, пытаемся получить от AniLiberty API
+      // Р•СЃР»Рё РєРµС€Р° РЅРµС‚, РїС‹С‚Р°РµРјСЃСЏ РїРѕР»СѓС‡РёС‚СЊ РѕС‚ AniLiberty API
       const result = await anilibertyService.getNewEpisodes(limit);
 
       if (result.success && result.data.length > 0) {
-        // Сохраняем в кеш
+        // РЎРѕС…СЂР°РЅСЏРµРј РІ РєРµС€
         const savedAnime = await this.cacheAnimeList(result.data);
 
         return res.json({
@@ -124,12 +124,12 @@ class AnilibertyController {
         });
       }
 
-      // Возвращаем ошибку если не удалось получить данные
+      // Р’РѕР·РІСЂР°С‰Р°РµРј РѕС€РёР±РєСѓ РµСЃР»Рё РЅРµ СѓРґР°Р»РѕСЃСЊ РїРѕР»СѓС‡РёС‚СЊ РґР°РЅРЅС‹Рµ
       return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
         success: false,
         error: {
-          message: result.error || 'Не удалось получить новые эпизоды',
-          details: 'Попробуйте позже'
+          message: result.error || 'РќРµ СѓРґР°Р»РѕСЃСЊ РїРѕР»СѓС‡РёС‚СЊ РЅРѕРІС‹Рµ СЌРїРёР·РѕРґС‹',
+          details: 'РџРѕРїСЂРѕР±СѓР№С‚Рµ РїРѕР·Р¶Рµ'
         }
       });
 
@@ -139,18 +139,18 @@ class AnilibertyController {
         success: false,
         error: {
           message: ERROR_MESSAGES.SERVER_ERROR,
-          details: 'Ошибка получения новых эпизодов'
+          details: 'РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РЅРѕРІС‹С… СЌРїРёР·РѕРґРѕРІ'
         }
       });
     }
   }
 
   /**
-   * Получение деталей аниме по ID
-   * @param {Object} req - объект запроса Express
-   * @param {Object} req.params - параметры маршрута
-   * @param {string} req.params.id - ID аниме в системе AniLiberty
-   * @param {Object} res - объект ответа Express
+   * РџРѕР»СѓС‡РµРЅРёРµ РґРµС‚Р°Р»РµР№ Р°РЅРёРјРµ РїРѕ ID
+   * @param {Object} req - РѕР±СЉРµРєС‚ Р·Р°РїСЂРѕСЃР° Express
+   * @param {Object} req.params - РїР°СЂР°РјРµС‚СЂС‹ РјР°СЂС€СЂСѓС‚Р°
+   * @param {string} req.params.id - ID Р°РЅРёРјРµ РІ СЃРёСЃС‚РµРјРµ AniLiberty
+   * @param {Object} res - РѕР±СЉРµРєС‚ РѕС‚РІРµС‚Р° Express
    * @returns {Promise<void>}
    */
   async getAnimeDetails(req, res) {
@@ -162,13 +162,13 @@ class AnilibertyController {
         return res.status(HTTP_STATUS.BAD_REQUEST).json({
           success: false,
           error: {
-            message: 'Некорректный ID аниме',
-            details: 'ID аниме должен быть числом'
+            message: 'РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID Р°РЅРёРјРµ',
+            details: 'ID Р°РЅРёРјРµ РґРѕР»Р¶РµРЅ Р±С‹С‚СЊ С‡РёСЃР»РѕРј'
           }
         });
       }
 
-      // Сначала ищем в локальной базе данных
+      // РЎРЅР°С‡Р°Р»Р° РёС‰РµРј РІ Р»РѕРєР°Р»СЊРЅРѕР№ Р±Р°Р·Рµ РґР°РЅРЅС‹С…
       let anime = await AnimeLiberty.findByAnilibertyId(anilibertyId);
 
       if (anime) {
@@ -179,11 +179,11 @@ class AnilibertyController {
         });
       }
 
-      // Если не найдено в кеше, запрашиваем у AniLiberty API
+      // Р•СЃР»Рё РЅРµ РЅР°Р№РґРµРЅРѕ РІ РєРµС€Рµ, Р·Р°РїСЂР°С€РёРІР°РµРј Сѓ AniLiberty API
       const result = await anilibertyService.getAnimeDetails(anilibertyId);
 
       if (result.success && result.data) {
-        // Конвертируем и сохраняем в кеш
+        // РљРѕРЅРІРµСЂС‚РёСЂСѓРµРј Рё СЃРѕС…СЂР°РЅСЏРµРј РІ РєРµС€
         const convertedData = anilibertyService.convertToAnimeModel(result.data);
         anime = new AnimeLiberty(convertedData);
         await anime.save();
@@ -198,8 +198,8 @@ class AnilibertyController {
       return res.status(HTTP_STATUS.NOT_FOUND).json({
         success: false,
         error: {
-          message: result.error || 'Аниме не найдено',
-          details: 'Аниме с указанным ID не существует'
+          message: result.error || 'РђРЅРёРјРµ РЅРµ РЅР°Р№РґРµРЅРѕ',
+          details: 'РђРЅРёРјРµ СЃ СѓРєР°Р·Р°РЅРЅС‹Рј ID РЅРµ СЃСѓС‰РµСЃС‚РІСѓРµС‚'
         }
       });
 
@@ -209,18 +209,18 @@ class AnilibertyController {
         success: false,
         error: {
           message: ERROR_MESSAGES.SERVER_ERROR,
-          details: 'Ошибка получения деталей аниме'
+          details: 'РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РґРµС‚Р°Р»РµР№ Р°РЅРёРјРµ'
         }
       });
     }
   }
 
   /**
-   * Получение данных эпизода
-   * @param {Object} req - объект запроса Express
-   * @param {Object} req.params - параметры маршрута
-   * @param {string} req.params.id - ID эпизода в системе AniLiberty
-   * @param {Object} res - объект ответа Express
+   * РџРѕР»СѓС‡РµРЅРёРµ РґР°РЅРЅС‹С… СЌРїРёР·РѕРґР°
+   * @param {Object} req - РѕР±СЉРµРєС‚ Р·Р°РїСЂРѕСЃР° Express
+   * @param {Object} req.params - РїР°СЂР°РјРµС‚СЂС‹ РјР°СЂС€СЂСѓС‚Р°
+   * @param {string} req.params.id - ID СЌРїРёР·РѕРґР° РІ СЃРёСЃС‚РµРјРµ AniLiberty
+   * @param {Object} res - РѕР±СЉРµРєС‚ РѕС‚РІРµС‚Р° Express
    * @returns {Promise<void>}
    */
   async getEpisodeData(req, res) {
@@ -231,12 +231,12 @@ class AnilibertyController {
       if (!episodeId || isNaN(episodeId)) {
         return res.status(400).json({
           success: false,
-          error: 'Некорректный ID эпизода',
-          message: 'ID эпизода должен быть числом'
+          error: 'РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID СЌРїРёР·РѕРґР°',
+          message: 'ID СЌРїРёР·РѕРґР° РґРѕР»Р¶РµРЅ Р±С‹С‚СЊ С‡РёСЃР»РѕРј'
         });
       }
 
-      // Запрашиваем данные эпизода у AniLiberty API
+      // Р—Р°РїСЂР°С€РёРІР°РµРј РґР°РЅРЅС‹Рµ СЌРїРёР·РѕРґР° Сѓ AniLiberty API
       const result = await anilibertyService.getEpisodeData(episodeId);
 
       if (result.success && result.data) {
@@ -249,8 +249,8 @@ class AnilibertyController {
       return res.status(HTTP_STATUS.NOT_FOUND).json({
         success: false,
         error: {
-          message: result.error || 'Эпизод не найден',
-          details: 'Эпизод с указанным ID не существует'
+          message: result.error || 'Р­РїРёР·РѕРґ РЅРµ РЅР°Р№РґРµРЅ',
+          details: 'Р­РїРёР·РѕРґ СЃ СѓРєР°Р·Р°РЅРЅС‹Рј ID РЅРµ СЃСѓС‰РµСЃС‚РІСѓРµС‚'
         }
       });
 
@@ -260,19 +260,19 @@ class AnilibertyController {
         success: false,
         error: {
           message: ERROR_MESSAGES.SERVER_ERROR,
-          details: 'Ошибка получения данных эпизода'
+          details: 'РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РґР°РЅРЅС‹С… СЌРїРёР·РѕРґР°'
         }
       });
     }
   }
 
   /**
-   * Поиск аниме по названию
-   * @param {Object} req - объект запроса Express
-   * @param {Object} req.query - параметры запроса
-   * @param {string} req.query.query - поисковый запрос
-   * @param {number} [req.query.limit=20] - количество результатов
-   * @param {Object} res - объект ответа Express
+   * РџРѕРёСЃРє Р°РЅРёРјРµ РїРѕ РЅР°Р·РІР°РЅРёСЋ
+   * @param {Object} req - РѕР±СЉРµРєС‚ Р·Р°РїСЂРѕСЃР° Express
+   * @param {Object} req.query - РїР°СЂР°РјРµС‚СЂС‹ Р·Р°РїСЂРѕСЃР°
+   * @param {string} req.query.query - РїРѕРёСЃРєРѕРІС‹Р№ Р·Р°РїСЂРѕСЃ
+   * @param {number} [req.query.limit=20] - РєРѕР»РёС‡РµСЃС‚РІРѕ СЂРµР·СѓР»СЊС‚Р°С‚РѕРІ
+   * @param {Object} res - РѕР±СЉРµРєС‚ РѕС‚РІРµС‚Р° Express
    * @returns {Promise<void>}
    */
   async searchAnime(req, res) {
@@ -283,15 +283,15 @@ class AnilibertyController {
         return res.status(HTTP_STATUS.BAD_REQUEST).json({
           success: false,
           error: {
-            message: 'Поисковый запрос не может быть пустым',
-            details: 'Введите название аниме для поиска'
+            message: 'РџРѕРёСЃРєРѕРІС‹Р№ Р·Р°РїСЂРѕСЃ РЅРµ РјРѕР¶РµС‚ Р±С‹С‚СЊ РїСѓСЃС‚С‹Рј',
+            details: 'Р’РІРµРґРёС‚Рµ РЅР°Р·РІР°РЅРёРµ Р°РЅРёРјРµ РґР»СЏ РїРѕРёСЃРєР°'
           }
         });
       }
 
       const searchLimit = parseInt(limit) || 20;
 
-      // Сначала ищем в локальной базе данных
+      // РЎРЅР°С‡Р°Р»Р° РёС‰РµРј РІ Р»РѕРєР°Р»СЊРЅРѕР№ Р±Р°Р·Рµ РґР°РЅРЅС‹С…
       const cachedResults = await AnimeLiberty.searchByTitle(query.trim(), { limit: searchLimit });
 
       if (cachedResults && cachedResults.length > 0) {
@@ -307,11 +307,11 @@ class AnilibertyController {
         });
       }
 
-      // Если в кеше ничего не найдено, ищем через API
+      // Р•СЃР»Рё РІ РєРµС€Рµ РЅРёС‡РµРіРѕ РЅРµ РЅР°Р№РґРµРЅРѕ, РёС‰РµРј С‡РµСЂРµР· API
       const result = await anilibertyService.searchAnime(query.trim(), searchLimit);
 
       if (result.success && result.data.length > 0) {
-        // Сохраняем результаты в кеш
+        // РЎРѕС…СЂР°РЅСЏРµРј СЂРµР·СѓР»СЊС‚Р°С‚С‹ РІ РєРµС€
         const savedAnime = await this.cacheAnimeList(result.data);
 
         return res.json({
@@ -325,7 +325,7 @@ class AnilibertyController {
       return res.json({
         success: true,
         data: [],
-        message: 'По вашему запросу ничего не найдено',
+        message: 'РџРѕ РІР°С€РµРјСѓ Р·Р°РїСЂРѕСЃСѓ РЅРёС‡РµРіРѕ РЅРµ РЅР°Р№РґРµРЅРѕ',
         pagination: {
           total: 0,
           page: 1,
@@ -339,26 +339,26 @@ class AnilibertyController {
         success: false,
         error: {
           message: ERROR_MESSAGES.SERVER_ERROR,
-          details: 'Ошибка поиска аниме'
+          details: 'РћС€РёР±РєР° РїРѕРёСЃРєР° Р°РЅРёРјРµ'
         }
       });
     }
   }
 
   /**
-   * Получение каталога аниме с фильтрацией
-   * @param {Object} req - объект запроса Express
-   * @param {Object} req.query - параметры запроса
-   * @param {number} [req.query.page=1] - номер страницы
-   * @param {number} [req.query.limit=20] - количество элементов на странице
-   * @param {string} [req.query.genres] - фильтр по жанрам (через запятую)
-   * @param {number} [req.query.year] - фильтр по году выпуска
-   * @param {string} [req.query.season] - фильтр по сезону
-   * @param {string} [req.query.status] - фильтр по статусу
-   * @param {string} [req.query.type] - фильтр по типу
-   * @param {string} [req.query.orderBy='updated_at'] - поле для сортировки
-   * @param {string} [req.query.sort='desc'] - направление сортировки
-   * @param {Object} res - объект ответа Express
+   * РџРѕР»СѓС‡РµРЅРёРµ РєР°С‚Р°Р»РѕРіР° Р°РЅРёРјРµ СЃ С„РёР»СЊС‚СЂР°С†РёРµР№
+   * @param {Object} req - РѕР±СЉРµРєС‚ Р·Р°РїСЂРѕСЃР° Express
+   * @param {Object} req.query - РїР°СЂР°РјРµС‚СЂС‹ Р·Р°РїСЂРѕСЃР°
+   * @param {number} [req.query.page=1] - РЅРѕРјРµСЂ СЃС‚СЂР°РЅРёС†С‹
+   * @param {number} [req.query.limit=20] - РєРѕР»РёС‡РµСЃС‚РІРѕ СЌР»РµРјРµРЅС‚РѕРІ РЅР° СЃС‚СЂР°РЅРёС†Рµ
+   * @param {string} [req.query.genres] - С„РёР»СЊС‚СЂ РїРѕ Р¶Р°РЅСЂР°Рј (С‡РµСЂРµР· Р·Р°РїСЏС‚СѓСЋ)
+   * @param {number} [req.query.year] - С„РёР»СЊС‚СЂ РїРѕ РіРѕРґСѓ РІС‹РїСѓСЃРєР°
+   * @param {string} [req.query.season] - С„РёР»СЊС‚СЂ РїРѕ СЃРµР·РѕРЅСѓ
+   * @param {string} [req.query.status] - С„РёР»СЊС‚СЂ РїРѕ СЃС‚Р°С‚СѓСЃСѓ
+   * @param {string} [req.query.type] - С„РёР»СЊС‚СЂ РїРѕ С‚РёРїСѓ
+   * @param {string} [req.query.orderBy='updated_at'] - РїРѕР»Рµ РґР»СЏ СЃРѕСЂС‚РёСЂРѕРІРєРё
+   * @param {string} [req.query.sort='desc'] - РЅР°РїСЂР°РІР»РµРЅРёРµ СЃРѕСЂС‚РёСЂРѕРІРєРё
+   * @param {Object} res - РѕР±СЉРµРєС‚ РѕС‚РІРµС‚Р° Express
    * @returns {Promise<void>}
    */
   async getCatalog(req, res) {
@@ -389,10 +389,10 @@ class AnilibertyController {
       if (status) options.status = status;
       if (type) options.type = type;
 
-      // Получаем из локальной базы данных
+      // РџРѕР»СѓС‡Р°РµРј РёР· Р»РѕРєР°Р»СЊРЅРѕР№ Р±Р°Р·С‹ РґР°РЅРЅС‹С…
       const catalogAnime = await AnimeLiberty.getCatalog(options);
 
-      // Подсчитываем общее количество для пагинации
+      // РџРѕРґСЃС‡РёС‚С‹РІР°РµРј РѕР±С‰РµРµ РєРѕР»РёС‡РµСЃС‚РІРѕ РґР»СЏ РїР°РіРёРЅР°С†РёРё
       const totalQuery = { isActive: true, approved: true };
       if (options.genres) totalQuery.genres = { $in: options.genres };
       if (options.year) totalQuery.year = options.year;
@@ -420,21 +420,21 @@ class AnilibertyController {
         success: false,
         error: {
           message: ERROR_MESSAGES.SERVER_ERROR,
-          details: 'Ошибка получения каталога'
+          details: 'РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РєР°С‚Р°Р»РѕРіР°'
         }
       });
     }
   }
 
   /**
-   * Получение списка доступных жанров
-   * @param {Object} req - объект запроса Express
-   * @param {Object} res - объект ответа Express
+   * РџРѕР»СѓС‡РµРЅРёРµ СЃРїРёСЃРєР° РґРѕСЃС‚СѓРїРЅС‹С… Р¶Р°РЅСЂРѕРІ
+   * @param {Object} req - РѕР±СЉРµРєС‚ Р·Р°РїСЂРѕСЃР° Express
+   * @param {Object} res - РѕР±СЉРµРєС‚ РѕС‚РІРµС‚Р° Express
    * @returns {Promise<void>}
    */
   async getGenres(req, res) {
     try {
-      // Сначала пытаемся получить уникальные жанры из локальной базы
+      // РЎРЅР°С‡Р°Р»Р° РїС‹С‚Р°РµРјСЃСЏ РїРѕР»СѓС‡РёС‚СЊ СѓРЅРёРєР°Р»СЊРЅС‹Рµ Р¶Р°РЅСЂС‹ РёР· Р»РѕРєР°Р»СЊРЅРѕР№ Р±Р°Р·С‹
       const localGenres = await AnimeLiberty.distinct('genres', { isActive: true });
 
       if (localGenres && localGenres.length > 0) {
@@ -445,7 +445,7 @@ class AnilibertyController {
         });
       }
 
-      // Если локальных жанров нет, запрашиваем у API
+      // Р•СЃР»Рё Р»РѕРєР°Р»СЊРЅС‹С… Р¶Р°РЅСЂРѕРІ РЅРµС‚, Р·Р°РїСЂР°С€РёРІР°РµРј Сѓ API
       const result = await anilibertyService.getGenres();
 
       if (result.success) {
@@ -459,8 +459,8 @@ class AnilibertyController {
       return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
         success: false,
         error: {
-          message: result.error || 'Не удалось получить жанры',
-          details: 'Попробуйте позже'
+          message: result.error || 'РќРµ СѓРґР°Р»РѕСЃСЊ РїРѕР»СѓС‡РёС‚СЊ Р¶Р°РЅСЂС‹',
+          details: 'РџРѕРїСЂРѕР±СѓР№С‚Рµ РїРѕР·Р¶Рµ'
         }
       });
 
@@ -470,16 +470,16 @@ class AnilibertyController {
         success: false,
         error: {
           message: ERROR_MESSAGES.SERVER_ERROR,
-          details: 'Ошибка получения жанров'
+          details: 'РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ Р¶Р°РЅСЂРѕРІ'
         }
       });
     }
   }
 
   /**
-   * Вспомогательный метод для кеширования списка аниме в локальной базе данных
-   * @param {Array} animeList - массив данных аниме от AniLiberty API
-   * @returns {Promise<Array>} массив сохраненных объектов аниме
+   * Р’СЃРїРѕРјРѕРіР°С‚РµР»СЊРЅС‹Р№ РјРµС‚РѕРґ РґР»СЏ РєРµС€РёСЂРѕРІР°РЅРёСЏ СЃРїРёСЃРєР° Р°РЅРёРјРµ РІ Р»РѕРєР°Р»СЊРЅРѕР№ Р±Р°Р·Рµ РґР°РЅРЅС‹С…
+   * @param {Array} animeList - РјР°СЃСЃРёРІ РґР°РЅРЅС‹С… Р°РЅРёРјРµ РѕС‚ AniLiberty API
+   * @returns {Promise<Array>} РјР°СЃСЃРёРІ СЃРѕС…СЂР°РЅРµРЅРЅС‹С… РѕР±СЉРµРєС‚РѕРІ Р°РЅРёРјРµ
    * @private
    */
   async cacheAnimeList(animeList) {
@@ -489,24 +489,24 @@ class AnilibertyController {
       try {
         const convertedData = anilibertyService.convertToAnimeModel(animeData);
 
-        // Проверяем, существует ли уже такое аниме
+        // РџСЂРѕРІРµСЂСЏРµРј, СЃСѓС‰РµСЃС‚РІСѓРµС‚ Р»Рё СѓР¶Рµ С‚Р°РєРѕРµ Р°РЅРёРјРµ
         let existingAnime = await AnimeLiberty.findByAnilibertyId(convertedData.anilibertyId);
 
         if (existingAnime) {
-          // Обновляем существующее аниме
+          // РћР±РЅРѕРІР»СЏРµРј СЃСѓС‰РµСЃС‚РІСѓСЋС‰РµРµ Р°РЅРёРјРµ
           Object.assign(existingAnime, convertedData);
           existingAnime.lastSynced = new Date();
           await existingAnime.save();
           savedAnime.push(existingAnime);
         } else {
-          // Создаем новое аниме
+          // РЎРѕР·РґР°РµРј РЅРѕРІРѕРµ Р°РЅРёРјРµ
           const newAnime = new AnimeLiberty(convertedData);
           await newAnime.save();
           savedAnime.push(newAnime);
         }
       } catch (error) {
         console.error('Error caching anime:', error);
-        // Пропускаем проблемные записи, но продолжаем обработку
+        // РџСЂРѕРїСѓСЃРєР°РµРј РїСЂРѕР±Р»РµРјРЅС‹Рµ Р·Р°РїРёСЃРё, РЅРѕ РїСЂРѕРґРѕР»Р¶Р°РµРј РѕР±СЂР°Р±РѕС‚РєСѓ
       }
     }
 
@@ -514,12 +514,12 @@ class AnilibertyController {
   }
 
   /**
-   * Синхронизация данных с AniLiberty API
-   * @param {Object} req - объект запроса Express
-   * @param {Object} req.query - параметры запроса
-   * @param {string} [req.query.type='popular'] - тип синхронизации ('popular' или 'new-episodes')
-   * @param {number} [req.query.limit=50] - количество элементов для синхронизации
-   * @param {Object} res - объект ответа Express
+   * РЎРёРЅС…СЂРѕРЅРёР·Р°С†РёСЏ РґР°РЅРЅС‹С… СЃ AniLiberty API
+   * @param {Object} req - РѕР±СЉРµРєС‚ Р·Р°РїСЂРѕСЃР° Express
+   * @param {Object} req.query - РїР°СЂР°РјРµС‚СЂС‹ Р·Р°РїСЂРѕСЃР°
+   * @param {string} [req.query.type='popular'] - С‚РёРї СЃРёРЅС…СЂРѕРЅРёР·Р°С†РёРё ('popular' РёР»Рё 'new-episodes')
+   * @param {number} [req.query.limit=50] - РєРѕР»РёС‡РµСЃС‚РІРѕ СЌР»РµРјРµРЅС‚РѕРІ РґР»СЏ СЃРёРЅС…СЂРѕРЅРёР·Р°С†РёРё
+   * @param {Object} res - РѕР±СЉРµРєС‚ РѕС‚РІРµС‚Р° Express
    * @returns {Promise<void>}
    */
   async syncWithAPI(req, res) {
@@ -539,8 +539,8 @@ class AnilibertyController {
           return res.status(HTTP_STATUS.BAD_REQUEST).json({
             success: false,
             error: {
-              message: 'Неподдерживаемый тип синхронизации',
-              details: 'Доступные типы: popular, new-episodes'
+              message: 'РќРµРїРѕРґРґРµСЂР¶РёРІР°РµРјС‹Р№ С‚РёРї СЃРёРЅС…СЂРѕРЅРёР·Р°С†РёРё',
+              details: 'Р”РѕСЃС‚СѓРїРЅС‹Рµ С‚РёРїС‹: popular, new-episodes'
             }
           });
       }
@@ -550,7 +550,7 @@ class AnilibertyController {
 
         return res.json({
           success: true,
-          message: `Синхронизировано ${syncedAnime.length} аниме`,
+          message: `РЎРёРЅС…СЂРѕРЅРёР·РёСЂРѕРІР°РЅРѕ ${syncedAnime.length} Р°РЅРёРјРµ`,
           data: {
             synced: syncedAnime.length,
             type: type
@@ -561,8 +561,8 @@ class AnilibertyController {
       return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
         success: false,
         error: {
-          message: result.error || 'Ошибка синхронизации',
-          details: 'Не удалось синхронизировать данные'
+          message: result.error || 'РћС€РёР±РєР° СЃРёРЅС…СЂРѕРЅРёР·Р°С†РёРё',
+          details: 'РќРµ СѓРґР°Р»РѕСЃСЊ СЃРёРЅС…СЂРѕРЅРёР·РёСЂРѕРІР°С‚СЊ РґР°РЅРЅС‹Рµ'
         }
       });
 
@@ -572,7 +572,7 @@ class AnilibertyController {
         success: false,
         error: {
           message: ERROR_MESSAGES.SERVER_ERROR,
-          details: 'Ошибка синхронизации с API'
+          details: 'РћС€РёР±РєР° СЃРёРЅС…СЂРѕРЅРёР·Р°С†РёРё СЃ API'
         }
       });
     }
@@ -580,3 +580,4 @@ class AnilibertyController {
 }
 
 module.exports = new AnilibertyController();
+

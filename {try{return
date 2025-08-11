@@ -1,0 +1,26 @@
+total 352
+drwxr-xr-x    1 root     root          4096 Aug  6 16:25 .
+drwxr-xr-x    1 root     root          4096 Aug  6 16:26 ..
+-rwxr-xr-x    1 nodejs   nodejs        1134 Aug  6 14:35 .env
+-rwxr-xr-x    1 nodejs   nodejs        1134 Aug  6 14:35 .env.example
+-rwxr-xr-x    1 nodejs   nodejs        2201 Aug  6 14:35 Dockerfile
+-rwxr-xr-x    1 nodejs   nodejs        6809 Aug  6 14:35 app.js
+drwxr-xr-x    2 nodejs   nodejs        4096 Aug  6 16:24 config
+drwxr-xr-x    2 nodejs   nodejs        4096 Aug  6 16:24 controllers
+-rwxr-xr-x    1 nodejs   nodejs        1202 Aug  6 14:35 jest.config.js
+drwxr-xr-x    2 nodejs   nodejs        4096 Aug  6 16:25 logs
+drwxr-xr-x    2 nodejs   nodejs        4096 Aug  6 16:24 middleware
+drwxr-xr-x    2 nodejs   nodejs        4096 Aug  6 16:24 models
+drwxr-xr-x  212 nodejs   nodejs       12288 Aug  6 16:25 node_modules
+-rwxr-xr-x    1 nodejs   nodejs         339 Aug  6 14:35 nodemon.json
+-rwxr-xr-x    1 nodejs   nodejs      251218 Aug  6 14:35 package-lock.json
+-rwxr-xr-x    1 nodejs   nodejs        1186 Aug  6 14:35 package.json
+drwxr-xr-x    2 nodejs   nodejs        4096 Aug  6 16:24 routes
+drwxr-xr-x    2 nodejs   nodejs        4096 Aug  6 16:24 scripts
+-rwxr-xr-x    1 nodejs   nodejs        1169 Aug  6 14:35 server.js
+drwxr-xr-x    2 nodejs   nodejs        4096 Aug  6 16:24 services
+drwxr-xr-x    1 nodejs   nodejs        4096 Aug  6 16:24 shared
+drwxr-xr-x    2 nodejs   nodejs        4096 Aug  6 16:24 socket
+drwxr-xr-x    2 nodejs   nodejs        4096 Aug  6 16:24 tests
+drwxrwxrwx    1 root     root          4096 Aug  6 14:35 uploads
+drwxr-xr-x    2 nodejs   nodejs        4096 Aug  6 16:24 utils

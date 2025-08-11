@@ -1,13 +1,13 @@
-const User = require('../models/User');
+﻿const User = require('../models/User');
 const WatchList = require('../models/WatchList');
-const { HTTP_STATUS, ERROR_MESSAGES } = require('../../shared/constants/constants');
+const { HTTP_STATUS, ERROR_MESSAGES } = require('/app/shared/constants/constants');
 const multer = require('multer');
-const sharp = require('sharp');
+const sharp = require('../utils/sharpAdapter');
 const path = require('path');
 const fs = require('fs').promises;
 
 class UserController {
-  // Получение профиля пользователя
+  // РџРѕР»СѓС‡РµРЅРёРµ РїСЂРѕС„РёР»СЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
   async getProfile(req, res) {
     try {
       const user = await User.findById(req.user.id)
@@ -29,7 +29,7 @@ class UserController {
         });
       }
 
-      // Получаем статистику пользователя
+      // РџРѕР»СѓС‡Р°РµРј СЃС‚Р°С‚РёСЃС‚РёРєСѓ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
       const stats = await WatchList.getUserStats(user._id);
 
       res.json({
@@ -51,13 +51,13 @@ class UserController {
     }
   }
 
-  // Обновление профиля пользователя
+  // РћР±РЅРѕРІР»РµРЅРёРµ РїСЂРѕС„РёР»СЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
   async updateProfile(req, res) {
     try {
       const { username, bio, preferences } = req.body;
       const userId = req.user.id;
 
-      // Проверяем уникальность username, если он изменился
+      // РџСЂРѕРІРµСЂСЏРµРј СѓРЅРёРєР°Р»СЊРЅРѕСЃС‚СЊ username, РµСЃР»Рё РѕРЅ РёР·РјРµРЅРёР»СЃСЏ
       if (username && username !== req.user.username) {
         const existingUser = await User.findOne({ 
           username, 
@@ -68,13 +68,13 @@ class UserController {
           return res.status(HTTP_STATUS.BAD_REQUEST).json({
             success: false,
             error: {
-              message: 'Пользователь с таким именем уже существует'
+              message: 'РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ СЃ С‚Р°РєРёРј РёРјРµРЅРµРј СѓР¶Рµ СЃСѓС‰РµСЃС‚РІСѓРµС‚'
             }
           });
         }
       }
 
-      // Обновляем профиль
+      // РћР±РЅРѕРІР»СЏРµРј РїСЂРѕС„РёР»СЊ
       const updateData = {};
       if (username) updateData.username = username;
       if (bio !== undefined) updateData.bio = bio;
@@ -91,7 +91,7 @@ class UserController {
         data: {
           user
         },
-        message: 'Профиль успешно обновлен'
+        message: 'РџСЂРѕС„РёР»СЊ СѓСЃРїРµС€РЅРѕ РѕР±РЅРѕРІР»РµРЅ'
       });
 
     } catch (error) {
@@ -101,7 +101,7 @@ class UserController {
         return res.status(HTTP_STATUS.BAD_REQUEST).json({
           success: false,
           error: {
-            message: 'Ошибка валидации данных',
+            message: 'РћС€РёР±РєР° РІР°Р»РёРґР°С†РёРё РґР°РЅРЅС‹С…',
             details: Object.values(error.errors).map(err => err.message)
           }
         });
@@ -116,13 +116,13 @@ class UserController {
     }
   }
 
-  // Смена пароля
+  // РЎРјРµРЅР° РїР°СЂРѕР»СЏ
   async changePassword(req, res) {
     try {
       const { currentPassword, newPassword } = req.body;
       const userId = req.user.id;
 
-      // Получаем пользователя с паролем
+      // РџРѕР»СѓС‡Р°РµРј РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ СЃ РїР°СЂРѕР»РµРј
       const user = await User.findById(userId).select('+password');
       if (!user) {
         return res.status(HTTP_STATUS.NOT_FOUND).json({
@@ -133,24 +133,24 @@ class UserController {
         });
       }
 
-      // Проверяем текущий пароль
+      // РџСЂРѕРІРµСЂСЏРµРј С‚РµРєСѓС‰РёР№ РїР°СЂРѕР»СЊ
       const isCurrentPasswordValid = await user.comparePassword(currentPassword);
       if (!isCurrentPasswordValid) {
         return res.status(HTTP_STATUS.BAD_REQUEST).json({
           success: false,
           error: {
-            message: 'Неверный текущий пароль'
+            message: 'РќРµРІРµСЂРЅС‹Р№ С‚РµРєСѓС‰РёР№ РїР°СЂРѕР»СЊ'
           }
         });
       }
 
-      // Обновляем пароль
+      // РћР±РЅРѕРІР»СЏРµРј РїР°СЂРѕР»СЊ
       user.password = newPassword;
       await user.save();
 
       res.json({
         success: true,
-        message: 'Пароль успешно изменен'
+        message: 'РџР°СЂРѕР»СЊ СѓСЃРїРµС€РЅРѕ РёР·РјРµРЅРµРЅ'
       });
 
     } catch (error) {
@@ -164,14 +164,14 @@ class UserController {
     }
   }
 
-  // Загрузка аватара
+  // Р—Р°РіСЂСѓР·РєР° Р°РІР°С‚Р°СЂР°
   async uploadAvatar(req, res) {
     try {
       if (!req.file) {
         return res.status(HTTP_STATUS.BAD_REQUEST).json({
           success: false,
           error: {
-            message: 'Файл не предоставлен'
+            message: 'Р¤Р°Р№Р» РЅРµ РїСЂРµРґРѕСЃС‚Р°РІР»РµРЅ'
           }
         });
       }
@@ -180,16 +180,16 @@ class UserController {
       const filename = `avatar_${userId}_${Date.now()}.jpg`;
       const avatarPath = path.join('uploads', 'avatars', filename);
 
-      // Создаем директорию если не существует
+      // РЎРѕР·РґР°РµРј РґРёСЂРµРєС‚РѕСЂРёСЋ РµСЃР»Рё РЅРµ СЃСѓС‰РµСЃС‚РІСѓРµС‚
       await fs.mkdir(path.dirname(avatarPath), { recursive: true });
 
-      // Обрабатываем изображение
+      // РћР±СЂР°Р±Р°С‚С‹РІР°РµРј РёР·РѕР±СЂР°Р¶РµРЅРёРµ
       await sharp(req.file.buffer)
         .resize(200, 200)
         .jpeg({ quality: 90 })
         .toFile(avatarPath);
 
-      // Удаляем старый аватар если он не дефолтный
+      // РЈРґР°Р»СЏРµРј СЃС‚Р°СЂС‹Р№ Р°РІР°С‚Р°СЂ РµСЃР»Рё РѕРЅ РЅРµ РґРµС„РѕР»С‚РЅС‹Р№
       const user = await User.findById(userId);
       if (user.avatar && !user.avatar.includes('placeholder')) {
         const oldAvatarPath = user.avatar.replace('/uploads/', 'uploads/');
@@ -200,7 +200,7 @@ class UserController {
         }
       }
 
-      // Обновляем путь к аватару в базе данных
+      // РћР±РЅРѕРІР»СЏРµРј РїСѓС‚СЊ Рє Р°РІР°С‚Р°СЂСѓ РІ Р±Р°Р·Рµ РґР°РЅРЅС‹С…
       const avatarUrl = `/uploads/avatars/${filename}`;
       await User.findByIdAndUpdate(userId, { avatar: avatarUrl });
 
@@ -209,7 +209,7 @@ class UserController {
         data: {
           avatarUrl
         },
-        message: 'Аватар успешно загружен'
+        message: 'РђРІР°С‚Р°СЂ СѓСЃРїРµС€РЅРѕ Р·Р°РіСЂСѓР¶РµРЅ'
       });
 
     } catch (error) {
@@ -223,7 +223,7 @@ class UserController {
     }
   }
 
-  // Получение публичного профиля пользователя
+  // РџРѕР»СѓС‡РµРЅРёРµ РїСѓР±Р»РёС‡РЅРѕРіРѕ РїСЂРѕС„РёР»СЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
   async getPublicProfile(req, res) {
     try {
       const { userId } = req.params;
@@ -240,20 +240,20 @@ class UserController {
         });
       }
 
-      // Проверяем, публичный ли профиль
+      // РџСЂРѕРІРµСЂСЏРµРј, РїСѓР±Р»РёС‡РЅС‹Р№ Р»Рё РїСЂРѕС„РёР»СЊ
       if (!user.preferences.publicProfile) {
         return res.status(HTTP_STATUS.FORBIDDEN).json({
           success: false,
           error: {
-            message: 'Профиль пользователя приватный'
+            message: 'РџСЂРѕС„РёР»СЊ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РїСЂРёРІР°С‚РЅС‹Р№'
           }
         });
       }
 
-      // Получаем публичную статистику
+      // РџРѕР»СѓС‡Р°РµРј РїСѓР±Р»РёС‡РЅСѓСЋ СЃС‚Р°С‚РёСЃС‚РёРєСѓ
       const stats = await WatchList.getUserStats(userId);
 
-      // Получаем публичные списки просмотра
+      // РџРѕР»СѓС‡Р°РµРј РїСѓР±Р»РёС‡РЅС‹Рµ СЃРїРёСЃРєРё РїСЂРѕСЃРјРѕС‚СЂР°
       const publicWatchLists = await WatchList.find({
         userId,
         isPrivate: false
@@ -282,12 +282,12 @@ class UserController {
     }
   }
 
-  // Получение статистики пользователя
+  // РџРѕР»СѓС‡РµРЅРёРµ СЃС‚Р°С‚РёСЃС‚РёРєРё РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
   async getUserStats(req, res) {
     try {
       const { userId } = req.params;
       
-      // Проверяем права доступа
+      // РџСЂРѕРІРµСЂСЏРµРј РїСЂР°РІР° РґРѕСЃС‚СѓРїР°
       if (userId !== req.user.id && req.user.role !== 'admin') {
         return res.status(HTTP_STATUS.FORBIDDEN).json({
           success: false,
@@ -299,7 +299,7 @@ class UserController {
 
       const stats = await WatchList.getUserStats(userId);
 
-      // Дополнительная статистика
+      // Р”РѕРїРѕР»РЅРёС‚РµР»СЊРЅР°СЏ СЃС‚Р°С‚РёСЃС‚РёРєР°
       const additionalStats = await User.aggregate([
         { $match: { _id: mongoose.Types.ObjectId(userId) } },
         {
@@ -338,13 +338,13 @@ class UserController {
     }
   }
 
-  // Удаление аккаунта
+  // РЈРґР°Р»РµРЅРёРµ Р°РєРєР°СѓРЅС‚Р°
   async deleteAccount(req, res) {
     try {
       const userId = req.user.id;
       const { password } = req.body;
 
-      // Получаем пользователя с паролем для подтверждения
+      // РџРѕР»СѓС‡Р°РµРј РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ СЃ РїР°СЂРѕР»РµРј РґР»СЏ РїРѕРґС‚РІРµСЂР¶РґРµРЅРёСЏ
       const user = await User.findById(userId).select('+password');
       if (!user) {
         return res.status(HTTP_STATUS.NOT_FOUND).json({
@@ -355,24 +355,24 @@ class UserController {
         });
       }
 
-      // Проверяем пароль
+      // РџСЂРѕРІРµСЂСЏРµРј РїР°СЂРѕР»СЊ
       const isPasswordValid = await user.comparePassword(password);
       if (!isPasswordValid) {
         return res.status(HTTP_STATUS.BAD_REQUEST).json({
           success: false,
           error: {
-            message: 'Неверный пароль'
+            message: 'РќРµРІРµСЂРЅС‹Р№ РїР°СЂРѕР»СЊ'
           }
         });
       }
 
-      // Удаляем связанные данные
+      // РЈРґР°Р»СЏРµРј СЃРІСЏР·Р°РЅРЅС‹Рµ РґР°РЅРЅС‹Рµ
       await Promise.all([
         WatchList.deleteMany({ userId }),
-        // Comment.deleteMany({ userId }), // Можно оставить комментарии как анонимные
+        // Comment.deleteMany({ userId }), // РњРѕР¶РЅРѕ РѕСЃС‚Р°РІРёС‚СЊ РєРѕРјРјРµРЅС‚Р°СЂРёРё РєР°Рє Р°РЅРѕРЅРёРјРЅС‹Рµ
       ]);
 
-      // Удаляем аватар если он не дефолтный
+      // РЈРґР°Р»СЏРµРј Р°РІР°С‚Р°СЂ РµСЃР»Рё РѕРЅ РЅРµ РґРµС„РѕР»С‚РЅС‹Р№
       if (user.avatar && !user.avatar.includes('placeholder')) {
         const avatarPath = user.avatar.replace('/uploads/', 'uploads/');
         try {
@@ -382,12 +382,12 @@ class UserController {
         }
       }
 
-      // Удаляем пользователя
+      // РЈРґР°Р»СЏРµРј РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
       await User.findByIdAndDelete(userId);
 
       res.json({
         success: true,
-        message: 'Аккаунт успешно удален'
+        message: 'РђРєРєР°СѓРЅС‚ СѓСЃРїРµС€РЅРѕ СѓРґР°Р»РµРЅ'
       });
 
     } catch (error) {
@@ -402,7 +402,7 @@ class UserController {
   }
 }
 
-// Конфигурация multer для загрузки аватаров
+// РљРѕРЅС„РёРіСѓСЂР°С†РёСЏ multer РґР»СЏ Р·Р°РіСЂСѓР·РєРё Р°РІР°С‚Р°СЂРѕРІ
 const avatarUpload = multer({
   storage: multer.memoryStorage(),
   limits: {
@@ -412,7 +412,7 @@ const avatarUpload = multer({
     if (file.mimetype.startsWith('image/')) {
       cb(null, true);
     } else {
-      cb(new Error('Только изображения разрешены'), false);
+      cb(new Error('РўРѕР»СЊРєРѕ РёР·РѕР±СЂР°Р¶РµРЅРёСЏ СЂР°Р·СЂРµС€РµРЅС‹'), false);
     }
   }
 });

@@ -1,9 +1,9 @@
-const Friendship = require('../models/Friendship');
+﻿const Friendship = require('../models/Friendship');
 const User = require('../models/User');
-const { HTTP_STATUS, ERROR_MESSAGES } = require('../../shared/constants/constants');
+const { HTTP_STATUS, ERROR_MESSAGES } = require('/app/shared/constants/constants');
 
 class FriendshipController {
-  // Получение списка друзей
+  // РџРѕР»СѓС‡РµРЅРёРµ СЃРїРёСЃРєР° РґСЂСѓР·РµР№
   async getFriends(req, res) {
     try {
       const userId = req.user.id;
@@ -18,7 +18,7 @@ class FriendshipController {
         limit: parseInt(limit)
       });
 
-      // Форматируем список друзей
+      // Р¤РѕСЂРјР°С‚РёСЂСѓРµРј СЃРїРёСЃРѕРє РґСЂСѓР·РµР№
       const friendsList = friends.map(friendship => {
         const friend = friendship.getFriend(userId);
         return {
@@ -40,7 +40,7 @@ class FriendshipController {
         };
       });
 
-      // Получаем статистику друзей
+      // РџРѕР»СѓС‡Р°РµРј СЃС‚Р°С‚РёСЃС‚РёРєСѓ РґСЂСѓР·РµР№
       const friendStats = await Friendship.getFriendStats(userId);
 
       res.json({
@@ -67,7 +67,7 @@ class FriendshipController {
     }
   }
 
-  // Получение входящих запросов в друзья
+  // РџРѕР»СѓС‡РµРЅРёРµ РІС…РѕРґСЏС‰РёС… Р·Р°РїСЂРѕСЃРѕРІ РІ РґСЂСѓР·СЊСЏ
   async getPendingRequests(req, res) {
     try {
       const userId = req.user.id;
@@ -114,19 +114,19 @@ class FriendshipController {
     }
   }
 
-  // Отправка запроса в друзья
+  // РћС‚РїСЂР°РІРєР° Р·Р°РїСЂРѕСЃР° РІ РґСЂСѓР·СЊСЏ
   async sendFriendRequest(req, res) {
     try {
       const requesterId = req.user.id;
       const { recipientId } = req.body;
 
-      // Проверяем существование получателя
+      // РџСЂРѕРІРµСЂСЏРµРј СЃСѓС‰РµСЃС‚РІРѕРІР°РЅРёРµ РїРѕР»СѓС‡Р°С‚РµР»СЏ
       const recipient = await User.findById(recipientId);
       if (!recipient) {
         return res.status(HTTP_STATUS.NOT_FOUND).json({
           success: false,
           error: {
-            message: 'Пользователь не найден'
+            message: 'РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ РЅРµ РЅР°Р№РґРµРЅ'
           }
         });
       }
@@ -138,13 +138,13 @@ class FriendshipController {
         data: {
           friendship
         },
-        message: `Запрос в друзья отправлен пользователю ${recipient.username}`
+        message: `Р—Р°РїСЂРѕСЃ РІ РґСЂСѓР·СЊСЏ РѕС‚РїСЂР°РІР»РµРЅ РїРѕР»СЊР·РѕРІР°С‚РµР»СЋ ${recipient.username}`
       });
 
     } catch (error) {
       console.error('Send friend request error:', error);
       
-      if (error.message.includes('Нельзя') || error.message.includes('уже')) {
+      if (error.message.includes('РќРµР»СЊР·СЏ') || error.message.includes('СѓР¶Рµ')) {
         return res.status(HTTP_STATUS.BAD_REQUEST).json({
           success: false,
           error: {
@@ -162,7 +162,7 @@ class FriendshipController {
     }
   }
 
-  // Принятие запроса в друзья
+  // РџСЂРёРЅСЏС‚РёРµ Р·Р°РїСЂРѕСЃР° РІ РґСЂСѓР·СЊСЏ
   async acceptFriendRequest(req, res) {
     try {
       const recipientId = req.user.id;
@@ -174,7 +174,7 @@ class FriendshipController {
         return res.status(HTTP_STATUS.NOT_FOUND).json({
           success: false,
           error: {
-            message: 'Запрос в друзья не найден'
+            message: 'Р—Р°РїСЂРѕСЃ РІ РґСЂСѓР·СЊСЏ РЅРµ РЅР°Р№РґРµРЅ'
           }
         });
       }
@@ -186,7 +186,7 @@ class FriendshipController {
         data: {
           friendship
         },
-        message: `Вы теперь друзья с ${requester.username}`
+        message: `Р’С‹ С‚РµРїРµСЂСЊ РґСЂСѓР·СЊСЏ СЃ ${requester.username}`
       });
 
     } catch (error) {
@@ -200,7 +200,7 @@ class FriendshipController {
     }
   }
 
-  // Отклонение запроса в друзья
+  // РћС‚РєР»РѕРЅРµРЅРёРµ Р·Р°РїСЂРѕСЃР° РІ РґСЂСѓР·СЊСЏ
   async rejectFriendRequest(req, res) {
     try {
       const recipientId = req.user.id;
@@ -212,14 +212,14 @@ class FriendshipController {
         return res.status(HTTP_STATUS.NOT_FOUND).json({
           success: false,
           error: {
-            message: 'Запрос в друзья не найден'
+            message: 'Р—Р°РїСЂРѕСЃ РІ РґСЂСѓР·СЊСЏ РЅРµ РЅР°Р№РґРµРЅ'
           }
         });
       }
 
       res.json({
         success: true,
-        message: 'Запрос в друзья отклонен'
+        message: 'Р—Р°РїСЂРѕСЃ РІ РґСЂСѓР·СЊСЏ РѕС‚РєР»РѕРЅРµРЅ'
       });
 
     } catch (error) {
@@ -233,7 +233,7 @@ class FriendshipController {
     }
   }
 
-  // Удаление из друзей
+  // РЈРґР°Р»РµРЅРёРµ РёР· РґСЂСѓР·РµР№
   async removeFriend(req, res) {
     try {
       const userId = req.user.id;
@@ -245,7 +245,7 @@ class FriendshipController {
         return res.status(HTTP_STATUS.NOT_FOUND).json({
           success: false,
           error: {
-            message: 'Дружба не найдена'
+            message: 'Р”СЂСѓР¶Р±Р° РЅРµ РЅР°Р№РґРµРЅР°'
           }
         });
       }
@@ -254,7 +254,7 @@ class FriendshipController {
 
       res.json({
         success: true,
-        message: `${friend?.username || 'Пользователь'} удален из друзей`
+        message: `${friend?.username || 'РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ'} СѓРґР°Р»РµРЅ РёР· РґСЂСѓР·РµР№`
       });
 
     } catch (error) {
@@ -268,19 +268,19 @@ class FriendshipController {
     }
   }
 
-  // Блокировка пользователя
+  // Р‘Р»РѕРєРёСЂРѕРІРєР° РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
   async blockUser(req, res) {
     try {
       const blockerId = req.user.id;
       const { blockedId } = req.body;
 
-      // Проверяем существование пользователя
+      // РџСЂРѕРІРµСЂСЏРµРј СЃСѓС‰РµСЃС‚РІРѕРІР°РЅРёРµ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
       const blockedUser = await User.findById(blockedId);
       if (!blockedUser) {
         return res.status(HTTP_STATUS.NOT_FOUND).json({
           success: false,
           error: {
-            message: 'Пользователь не найден'
+            message: 'РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ РЅРµ РЅР°Р№РґРµРЅ'
           }
         });
       }
@@ -292,7 +292,7 @@ class FriendshipController {
         data: {
           friendship
         },
-        message: `Пользователь ${blockedUser.username} заблокирован`
+        message: `РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ ${blockedUser.username} Р·Р°Р±Р»РѕРєРёСЂРѕРІР°РЅ`
       });
 
     } catch (error) {
@@ -306,7 +306,7 @@ class FriendshipController {
     }
   }
 
-  // Поиск пользователей для добавления в друзья
+  // РџРѕРёСЃРє РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№ РґР»СЏ РґРѕР±Р°РІР»РµРЅРёСЏ РІ РґСЂСѓР·СЊСЏ
   async searchUsers(req, res) {
     try {
       const currentUserId = req.user.id;
@@ -316,15 +316,15 @@ class FriendshipController {
         return res.status(HTTP_STATUS.BAD_REQUEST).json({
           success: false,
           error: {
-            message: 'Запрос должен содержать минимум 2 символа'
+            message: 'Р—Р°РїСЂРѕСЃ РґРѕР»Р¶РµРЅ СЃРѕРґРµСЂР¶Р°С‚СЊ РјРёРЅРёРјСѓРј 2 СЃРёРјРІРѕР»Р°'
           }
         });
       }
 
-      // Поиск пользователей по username или email
+      // РџРѕРёСЃРє РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№ РїРѕ username РёР»Рё email
       const users = await User.find({
         $and: [
-          { _id: { $ne: currentUserId } }, // Исключаем текущего пользователя
+          { _id: { $ne: currentUserId } }, // РСЃРєР»СЋС‡Р°РµРј С‚РµРєСѓС‰РµРіРѕ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
           {
             $or: [
               { username: { $regex: query, $options: 'i' } },
@@ -339,7 +339,7 @@ class FriendshipController {
       .limit(parseInt(limit))
       .skip((parseInt(page) - 1) * parseInt(limit));
 
-      // Проверяем статус дружбы для каждого пользователя
+      // РџСЂРѕРІРµСЂСЏРµРј СЃС‚Р°С‚СѓСЃ РґСЂСѓР¶Р±С‹ РґР»СЏ РєР°Р¶РґРѕРіРѕ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
       const usersWithFriendshipStatus = await Promise.all(
         users.map(async (user) => {
           const friendshipStatus = await Friendship.getFriendshipStatus(currentUserId, user._id);
@@ -382,19 +382,19 @@ class FriendshipController {
     }
   }
 
-  // Получение рекомендаций друзей
+  // РџРѕР»СѓС‡РµРЅРёРµ СЂРµРєРѕРјРµРЅРґР°С†РёР№ РґСЂСѓР·РµР№
   async getFriendRecommendations(req, res) {
     try {
       const userId = req.user.id;
       const { limit = 10 } = req.query;
 
-      // Получаем друзей текущего пользователя
+      // РџРѕР»СѓС‡Р°РµРј РґСЂСѓР·РµР№ С‚РµРєСѓС‰РµРіРѕ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
       const currentFriends = await Friendship.getFriends(userId);
       const friendIds = currentFriends.map(f => 
         f.requester.toString() === userId ? f.recipient : f.requester
       );
 
-      // Находим пользователей с общими друзьями
+      // РќР°С…РѕРґРёРј РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№ СЃ РѕР±С‰РёРјРё РґСЂСѓР·СЊСЏРјРё
       const recommendations = await User.aggregate([
         {
           $match: {
@@ -465,7 +465,7 @@ class FriendshipController {
         }
       ]);
 
-      // Добавляем информацию об общих аниме
+      // Р”РѕР±Р°РІР»СЏРµРј РёРЅС„РѕСЂРјР°С†РёСЋ РѕР± РѕР±С‰РёС… Р°РЅРёРјРµ
       const recommendationsWithDetails = await Promise.all(
         recommendations.map(async (user) => {
           const mutualData = await Friendship.getMutualData(userId, user._id);
@@ -479,7 +479,7 @@ class FriendshipController {
         })
       );
 
-      // Сортируем по рекомендательному счету
+      // РЎРѕСЂС‚РёСЂСѓРµРј РїРѕ СЂРµРєРѕРјРµРЅРґР°С‚РµР»СЊРЅРѕРјСѓ СЃС‡РµС‚Сѓ
       recommendationsWithDetails.sort((a, b) => b.recommendationScore - a.recommendationScore);
 
       res.json({
@@ -500,7 +500,7 @@ class FriendshipController {
     }
   }
 
-  // Получение статуса дружбы с конкретным пользователем
+  // РџРѕР»СѓС‡РµРЅРёРµ СЃС‚Р°С‚СѓСЃР° РґСЂСѓР¶Р±С‹ СЃ РєРѕРЅРєСЂРµС‚РЅС‹Рј РїРѕР»СЊР·РѕРІР°С‚РµР»РµРј
   async getFriendshipStatus(req, res) {
     try {
       const userId = req.user.id;

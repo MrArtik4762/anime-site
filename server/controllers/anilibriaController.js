@@ -1,8 +1,8 @@
-const anilibriaService = require('../services/anilibriaService');
-const { HTTP_STATUS } = require('../../shared/constants/constants');
+﻿const anilibriaService = require('../services/anilibriaService');
+const { HTTP_STATUS } = require('/app/shared/constants/constants');
 
 /**
- * Получить популярные аниме из AniLibria
+ * РџРѕР»СѓС‡РёС‚СЊ РїРѕРїСѓР»СЏСЂРЅС‹Рµ Р°РЅРёРјРµ РёР· AniLibria
  */
 const getPopular = async (req, res) => {
   try {
@@ -25,21 +25,21 @@ const getPopular = async (req, res) => {
   } catch (error) {
     console.error('Error fetching popular anime from AniLibria:', error);
     
-    // Возвращаем тестовые данные при ошибке API
+    // Р’РѕР·РІСЂР°С‰Р°РµРј С‚РµСЃС‚РѕРІС‹Рµ РґР°РЅРЅС‹Рµ РїСЂРё РѕС€РёР±РєРµ API
     const mockData = [
       {
         id: 9919,
         names: {
-          ru: "Девочки-бабочки",
+          ru: "Р”РµРІРѕС‡РєРё-Р±Р°Р±РѕС‡РєРё",
           en: "Butterfly Girls",
           alternative: "Chou Shoujo"
         },
-        description: "История о девочках, которые превращаются в бабочек и сражаются со злом.",
+        description: "РСЃС‚РѕСЂРёСЏ Рѕ РґРµРІРѕС‡РєР°С…, РєРѕС‚РѕСЂС‹Рµ РїСЂРµРІСЂР°С‰Р°СЋС‚СЃСЏ РІ Р±Р°Р±РѕС‡РµРє Рё СЃСЂР°Р¶Р°СЋС‚СЃСЏ СЃРѕ Р·Р»РѕРј.",
         type: { string: "TV", episodes: 24 },
-        status: { string: "В работе" },
-        genres: ["Магия", "Школа", "Драма"],
+        status: { string: "Р’ СЂР°Р±РѕС‚Рµ" },
+        genres: ["РњР°РіРёСЏ", "РЁРєРѕР»Р°", "Р”СЂР°РјР°"],
         year: 2025,
-        season: { string: "лето" },
+        season: { string: "Р»РµС‚Рѕ" },
         posters: {
           small: { url: "https://www.anilibria.tv/storage/releases/posters/9919/small.jpg" },
           medium: { url: "https://www.anilibria.tv/storage/releases/posters/9919/medium.jpg" },
@@ -49,7 +49,7 @@ const getPopular = async (req, res) => {
           episodes: { last: 17 },
           list: {
             "1": {
-              name: "Первая встреча",
+              name: "РџРµСЂРІР°СЏ РІСЃС‚СЂРµС‡Р°",
               preview: "/storage/releases/episodes/previews/9919/1/preview.jpg",
               hls: {
                 fhd: "/videos/media/ts/9919/1/1080/video.m3u8",
@@ -64,16 +64,16 @@ const getPopular = async (req, res) => {
       {
         id: 9988,
         names: {
-          ru: "Труська, Чулко и пресвятой Подвяз 2",
+          ru: "РўСЂСѓСЃСЊРєР°, Р§СѓР»РєРѕ Рё РїСЂРµСЃРІСЏС‚РѕР№ РџРѕРґРІСЏР· 2",
           en: "New Panty & Stocking with Garterbelt",
           alternative: null
         },
-        description: "Продолжение приключений двух падших ангелов в Датэн-сити.",
+        description: "РџСЂРѕРґРѕР»Р¶РµРЅРёРµ РїСЂРёРєР»СЋС‡РµРЅРёР№ РґРІСѓС… РїР°РґС€РёС… Р°РЅРіРµР»РѕРІ РІ Р”Р°С‚СЌРЅ-СЃРёС‚Рё.",
         type: { string: "TV", episodes: 13 },
-        status: { string: "В работе" },
-        genres: ["Комедия", "Пародия", "Фэнтези", "Экшен"],
+        status: { string: "Р’ СЂР°Р±РѕС‚Рµ" },
+        genres: ["РљРѕРјРµРґРёСЏ", "РџР°СЂРѕРґРёСЏ", "Р¤СЌРЅС‚РµР·Рё", "Р­РєС€РµРЅ"],
         year: 2025,
-        season: { string: "лето" },
+        season: { string: "Р»РµС‚Рѕ" },
         posters: {
           small: { url: "https://www.anilibria.tv/storage/releases/posters/9988/small.jpg" },
           medium: { url: "https://www.anilibria.tv/storage/releases/posters/9988/medium.jpg" },
@@ -83,7 +83,7 @@ const getPopular = async (req, res) => {
           episodes: { last: 4 },
           list: {
             "1": {
-              name: "Возвращение",
+              name: "Р’РѕР·РІСЂР°С‰РµРЅРёРµ",
               preview: "/storage/releases/episodes/previews/9988/1/preview.jpg",
               hls: {
                 fhd: "/videos/media/ts/9988/1/1080/video.m3u8",
@@ -110,7 +110,7 @@ const getPopular = async (req, res) => {
 };
 
 /**
- * Получить последние обновления из AniLibria
+ * РџРѕР»СѓС‡РёС‚СЊ РїРѕСЃР»РµРґРЅРёРµ РѕР±РЅРѕРІР»РµРЅРёСЏ РёР· AniLibria
  */
 const getUpdates = async (req, res) => {
   try {
@@ -133,21 +133,21 @@ const getUpdates = async (req, res) => {
   } catch (error) {
     console.error('Error fetching updates from AniLibria:', error);
     
-    // Возвращаем тестовые данные при ошибке API
+    // Р’РѕР·РІСЂР°С‰Р°РµРј С‚РµСЃС‚РѕРІС‹Рµ РґР°РЅРЅС‹Рµ РїСЂРё РѕС€РёР±РєРµ API
     const mockData = [
       {
         id: 10027,
         names: {
-          ru: "Сведённые кукушкой 2",
+          ru: "РЎРІРµРґС‘РЅРЅС‹Рµ РєСѓРєСѓС€РєРѕР№ 2",
           en: "Kakkou no Iinazuke Season 2",
           alternative: null
         },
-        description: "Продолжение романтической комедии о перепутанных в роддоме детях.",
+        description: "РџСЂРѕРґРѕР»Р¶РµРЅРёРµ СЂРѕРјР°РЅС‚РёС‡РµСЃРєРѕР№ РєРѕРјРµРґРёРё Рѕ РїРµСЂРµРїСѓС‚Р°РЅРЅС‹С… РІ СЂРѕРґРґРѕРјРµ РґРµС‚СЏС….",
         type: { string: "TV", episodes: 12 },
-        status: { string: "В работе" },
-        genres: ["Комедия", "Романтика"],
+        status: { string: "Р’ СЂР°Р±РѕС‚Рµ" },
+        genres: ["РљРѕРјРµРґРёСЏ", "Р РѕРјР°РЅС‚РёРєР°"],
         year: 2025,
-        season: { string: "лето" },
+        season: { string: "Р»РµС‚Рѕ" },
         posters: {
           small: { url: "https://www.anilibria.tv/storage/releases/posters/10027/small.jpg" },
           medium: { url: "https://www.anilibria.tv/storage/releases/posters/10027/medium.jpg" },
@@ -157,7 +157,7 @@ const getUpdates = async (req, res) => {
           episodes: { last: 4 },
           list: {
             "1": {
-              name: "Кто был первой любовью Умино?",
+              name: "РљС‚Рѕ Р±С‹Р» РїРµСЂРІРѕР№ Р»СЋР±РѕРІСЊСЋ РЈРјРёРЅРѕ?",
               preview: "/storage/releases/episodes/previews/10027/1/preview.jpg",
               hls: {
                 fhd: "/videos/media/ts/10027/1/1080/video.m3u8",
@@ -172,16 +172,16 @@ const getUpdates = async (req, res) => {
       {
         id: 9984,
         names: {
-          ru: "Я переродился торговым автоматом и скитаюсь по лабиринту 2",
+          ru: "РЇ РїРµСЂРµСЂРѕРґРёР»СЃСЏ С‚РѕСЂРіРѕРІС‹Рј Р°РІС‚РѕРјР°С‚РѕРј Рё СЃРєРёС‚Р°СЋСЃСЊ РїРѕ Р»Р°Р±РёСЂРёРЅС‚Сѓ 2",
           en: "Jidou Hanbaiki ni Umarekawatta Ore wa Meikyuu wo Samayou 2nd Season",
           alternative: null
         },
-        description: "Продолжение приключений торгового автомата в фэнтезийном мире.",
+        description: "РџСЂРѕРґРѕР»Р¶РµРЅРёРµ РїСЂРёРєР»СЋС‡РµРЅРёР№ С‚РѕСЂРіРѕРІРѕРіРѕ Р°РІС‚РѕРјР°С‚Р° РІ С„СЌРЅС‚РµР·РёР№РЅРѕРј РјРёСЂРµ.",
         type: { string: "TV", episodes: null },
-        status: { string: "В работе" },
-        genres: ["Исекай", "Комедия", "Фэнтези"],
+        status: { string: "Р’ СЂР°Р±РѕС‚Рµ" },
+        genres: ["РСЃРµРєР°Р№", "РљРѕРјРµРґРёСЏ", "Р¤СЌРЅС‚РµР·Рё"],
         year: 2025,
-        season: { string: "лето" },
+        season: { string: "Р»РµС‚Рѕ" },
         posters: {
           small: { url: "https://www.anilibria.tv/storage/releases/posters/9984/small.jpg" },
           medium: { url: "https://www.anilibria.tv/storage/releases/posters/9984/medium.jpg" },
@@ -191,7 +191,7 @@ const getUpdates = async (req, res) => {
           episodes: { last: 5 },
           list: {
             "1": {
-              name: "План охотников",
+              name: "РџР»Р°РЅ РѕС…РѕС‚РЅРёРєРѕРІ",
               preview: "/storage/releases/episodes/previews/9984/1/preview.jpg",
               hls: {
                 fhd: "/videos/media/ts/9984/1/1080/video.m3u8",
@@ -218,7 +218,7 @@ const getUpdates = async (req, res) => {
 };
 
 /**
- * Поиск аниме в AniLibria
+ * РџРѕРёСЃРє Р°РЅРёРјРµ РІ AniLibria
  */
 const search = async (req, res) => {
   try {
@@ -236,7 +236,7 @@ const search = async (req, res) => {
       return res.status(HTTP_STATUS.BAD_REQUEST).json({
         success: false,
         error: {
-          message: 'Поисковый запрос должен содержать минимум 2 символа'
+          message: 'РџРѕРёСЃРєРѕРІС‹Р№ Р·Р°РїСЂРѕСЃ РґРѕР»Р¶РµРЅ СЃРѕРґРµСЂР¶Р°С‚СЊ РјРёРЅРёРјСѓРј 2 СЃРёРјРІРѕР»Р°'
         }
       });
     }
@@ -265,7 +265,7 @@ const search = async (req, res) => {
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: {
-        message: 'Ошибка при поиске аниме',
+        message: 'РћС€РёР±РєР° РїСЂРё РїРѕРёСЃРєРµ Р°РЅРёРјРµ',
         details: error.message
       }
     });
@@ -273,7 +273,7 @@ const search = async (req, res) => {
 };
 
 /**
- * Fallback поиск аниме с расширенными возможностями
+ * Fallback РїРѕРёСЃРє Р°РЅРёРјРµ СЃ СЂР°СЃС€РёСЂРµРЅРЅС‹РјРё РІРѕР·РјРѕР¶РЅРѕСЃС‚СЏРјРё
  */
 const searchFallback = async (req, res) => {
   try {
@@ -291,33 +291,33 @@ const searchFallback = async (req, res) => {
       return res.status(HTTP_STATUS.BAD_REQUEST).json({
         success: false,
         error: {
-          message: 'Поисковый запрос обязателен'
+          message: 'РџРѕРёСЃРєРѕРІС‹Р№ Р·Р°РїСЂРѕСЃ РѕР±СЏР·Р°С‚РµР»РµРЅ'
         }
       });
     }
 
-    // Используем метод searchWithFallback для более надежного поиска
+    // РСЃРїРѕР»СЊР·СѓРµРј РјРµС‚РѕРґ searchWithFallback РґР»СЏ Р±РѕР»РµРµ РЅР°РґРµР¶РЅРѕРіРѕ РїРѕРёСЃРєР°
     const result = await anilibriaService.searchWithFallback(
       query.trim(),
       parseInt(limit)
     );
 
-    // Если результат пустой, используем mock данные
+    // Р•СЃР»Рё СЂРµР·СѓР»СЊС‚Р°С‚ РїСѓСЃС‚РѕР№, РёСЃРїРѕР»СЊР·СѓРµРј mock РґР°РЅРЅС‹Рµ
     if (!result.data || result.data.length === 0) {
       const mockSearchResults = [
         {
           id: 9988,
           names: {
-            ru: "Труська, Чулко и пресвятой Подвяз 2",
+            ru: "РўСЂСѓСЃСЊРєР°, Р§СѓР»РєРѕ Рё РїСЂРµСЃРІСЏС‚РѕР№ РџРѕРґРІСЏР· 2",
             en: "New Panty & Stocking with Garterbelt",
             alternative: null
           },
-          description: "Продолжение приключений двух падших ангелов в Датэн-сити.",
+          description: "РџСЂРѕРґРѕР»Р¶РµРЅРёРµ РїСЂРёРєР»СЋС‡РµРЅРёР№ РґРІСѓС… РїР°РґС€РёС… Р°РЅРіРµР»РѕРІ РІ Р”Р°С‚СЌРЅ-СЃРёС‚Рё.",
           type: { string: "TV", episodes: 13 },
-          status: { string: "В работе" },
-          genres: ["Комедия", "Пародия", "Фэнтези", "Экшен"],
+          status: { string: "Р’ СЂР°Р±РѕС‚Рµ" },
+          genres: ["РљРѕРјРµРґРёСЏ", "РџР°СЂРѕРґРёСЏ", "Р¤СЌРЅС‚РµР·Рё", "Р­РєС€РµРЅ"],
           year: 2025,
-          season: { string: "лето" },
+          season: { string: "Р»РµС‚Рѕ" },
           posters: {
             small: { url: "https://www.anilibria.tv/storage/releases/posters/9988/small.jpg" },
             medium: { url: "https://www.anilibria.tv/storage/releases/posters/9988/medium.jpg" },
@@ -327,7 +327,7 @@ const searchFallback = async (req, res) => {
             episodes: { last: 4 },
             list: {
               "1": {
-                name: "Возвращение",
+                name: "Р’РѕР·РІСЂР°С‰РµРЅРёРµ",
                 preview: "/storage/releases/episodes/previews/9988/1/preview.jpg",
                 hls: {
                   fhd: "/videos/media/ts/9988/1/1080/video.m3u8",
@@ -369,21 +369,21 @@ const searchFallback = async (req, res) => {
   } catch (error) {
     console.error('Error in fallback search:', error);
     
-    // Возвращаем mock данные при полном отказе API
+    // Р’РѕР·РІСЂР°С‰Р°РµРј mock РґР°РЅРЅС‹Рµ РїСЂРё РїРѕР»РЅРѕРј РѕС‚РєР°Р·Рµ API
     const mockSearchResults = [
       {
         id: 9988,
         names: {
-          ru: "Труська, Чулко и пресвятой Подвяз 2",
+          ru: "РўСЂСѓСЃСЊРєР°, Р§СѓР»РєРѕ Рё РїСЂРµСЃРІСЏС‚РѕР№ РџРѕРґРІСЏР· 2",
           en: "New Panty & Stocking with Garterbelt",
           alternative: null
         },
-        description: "Продолжение приключений двух падших ангелов в Датэн-сити.",
+        description: "РџСЂРѕРґРѕР»Р¶РµРЅРёРµ РїСЂРёРєР»СЋС‡РµРЅРёР№ РґРІСѓС… РїР°РґС€РёС… Р°РЅРіРµР»РѕРІ РІ Р”Р°С‚СЌРЅ-СЃРёС‚Рё.",
         type: { string: "TV", episodes: 13 },
-        status: { string: "В работе" },
-        genres: ["Комедия", "Пародия", "Фэнтези", "Экшен"],
+        status: { string: "Р’ СЂР°Р±РѕС‚Рµ" },
+        genres: ["РљРѕРјРµРґРёСЏ", "РџР°СЂРѕРґРёСЏ", "Р¤СЌРЅС‚РµР·Рё", "Р­РєС€РµРЅ"],
         year: 2025,
-        season: { string: "лето" },
+        season: { string: "Р»РµС‚Рѕ" },
         posters: {
           small: { url: "https://www.anilibria.tv/storage/releases/posters/9988/small.jpg" },
           medium: { url: "https://www.anilibria.tv/storage/releases/posters/9988/medium.jpg" },
@@ -393,7 +393,7 @@ const searchFallback = async (req, res) => {
           episodes: { last: 4 },
           list: {
             "1": {
-              name: "Возвращение",
+              name: "Р’РѕР·РІСЂР°С‰РµРЅРёРµ",
               preview: "/storage/releases/episodes/previews/9988/1/preview.jpg",
               hls: {
                 fhd: "/videos/media/ts/9988/1/1080/video.m3u8",
@@ -424,7 +424,7 @@ const searchFallback = async (req, res) => {
 };
 
 /**
- * Получить информацию об аниме по ID
+ * РџРѕР»СѓС‡РёС‚СЊ РёРЅС„РѕСЂРјР°С†РёСЋ РѕР± Р°РЅРёРјРµ РїРѕ ID
  */
 const getById = async (req, res) => {
   try {
@@ -434,7 +434,7 @@ const getById = async (req, res) => {
       return res.status(HTTP_STATUS.BAD_REQUEST).json({
         success: false,
         error: {
-          message: 'ID аниме обязателен'
+          message: 'ID Р°РЅРёРјРµ РѕР±СЏР·Р°С‚РµР»РµРЅ'
         }
       });
     }
@@ -445,7 +445,7 @@ const getById = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_FOUND).json({
         success: false,
         error: {
-          message: 'Аниме не найдено'
+          message: 'РђРЅРёРјРµ РЅРµ РЅР°Р№РґРµРЅРѕ'
         }
       });
     }
@@ -459,7 +459,7 @@ const getById = async (req, res) => {
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: {
-        message: 'Ошибка при получении информации об аниме',
+        message: 'РћС€РёР±РєР° РїСЂРё РїРѕР»СѓС‡РµРЅРёРё РёРЅС„РѕСЂРјР°С†РёРё РѕР± Р°РЅРёРјРµ',
         details: error.message
       }
     });
@@ -467,7 +467,7 @@ const getById = async (req, res) => {
 };
 
 /**
- * Получить случайное аниме
+ * РџРѕР»СѓС‡РёС‚СЊ СЃР»СѓС‡Р°Р№РЅРѕРµ Р°РЅРёРјРµ
  */
 const getRandom = async (req, res) => {
   try {
@@ -486,7 +486,7 @@ const getRandom = async (req, res) => {
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: {
-        message: 'Ошибка при получении случайного аниме',
+        message: 'РћС€РёР±РєР° РїСЂРё РїРѕР»СѓС‡РµРЅРёРё СЃР»СѓС‡Р°Р№РЅРѕРіРѕ Р°РЅРёРјРµ',
         details: error.message
       }
     });
@@ -494,7 +494,7 @@ const getRandom = async (req, res) => {
 };
 
 /**
- * Получить жанры
+ * РџРѕР»СѓС‡РёС‚СЊ Р¶Р°РЅСЂС‹
  */
 const getGenres = async (req, res) => {
   try {
@@ -509,7 +509,7 @@ const getGenres = async (req, res) => {
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: {
-        message: 'Ошибка при получении жанров',
+        message: 'РћС€РёР±РєР° РїСЂРё РїРѕР»СѓС‡РµРЅРёРё Р¶Р°РЅСЂРѕРІ',
         details: error.message
       }
     });
@@ -517,7 +517,7 @@ const getGenres = async (req, res) => {
 };
 
 /**
- * Получить расписание
+ * РџРѕР»СѓС‡РёС‚СЊ СЂР°СЃРїРёСЃР°РЅРёРµ
  */
 const getSchedule = async (req, res) => {
   try {
@@ -536,7 +536,7 @@ const getSchedule = async (req, res) => {
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: {
-        message: 'Ошибка при получении расписания',
+        message: 'РћС€РёР±РєР° РїСЂРё РїРѕР»СѓС‡РµРЅРёРё СЂР°СЃРїРёСЃР°РЅРёСЏ',
         details: error.message
       }
     });
@@ -544,7 +544,7 @@ const getSchedule = async (req, res) => {
 };
 
 /**
- * Получить информацию о YouTube канале
+ * РџРѕР»СѓС‡РёС‚СЊ РёРЅС„РѕСЂРјР°С†РёСЋ Рѕ YouTube РєР°РЅР°Р»Рµ
  */
 const getYouTube = async (req, res) => {
   try {
@@ -563,7 +563,7 @@ const getYouTube = async (req, res) => {
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: {
-        message: 'Ошибка при получении данных YouTube',
+        message: 'РћС€РёР±РєР° РїСЂРё РїРѕР»СѓС‡РµРЅРёРё РґР°РЅРЅС‹С… YouTube',
         details: error.message
       }
     });

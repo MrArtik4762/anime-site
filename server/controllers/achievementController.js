@@ -1,11 +1,11 @@
-const Achievement = require('../models/Achievement');
+﻿const Achievement = require('../models/Achievement');
 const UserAchievement = require('../models/UserAchievement');
 const User = require('../models/User');
 const WatchList = require('../models/WatchList');
-const { HTTP_STATUS, ERROR_MESSAGES } = require('../../shared/constants/constants');
+const { HTTP_STATUS, ERROR_MESSAGES } = require('/app/shared/constants/constants');
 
 class AchievementController {
-  // Получение всех достижений для пользователя
+  // РџРѕР»СѓС‡РµРЅРёРµ РІСЃРµС… РґРѕСЃС‚РёР¶РµРЅРёР№ РґР»СЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
   async getUserAchievements(req, res) {
     try {
       const userId = req.user.id;
@@ -17,7 +17,7 @@ class AchievementController {
 
       const userAchievements = await UserAchievement.getUserAchievements(userId, options);
       
-      // Получаем статистику
+      // РџРѕР»СѓС‡Р°РµРј СЃС‚Р°С‚РёСЃС‚РёРєСѓ
       const stats = await UserAchievement.getUserStats(userId);
       const progressByCategory = await UserAchievement.getProgressByCategory(userId);
 
@@ -46,7 +46,7 @@ class AchievementController {
     }
   }
 
-  // Получение недавно разблокированных достижений
+  // РџРѕР»СѓС‡РµРЅРёРµ РЅРµРґР°РІРЅРѕ СЂР°Р·Р±Р»РѕРєРёСЂРѕРІР°РЅРЅС‹С… РґРѕСЃС‚РёР¶РµРЅРёР№
   async getRecentUnlocks(req, res) {
     try {
       const userId = req.user.id;
@@ -72,12 +72,12 @@ class AchievementController {
     }
   }
 
-  // Проверка прогресса достижений для пользователя
+  // РџСЂРѕРІРµСЂРєР° РїСЂРѕРіСЂРµСЃСЃР° РґРѕСЃС‚РёР¶РµРЅРёР№ РґР»СЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
   async checkAchievements(req, res) {
     try {
       const userId = req.user.id;
 
-      // Получаем статистику пользователя
+      // РџРѕР»СѓС‡Р°РµРј СЃС‚Р°С‚РёСЃС‚РёРєСѓ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
       const user = await User.findById(userId);
       const watchStats = await WatchList.getUserStats(userId);
       
@@ -86,10 +86,10 @@ class AchievementController {
         ...watchStats
       };
 
-      // Проверяем достижения
+      // РџСЂРѕРІРµСЂСЏРµРј РґРѕСЃС‚РёР¶РµРЅРёСЏ
       const newAchievements = await Achievement.checkUserAchievements(userId, userStats);
 
-      // Обновляем прогресс для всех активных достижений
+      // РћР±РЅРѕРІР»СЏРµРј РїСЂРѕРіСЂРµСЃСЃ РґР»СЏ РІСЃРµС… Р°РєС‚РёРІРЅС‹С… РґРѕСЃС‚РёР¶РµРЅРёР№
       const activeAchievements = await Achievement.find({ isActive: true });
       const progressUpdates = [];
 
@@ -132,8 +132,8 @@ class AchievementController {
           userStats
         },
         message: newAchievements.length > 0 ? 
-          `Разблокировано новых достижений: ${newAchievements.length}` : 
-          'Прогресс обновлен'
+          `Р Р°Р·Р±Р»РѕРєРёСЂРѕРІР°РЅРѕ РЅРѕРІС‹С… РґРѕСЃС‚РёР¶РµРЅРёР№: ${newAchievements.length}` : 
+          'РџСЂРѕРіСЂРµСЃСЃ РѕР±РЅРѕРІР»РµРЅ'
       });
 
     } catch (error) {
@@ -147,7 +147,7 @@ class AchievementController {
     }
   }
 
-  // Получение всех доступных достижений (каталог)
+  // РџРѕР»СѓС‡РµРЅРёРµ РІСЃРµС… РґРѕСЃС‚СѓРїРЅС‹С… РґРѕСЃС‚РёР¶РµРЅРёР№ (РєР°С‚Р°Р»РѕРі)
   async getAllAchievements(req, res) {
     try {
       const { category, rarity, showSecret = false } = req.query;
@@ -161,7 +161,7 @@ class AchievementController {
       const achievements = await Achievement.find(filter)
         .sort({ category: 1, rarity: 1, createdAt: 1 });
 
-      // Получаем прогресс пользователя для каждого достижения
+      // РџРѕР»СѓС‡Р°РµРј РїСЂРѕРіСЂРµСЃСЃ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РґР»СЏ РєР°Р¶РґРѕРіРѕ РґРѕСЃС‚РёР¶РµРЅРёСЏ
       const userAchievements = await UserAchievement.find({
         userId,
         achievementId: { $in: achievements.map(a => a._id) }
@@ -183,7 +183,7 @@ class AchievementController {
         };
       });
 
-      // Группируем по категориям
+      // Р“СЂСѓРїРїРёСЂСѓРµРј РїРѕ РєР°С‚РµРіРѕСЂРёСЏРј
       const categorizedAchievements = {};
       achievementsWithProgress.forEach(achievement => {
         if (!categorizedAchievements[achievement.category]) {
@@ -212,7 +212,7 @@ class AchievementController {
     }
   }
 
-  // Обновление прогресса достижения
+  // РћР±РЅРѕРІР»РµРЅРёРµ РїСЂРѕРіСЂРµСЃСЃР° РґРѕСЃС‚РёР¶РµРЅРёСЏ
   async updateProgress(req, res) {
     try {
       const { achievementName, increment = 1, metadata = {} } = req.body;
@@ -229,14 +229,14 @@ class AchievementController {
         return res.status(HTTP_STATUS.NOT_FOUND).json({
           success: false,
           error: {
-            message: 'Достижение не найдено'
+            message: 'Р”РѕСЃС‚РёР¶РµРЅРёРµ РЅРµ РЅР°Р№РґРµРЅРѕ'
           }
         });
       }
 
-      let message = 'Прогресс обновлен';
+      let message = 'РџСЂРѕРіСЂРµСЃСЃ РѕР±РЅРѕРІР»РµРЅ';
       if (userAchievement.isCompleted) {
-        message = `Достижение "${userAchievement.achievementId.title}" разблокировано!`;
+        message = `Р”РѕСЃС‚РёР¶РµРЅРёРµ "${userAchievement.achievementId.title}" СЂР°Р·Р±Р»РѕРєРёСЂРѕРІР°РЅРѕ!`;
       }
 
       res.json({
@@ -258,7 +258,7 @@ class AchievementController {
     }
   }
 
-  // Скрыть/показать достижение
+  // РЎРєСЂС‹С‚СЊ/РїРѕРєР°Р·Р°С‚СЊ РґРѕСЃС‚РёР¶РµРЅРёРµ
   async toggleAchievementVisibility(req, res) {
     try {
       const { achievementId } = req.params;
@@ -275,7 +275,7 @@ class AchievementController {
         return res.status(HTTP_STATUS.NOT_FOUND).json({
           success: false,
           error: {
-            message: 'Достижение пользователя не найдено'
+            message: 'Р”РѕСЃС‚РёР¶РµРЅРёРµ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РЅРµ РЅР°Р№РґРµРЅРѕ'
           }
         });
       }
@@ -285,7 +285,7 @@ class AchievementController {
         data: {
           userAchievement
         },
-        message: `Достижение ${isDisplayed ? 'показано' : 'скрыто'}`
+        message: `Р”РѕСЃС‚РёР¶РµРЅРёРµ ${isDisplayed ? 'РїРѕРєР°Р·Р°РЅРѕ' : 'СЃРєСЂС‹С‚Рѕ'}`
       });
 
     } catch (error) {
@@ -299,7 +299,7 @@ class AchievementController {
     }
   }
 
-  // Получение топа пользователей по достижениям
+  // РџРѕР»СѓС‡РµРЅРёРµ С‚РѕРїР° РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№ РїРѕ РґРѕСЃС‚РёР¶РµРЅРёСЏРј
   async getLeaderboard(req, res) {
     try {
       const { category, limit = 20 } = req.query;
@@ -378,7 +378,7 @@ class AchievementController {
     }
   }
 
-  // Вспомогательный метод для расчета прогресса
+  // Р’СЃРїРѕРјРѕРіР°С‚РµР»СЊРЅС‹Р№ РјРµС‚РѕРґ РґР»СЏ СЂР°СЃС‡РµС‚Р° РїСЂРѕРіСЂРµСЃСЃР°
   async calculateProgress(achievement, userId, userStats) {
     const { type, target, field } = achievement.criteria;
 

@@ -10,6 +10,10 @@ const FilterContainer = styled.div`
   border-radius: 12px;
   padding: 20px;
   width: 100%;
+  
+  @media (max-width: 768px) {
+    padding: 16px;
+  }
 `;
 
 const FilterHeader = styled.div`
@@ -24,6 +28,10 @@ const FilterTitle = styled.h3`
   font-weight: 600;
   color: ${props => props.theme.colors.text};
   margin: 0;
+  
+  @media (max-width: 768px) {
+    font-size: 1rem;
+  }
 `;
 
 const ToggleButton = styled.button`
@@ -60,6 +68,7 @@ const FilterGrid = styled.div`
   
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
+    gap: 12px;
   }
 `;
 
@@ -73,6 +82,10 @@ const FilterLabel = styled.label`
   font-size: 0.875rem;
   font-weight: 500;
   color: ${props => props.theme.colors.text};
+  
+  @media (max-width: 768px) {
+    font-size: 0.8125rem;
+  }
 `;
 
 const Select = styled.select`
@@ -94,6 +107,11 @@ const Select = styled.select`
     background: ${props => props.theme.colors.surface};
     color: ${props => props.theme.colors.text};
   }
+  
+  @media (max-width: 768px) {
+    padding: 8px 10px;
+    font-size: 0.8125rem;
+  }
 `;
 
 const CheckboxGroup = styled.div`
@@ -101,6 +119,12 @@ const CheckboxGroup = styled.div`
   flex-wrap: wrap;
   gap: 8px;
   margin-top: 8px;
+  
+  @media (max-width: 768px) {
+    max-height: 200px;
+    overflow-y: auto;
+    padding-right: 8px;
+  }
 `;
 
 const CheckboxItem = styled.label`
@@ -116,6 +140,7 @@ const CheckboxItem = styled.label`
   cursor: pointer;
   transition: all 0.3s ease;
   user-select: none;
+  white-space: nowrap;
   
   &:hover {
     background: ${props => props.checked ? props.theme.colors.primaryDark : props.theme.colors.border};
@@ -123,6 +148,11 @@ const CheckboxItem = styled.label`
   
   input {
     display: none;
+  }
+  
+  @media (max-width: 768px) {
+    padding: 4px 10px;
+    font-size: 0.7rem;
   }
 `;
 
@@ -147,6 +177,11 @@ const RangeInput = styled.input`
     outline: none;
     border-color: ${props => props.theme.colors.primary};
   }
+  
+  @media (max-width: 768px) {
+    padding: 6px 8px;
+    font-size: 0.8125rem;
+  }
 `;
 
 const RangeSeparator = styled.span`
@@ -161,6 +196,7 @@ const FilterActions = styled.div`
   
   @media (max-width: 768px) {
     justify-content: stretch;
+    gap: 8px;
     
     button {
       flex: 1;
@@ -171,6 +207,8 @@ const FilterActions = styled.div`
 const FilterPanel = ({ filters, onFilterChange }) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const [genres, setGenres] = useState([]);
+  const [isApplying, setIsApplying] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
   const [localFilters, setLocalFilters] = useState({
     genre: [],
     year: '',
@@ -216,10 +254,16 @@ const FilterPanel = ({ filters, onFilterChange }) => {
   };
 
   const applyFilters = () => {
-    onFilterChange(localFilters);
+    setIsApplying(true);
+    // Имитация задержки для демонстрации индикатора загрузки
+    setTimeout(() => {
+      onFilterChange(localFilters);
+      setIsApplying(false);
+    }, 300);
   };
 
   const resetFilters = () => {
+    setIsResetting(true);
     const resetFilters = {
       genre: [],
       year: '',
@@ -236,7 +280,11 @@ const FilterPanel = ({ filters, onFilterChange }) => {
       sortOrder: 'desc',
     };
     setLocalFilters(resetFilters);
-    onFilterChange(resetFilters);
+    // Имитация задержки для демонстрации индикатора загрузки
+    setTimeout(() => {
+      onFilterChange(resetFilters);
+      setIsResetting(false);
+    }, 300);
   };
 
   const currentYear = new Date().getFullYear();
@@ -376,11 +424,11 @@ const FilterPanel = ({ filters, onFilterChange }) => {
             )}
 
             <FilterActions>
-              <Button variant="outline" onClick={resetFilters}>
-                Сбросить
+              <Button variant="outline" onClick={resetFilters} disabled={isResetting}>
+                {isResetting ? 'Сброс...' : 'Сбросить'}
               </Button>
-              <Button onClick={applyFilters}>
-                Применить
+              <Button onClick={applyFilters} disabled={isApplying}>
+                {isApplying ? 'Применение...' : 'Применить'}
               </Button>
             </FilterActions>
           </FilterContent>

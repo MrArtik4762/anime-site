@@ -89,14 +89,18 @@ export const AuthProvider = ({ children }) => {
   };
 
   const register = async (userData) => {
+    console.log('🔍 CLIENT REGISTER DEBUG - UserData:', userData);
     dispatch({ type: 'AUTH_START' });
     try {
       const response = await authService.register(userData);
+      console.log('🔍 CLIENT REGISTER DEBUG - Response:', response);
       const { user, tokens } = response.data;
       localStorage.setItem('token', tokens.accessToken);
       dispatch({ type: 'AUTH_SUCCESS', payload: user });
       return { success: true };
     } catch (error) {
+      console.log('🔍 CLIENT REGISTER DEBUG - Error:', error);
+      console.log('🔍 CLIENT REGISTER DEBUG - Error response:', error.response);
       dispatch({ type: 'AUTH_FAILURE', payload: error.message });
       return { success: false, error: error.message };
     }
