@@ -1,0 +1,158 @@
+name: Auto Update README
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  schedule:
+    # Запуск каждый день в 2:00 UTC (5:00 по Мinsk)
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  update-readme:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        fetch-depth: 0  # Получаем всю историю для анализа коммитов
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: |
+        npm ci
+        cd scripts && npm ci
+    
+    - name: Update README.md
+      run: |
+        node scripts/update-readme.js
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Check if README was updated
+      id: check-readme
+      run: |
+        if git diff --quiet HEAD -- README.md; then
+          echo "readme-updated=false" >> $GITHUB_OUTPUT
+          echo "README.md не требует обновления"
+        else
+          echo "readme-updated=true" >> $GITHUB_OUTPUT
+          echo "README.md был обновлен"
+        fi
+    
+    - name: Commit and push README changes
+      if: steps.check-readme.outputs.readme-updated == 'true'
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add README.md
+        git diff --staged --quiet || git commit -m "docs: auto-update README.md [skip ci]"
+        git push
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Create Pull Request for README updates
+      if: github.event_name == 'schedule' && steps.check-readme.outputs.readme-updated == 'true'
+      uses: peter-evans/create-pull-request@v5
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        commit-message: "docs: auto-update README.md [skip ci]"
+        title: "📝 Автоматическое обновление README.md"
+        body: |
+          ## 📝 Автоматическое обновление README.md
+          
+          Это автоматическое обновление README.md, выполненное по расписанию.
+          
+          ### Что было обновлено:
+          - Раздел "Недавние обновления"
+          - Статистика проекта
+          - Информация о последних коммитах
+          - Даты и версии
+          
+          ### 🤖 Сгенерировано действием:
+          `update-readme.yml`
+          
+          ---
+          *Это PR был создан автоматически. Пожалуйста, проверьте изменения перед слиянием.*
+        branch: "auto-update-readme"
+        branch-suffix: "timestamp"
+        delete-branch: true
+
+  update-changelog:
+    runs-on: ubuntu-latest
+    needs: update-readme
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        fetch-depth: 0
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: |
+        npm ci
+        cd scripts && npm ci
+    
+    - name: Prepare commit
+      run: |
+        node scripts/prepare-commit.js update
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Check if CHANGELOG was updated
+      id: check-changelog
+      run: |
+        if [ -f CHANGELOG.md ]; then
+          if git diff --quiet HEAD -- CHANGELOG.md; then
+            echo "changelog-updated=false" >> $GITHUB_OUTPUT
+            echo "CHANGELOG.md не требует обновления"
+          else
+            echo "changelog-updated=true" >> $GITHUB_OUTPUT
+            echo "CHANGELOG.md был обновлен"
+          fi
+        else
+          echo "changelog-updated=false" >> $GITHUB_OUTPUT
+          echo "CHANGELOG.md не существует"
+        fi
+    
+    - name: Commit and push CHANGELOG changes
+      if: steps.check-changelog.outputs.changelog-updated == 'true'
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add CHANGELOG.md
+        git diff --staged --quiet || git commit -m "docs: auto-update CHANGELOG.md [skip ci]"
+        git push
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  notify:
+    runs-on: ubuntu-latest
+    needs: [update-readme, update-changelog]
+    if: always()
+    
+    steps:
+    - name: Notify status
+      run: |
+        if [[ "${{ needs.update-readme.result }}" == "success" && "${{ needs.update-changelog.result }}" == "success" ]]; then
+          echo "✅ Все задания успешно выполнены"
+        else
+          echo "❌ Некоторые задания завершились с ошибкой"
+          exit 1
+        fi

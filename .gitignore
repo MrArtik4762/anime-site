@@ -121,3 +121,8 @@ build/
 # OS files
 .DS_Store
 Thumbs.db
+
+# Temporary files for README update scripts
+README_TEMP.md
+*.tmp
+temp/
