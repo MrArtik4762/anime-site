@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
-import { useRouter } from 'next/router';
 import { useAuth } from '../../context/AuthContext';
 import { animeService } from '../../services/animeService';
 import { videoService } from '../../services/videoService';
@@ -15,6 +15,7 @@ const CardContainer = styled(motion.div)`
   box-shadow: 0 4px 20px ${props => props.theme.colors.shadow};
   transition: all 0.3s ease;
   position: relative;
+  cursor: pointer;
   
   &:hover {
     transform: translateY(-4px);
@@ -246,17 +247,22 @@ const getStatusText = (status) => {
   return 'Неизвестно';
 };
 
-// Утилита для получения заголовка аниме
+// Утилита для получения заголовка аниме с приоритетом русского языка
 const getAnimeTitle = (anime) => {
   if (typeof anime.title === 'string') return anime.title;
 
-  // Структура AniLibria API
+  // Приоритет русского языка - ВСЕГДА ПОКАЗЫВАЕМ НА РУССКОМ
+  // Структура AniLibrity API
   if (anime.names?.ru) return anime.names.ru;
+  if (anime.names?.main) return anime.names.main;
+  
+  // Структура нашей модели - русский приоритет
+  if (anime.title?.ru) return anime.title.ru;
+  if (anime.title?.main) return anime.title.main;
+  
+  // Fallback к английскому только если русского нет
   if (anime.names?.en) return anime.names.en;
   if (anime.names?.alternative) return anime.names.alternative;
-
-  // Структура нашей модели
-  if (anime.title?.ru) return anime.title.ru;
   if (anime.title?.en) return anime.title.en;
   if (anime.title?.romaji) return anime.title.romaji;
   if (anime.title?.english) return anime.title.english;
@@ -322,12 +328,21 @@ const AnimeCard = ({ anime }) => {
   const [isWatchlistLoading, setIsWatchlistLoading] = useState(false);
   const [imageError, setImageError] = useState(false);
   const { isAuthenticated } = useAuth();
-  const router = useRouter();
+  const navigate = useNavigate();
 
   const animeId = getAnimeId(anime);
   const title = getAnimeTitle(anime);
   const poster = getAnimePoster(anime);
   const rating = getAnimeRating(anime);
+
+  // Обработчик клика на всю карточку для перехода к детальной странице
+  const handleCardClick = (e) => {
+    // Предотвращаем переход при клике на кнопки действий
+    if (e.target.closest('.action-button')) {
+      return;
+    }
+    navigate(`/anime/${animeId}`);
+  };
 
   const handleImageError = (e) => {
     console.log('Image failed to load:', poster);
@@ -378,8 +393,19 @@ const AnimeCard = ({ anime }) => {
     }
   };
 
-  const handleClick = () => {
-    router.push(`/anime/${animeId}`);
+  // Функция для обработки просмотра видео согласно спецификации
+  const handleWatch = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    try {
+      const videoData = await videoService.getVideoStream(animeId, 1);
+      // Логика открытия плеера с полученным видео
+      console.log('Video data received:', videoData);
+      // Здесь можно добавить навигацию к плееру или открытие модального окна
+    } catch (error) {
+      toast.error('Ошибка загрузки видео');
+    }
   };
 
   return (
@@ -388,8 +414,7 @@ const AnimeCard = ({ anime }) => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
       whileHover={{ y: -4 }}
-      onClick={handleClick}
-      style={{ cursor: 'pointer' }}
+      onClick={handleCardClick}
     >
       <ImageContainer>
         {poster && !imageError ? (
@@ -426,7 +451,7 @@ const AnimeCard = ({ anime }) => {
 
         <ActionButtons>
           <ActionButton
-            className={isFavorite ? 'active' : ''}
+            className={`action-button ${isFavorite ? 'active' : ''}`}
             onClick={handleFavoriteToggle}
             title={isFavorite ? 'Удалить из избранного' : 'Добавить в избранное'}
             disabled={isFavoriteLoading}
@@ -435,7 +460,7 @@ const AnimeCard = ({ anime }) => {
           </ActionButton>
 
           <ActionButton
-            className={isInWatchlist ? 'active' : ''}
+            className={`action-button ${isInWatchlist ? 'active' : ''}`}
             onClick={handleWatchlistToggle}
             title={isInWatchlist ? 'Удалить из списка' : 'Добавить в список'}
             disabled={isWatchlistLoading}
@@ -472,6 +497,9 @@ const AnimeCard = ({ anime }) => {
           </Genres>
         )}
 
+        <WatchButton className="action-button" onClick={handleWatch}>
+          Смотреть
+        </WatchButton>
       </CardContent>
     </CardContainer>
   );

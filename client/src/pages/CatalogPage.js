@@ -4,10 +4,11 @@ import styled from 'styled-components';
 import { animeService } from '../services/animeService';
 import anilibriaService from '../services/anilibriaService';
 import jikanService from '../services/jikanService'; // Добавляем импорт
+import { anilibriaV2Service } from '../services/anilibriaV2Service';
 import { Container, Grid, LoadingSpinner } from '../styles/GlobalStyles';
 import AnimeCard from '../components/anime/AnimeCard';
-import SearchBar from '../components/common/SearchBar';
-import FilterPanel from '../components/common/FilterPanel';
+import AdvancedSearchBar from '../components/common/AdvancedSearchBar';
+import AdvancedFilterPanel from '../components/common/AdvancedFilterPanel';
 
 const CatalogContainer = styled.div`
   min-height: 100vh;
@@ -411,12 +412,12 @@ const CatalogPage = ({ filter }) => {
         <Header>
           <Title>{getPageTitle()}</Title>
           <Subtitle>{getPageSubtitle()}</Subtitle>
-          {!filter && <SearchBar onSearch={handleSearch} />}
+          {!filter && <AdvancedSearchBar onSearch={handleSearch} />}
         </Header>
 
         {!filter && (
           <FiltersSection>
-            <FilterPanel filters={filters} onFilterChange={handleFilterChange} />
+            <AdvancedFilterPanel filters={filters} onFilterChange={handleFilterChange} resultCount={totalCount} />
           </FiltersSection>
         )}
 

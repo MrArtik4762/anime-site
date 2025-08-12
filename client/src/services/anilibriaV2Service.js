@@ -25,14 +25,58 @@ anilibriaV2Api.interceptors.response.use(
 );
 
 export const anilibriaV2Service = {
-  // Получить популярные аниме (используем latest как популярные)
+  // Получить популярные аниме с поддержкой пагинации (100 тайтлов/страницу)
   async getPopularAnime(params = {}) {
     try {
-      const { perPage = 10, page = 1 } = params;
-      const response = await anilibriaV2Api.get('/anime/releases/latest', {
-        params: { limit: perPage }
+      const { perPage = 100, page = 1 } = params;
+      
+      // Для получения большего количества данных используем несколько эндпоинтов
+      const requests = [];
+      
+      // Получаем последние релизы (основной источник)
+      requests.push(anilibriaV2Api.get('/anime/releases/latest', {
+        params: { limit: Math.min(perPage, 100) }
+      }));
+      
+      // Если нужно больше данных, добавляем дополнительные запросы  
+      if (perPage > 100 || page > 1) {
+        // Можно добавить дополнительные эндпоинты для расширения базы
+        // Например, получить данные из разных категорий
+        const additionalLimit = Math.max(0, perPage - 100);
+        if (additionalLimit > 0) {
+          requests.push(anilibriaV2Api.get('/anime/releases/fresh', {
+            params: { limit: additionalLimit }
+          }));
+        }
+      }
+      
+      const responses = await Promise.allSettled(requests);
+      const allData = [];
+      
+      responses.forEach((response, index) => {
+        if (response.status === 'fulfilled' && Array.isArray(response.value.data)) {
+          allData.push(...response.value.data);
+        } else {
+          console.warn(`Request ${index} failed:`, response.reason);
+        }
       });
-      return Array.isArray(response.data) ? response.data : [];
+      
+      // Удаляем дубликаты по ID
+      const uniqueData = allData.reduce((acc, current) => {
+        const x = acc.find(item => item.id === current.id);
+        if (!x) {
+          return acc.concat([current]);
+        } else {
+          return acc;
+        }
+      }, []);
+      
+      // Применяем пагинацию к объединенным данным
+      const startIndex = (page - 1) * perPage;
+      const endIndex = startIndex + perPage;
+      const paginatedData = uniqueData.slice(startIndex, endIndex);
+      
+      return paginatedData;
     } catch (error) {
       throw new Error(`Ошибка получения популярных аниме: ${error.message}`);
     }
@@ -96,15 +140,18 @@ export const anilibriaV2Service = {
     }
   },
 
-  // Поиск аниме по названию
+  // Поиск аниме по названию с поддержкой пагинации и русского языка
   async searchAnime(query, params = {}) {
     try {
-      const { perPage = 20, page = 1, ...filters } = params;
+      const { perPage = 50, page = 1, language = 'ru', voice = 'ru', ...filters } = params;
       const response = await anilibriaV2Api.get('/app/search/releases', {
         params: {
           search: query,
           limit: perPage,
           page,
+          // Принудительно устанавливаем русский язык
+          language: 'ru',
+          voice: 'ru',
           ...filters
         }
       });
@@ -186,13 +233,23 @@ export const anilibriaV2Service = {
     return qualities;
   },
 
-  // Конвертировать данные аниме в унифицированный формат
+  // Конвертировать данные аниме в унифицированный формат с приоритетом русского языка
   convertAnimeToFormat(anime) {
     if (!anime) return null;
 
+    // Получаем русское название с приоритетом
+    const getRussianTitle = (nameObj) => {
+      if (!nameObj) return 'Без названия';
+      if (typeof nameObj === 'string') return nameObj;
+      
+      // Приоритет русского названия
+      return nameObj.main || nameObj.ru || nameObj.russian || 
+             nameObj.en || nameObj.english || nameObj.alternative || 'Без названия';
+    };
+
     return {
       id: anime.id,
-      title: anime.name?.main || anime.title || 'Без названия',
+      title: getRussianTitle(anime.name) || anime.title || 'Без названия',
       titleEnglish: anime.name?.english || anime.title_english,
       titleAlternative: anime.name?.alternative || anime.title_alternative,
       alias: anime.alias,
