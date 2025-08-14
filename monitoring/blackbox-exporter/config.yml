@@ -1,0 +1,173 @@
+modules:
+  http_2xx:
+    prober: http
+    timeout: 5s
+    http:
+      valid_http_versions: ["HTTP/1.1", "HTTP/2"]
+      valid_status_codes: []  # Defaults to 2xx
+      method: GET
+      headers:
+        Host: example.com
+      no_redirect: false
+      fail_if_ssl: false
+      fail_if_not_ssl: false
+      tls_config:
+        insecure_skip_verify: false
+
+  http_post_2xx:
+    prober: http
+    timeout: 5s
+    http:
+      method: POST
+      headers:
+        Content-Type: application/json
+      body: '{}'
+
+  tcp_connect:
+    prober: tcp
+    timeout: 5s
+
+  pop3s_banner:
+    prober: tcp
+    timeout: 5s
+    tcp:
+      query_response:
+        - expect: "^+OK"
+      tls: true
+      tls_config:
+        insecure_skip_verify: false
+
+  ssh_banner:
+    prober: tcp
+    timeout: 5s
+    tcp:
+      query_response:
+        - expect: "^SSH-2.0-"
+
+  irc_banner:
+    prober: tcp
+    timeout: 5s
+    tcp:
+      query_response:
+        - expect: "^001"
+
+  icmp:
+    prober: icmp
+    timeout: 5s
+    icmp:
+      preferred_ip_protocol: ipv4
+
+  dns_soa:
+    prober: dns
+    timeout: 5s
+    dns:
+      query_name: "kubernetes.default.svc.cluster.local"
+      query_type: "SOA"
+
+  # Проверки для anime-site
+  anime-site-api:
+    prober: http
+    timeout: 10s
+    http:
+      valid_http_versions: ["HTTP/1.1", "HTTP/2"]
+      valid_status_codes: [200]
+      method: GET
+      headers:
+        Host: anime-site.local
+        User-Agent: "Blackbox Exporter Health Check"
+      no_redirect: false
+      fail_if_ssl: false
+      fail_if_not_ssl: false
+      tls_config:
+        insecure_skip_verify: true
+      expected_content:
+        - "anime"
+        - "site"
+
+  anime-site-health:
+    prober: http
+    timeout: 5s
+    http:
+      valid_http_versions: ["HTTP/1.1", "HTTP/2"]
+      valid_status_codes: [200]
+      method: GET
+      headers:
+        Host: anime-site.local
+      no_redirect: false
+      fail_if_ssl: false
+      fail_if_not_ssl: false
+      tls_config:
+        insecure_skip_verify: true
+      path: "/health"
+
+  anime-site-metrics:
+    prober: http
+    timeout: 5s
+    http:
+      valid_http_versions: ["HTTP/1.1", "HTTP/2"]
+      valid_status_codes: [200]
+      method: GET
+      headers:
+        Host: anime-site.local
+      no_redirect: false
+      fail_if_ssl: false
+      fail_if_not_ssl: false
+      tls_config:
+        insecure_skip_verify: true
+      path: "/metrics"
+
+  # Проверки баз данных
+  postgresql:
+    prober: tcp
+    timeout: 5s
+    tcp:
+      address: "postgres:5432"
+
+  mysql:
+    prober: tcp
+    timeout: 5s
+    tcp:
+      address: "mysql:3306"
+
+  redis:
+    prober: tcp
+    timeout: 5s
+    tcp:
+      address: "redis:6379"
+
+  # Проверки внешних сервисов
+  google_dns:
+    prober: icmp
+    timeout: 5s
+    icmp:
+      preferred_ip_protocol: ipv4
+
+  cloudflare:
+    prober: http
+    timeout: 5s
+    http:
+      valid_http_versions: ["HTTP/1.1", "HTTP/2"]
+      valid_status_codes: [200]
+      method: GET
+      headers:
+        Host: cloudflare.com
+      no_redirect: false
+      fail_if_ssl: false
+      fail_if_not_ssl: false
+      tls_config:
+        insecure_skip_verify: true
+
+  github:
+    prober: http
+    timeout: 5s
+    http:
+      valid_http_versions: ["HTTP/1.1", "HTTP/2"]
+      valid_status_codes: [200]
+      method: GET
+      headers:
+        Host: github.com
+      no_redirect: false
+      fail_if_ssl: false
+      fail_if_not_ssl: false
+      tls_config:
+        insecure_skip_verify: true

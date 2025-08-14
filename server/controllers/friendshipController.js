@@ -1,6 +1,6 @@
 ﻿const Friendship = require('../models/Friendship');
 const User = require('../models/User');
-const { HTTP_STATUS, ERROR_MESSAGES } = require('/app/shared/constants/constants');
+const { HTTP_STATUS, ERROR_MESSAGES } = require('../../shared/constants/constants');
 
 class FriendshipController {
   // РџРѕР»СѓС‡РµРЅРёРµ СЃРїРёСЃРєР° РґСЂСѓР·РµР№

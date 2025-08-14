@@ -4,6 +4,7 @@
   "description": "Frontend React приложение для аниме-сайта",
   "private": true,
   "dependencies": {
+    "@tanstack/react-query": "^5.0.0",
     "axios": "^1.11.0",
     "dashjs": "^4.7.0",
     "framer-motion": "^10.12.4",
@@ -19,19 +20,32 @@
     "react-router-dom": "^6.8.1",
     "react-scripts": "5.0.1",
     "styled-components": "^5.3.9",
-    "video.js": "^8.0.4"
+    "video.js": "^8.0.4",
+    "@sentry/react": "^7.60.1",
+    "@sentry/tracing": "^7.60.1",
+    "react-error-boundary": "^4.0.11"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^5.16.5",
+    "@testing-library/react": "^13.4.0",
+    "@testing-library/user-event": "^14.4.3",
     "eslint": "^8.57.1",
     "eslint-config-react-app": "^7.0.1",
     "eslint-plugin-jsx-a11y": "^6.10.2",
     "eslint-plugin-react": "^7.37.5",
-    "eslint-plugin-react-hooks": "^5.2.0"
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "jest": "^29.5.0",
+    "jest-environment-jsdom": "^29.5.0",
+    "jest-styled-components": "^7.1.1",
+    "react-test-renderer": "^18.2.0"
   },
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
+    "test:watch": "react-scripts test --watch",
+    "test:coverage": "react-scripts test --coverage",
+    "test:debug": "react-scripts test --runInBand --env=jsdom",
     "eject": "react-scripts eject",
     "lint": "eslint src/",
     "lint:fix": "eslint src/ --fix",

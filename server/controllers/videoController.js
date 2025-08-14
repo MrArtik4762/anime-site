@@ -3,7 +3,7 @@ const { promisify } = require('util');
 const redis = require('../config/redis');
 const { createError } = require('../utils/errors');
 const { metrics } = require('../utils/metrics');
-const { HTTP_STATUS, ERROR_MESSAGES } = require('/app/shared/constants/constants');
+const { HTTP_STATUS, ERROR_MESSAGES } = require('../../shared/constants/constants');
 
 const CACHE_TTL = 3600; // 1 С‡Р°СЃ
 const get = promisify(redis.get).bind(redis);

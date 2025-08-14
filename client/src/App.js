@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { HelmetProvider } from 'react-helmet-async';
 import { AuthProvider } from './context/AuthContext';
-import { ThemeProvider, useTheme } from './context/ThemeContext';
+import { ThemeProvider, useTheme } from './components/common/ThemeProvider';
 import { GlobalStyles } from './styles/GlobalStyles';
 
 // Components
@@ -16,6 +16,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import AnimePage from './pages/AnimePage';
 import WatchPage from './pages/WatchPage';
+import PlayerPage from './pages/PlayerPage';
 import ProfilePage from './pages/ProfilePage';
 import CatalogPageV2 from './pages/CatalogPageV2';
 import AdminPage from './pages/AdminPage';
@@ -77,6 +78,7 @@ function App() {
                 <Route path="/latest" element={<CatalogPageV2 filter="latest" />} />
                 <Route path="/anime/:id" element={<AnimePage />} />
                 <Route path="/watch/:episodeId" element={<WatchPage />} />
+                <Route path="/episode/:episodeId" element={<PlayerPage />} />
                 {/* Обратная совместимость со старым форматом */}
                 <Route path="/watch/:animeId/:episodeId" element={<WatchPage />} />
                 <Route path="/demo/video-player" element={<VideoPlayerDemo />} />

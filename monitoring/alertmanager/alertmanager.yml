@@ -1,0 +1,139 @@
+global:
+  # SMTP настройки для email уведомлений
+  smtp_smarthost: 'localhost:587'
+  smtp_from: 'alerts@anime-site.com'
+  smtp_auth_username: 'alerts@anime-site.com'
+  smtp_auth_password: 'your-smtp-password'
+
+# Файл с шаблонами уведомлений
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'
+
+# Настройка маршрутизации
+route:
+  # Группируем оповещения по имени
+  group_by: ['alertname', 'severity']
+  
+  # Ждем 10 секунд перед отправкой первого уведомления в группе
+  group_wait: 10s
+  
+  # Ждем 10 секунд между отправками уведомлений в той же группе
+  group_interval: 10s
+  
+  # Повторяем каждые 1 час для активных оповещений
+  repeat_interval: 1h
+  
+  # Отправляем все оповещения по умолчанию в receiver 'web.hook'
+  receiver: 'web.hook'
+  
+  # Маршруты для специфических оповещений
+  routes:
+    # Критические ошибки отправляем всем
+    - match:
+        severity: critical
+      receiver: 'critical'
+      continue: true
+    
+    # Ошибки базы данных отправляем DevOps
+    - match:
+        alertname: "DatabaseConnectionIssues"
+      receiver: 'devops'
+      continue: true
+    
+    # Ошибки API отправляем разработчикам
+    - match:
+        alertname: "HighErrorRate"
+      receiver: 'developers'
+      continue: true
+
+# Настройка получателей
+receivers:
+  # Вебхук для Slack
+  - name: 'web.hook'
+    email_configs:
+      - to: 'team@anime-site.com'
+        subject: 'Anime Site Alert'
+        body: |
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Labels: {{ .Labels }}
+          {{ end }}
+    
+    slack_configs:
+      - api_url: 'YOUR_SLACK_WEBHOOK_URL'
+        channel: '#alerts'
+        title: 'Anime Site Alert'
+        text: '{{ range .Alerts }}{{ .Annotations.summary }}{{ end }}'
+        color: '{{ if eq .Labels.severity "critical" }}danger{{ else if eq .Labels.severity "warning" }}warning{{ else }}good{{ end }}'
+    
+    # Pushover уведомления (опционально)
+    pushover_configs:
+      - user_key: 'YOUR_PUSHOVER_USER_KEY'
+        api_token: 'YOUR_PUSHOVER_API_TOKEN'
+        title: 'Anime Site Alert'
+        message: '{{ range .Alerts }}{{ .Annotations.summary }}{{ end }}'
+
+  # Критические ошибки
+  - name: 'critical'
+    email_configs:
+      - to: 'emergency@anime-site.com'
+        subject: 'CRITICAL: {{ .GroupLabels.alertname }}'
+        body: |
+          {{ range .Alerts }}
+          CRITICAL ALERT: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          {{ end }}
+    
+    slack_configs:
+      - api_url: 'YOUR_CRITICAL_SLACK_WEBHOOK_URL'
+        channel: '#critical-alerts'
+        title: '🚨 CRITICAL ALERT'
+        text: '{{ range .Alerts }}{{ .Annotations.summary }}{{ end }}'
+        color: 'danger'
+    
+    # Telegram уведомления (опционально)
+    telegram_configs:
+      - bot_token: 'YOUR_TELEGRAM_BOT_TOKEN'
+        chat_id: 'YOUR_TELEGRAM_CHAT_ID'
+        message: |
+          🚨 CRITICAL ALERT: {{ .GroupLabels.alertname }}
+          {{ range .Alerts }}
+          {{ .Annotations.summary }}
+          {{ end }}
+
+  # DevOps команда
+  - name: 'devops'
+    email_configs:
+      - to: 'devops@anime-site.com'
+        subject: 'DevOps Alert: {{ .GroupLabels.alertname }}'
+        body: |
+          {{ range .Alerts }}
+          DevOps Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          {{ end }}
+
+  # Разработчики
+  - name: 'developers'
+    email_configs:
+      - to: 'developers@anime-site.com'
+        subject: 'Developer Alert: {{ .GroupLabels.alertname }}'
+        body: |
+          {{ range .Alerts }}
+          Developer Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          {{ end }}
+
+# Ингибирование (подавление) дублирующих оповещений
+inhibit_rules:
+  # Подавляем критические оповещения, если сервис уже в нерабочем состоянии
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'dev', 'instance']
+
+# Время хранения оповещений
+# По умолчанию 120 часов (5 дней)
+# Можно переопределить для конкретных оповещений
+# retention: 120h

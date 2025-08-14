@@ -1,0 +1,245 @@
+groups:
+  - name: anime-site-service
+    interval: 30s
+    rules:
+      # High error rate
+      - alert: HighErrorRate
+        expr: sum(rate(anime_site_http_requests_total{status=~"5.."}[5m])) by (route) > 0.1
+        for: 5m
+        labels:
+          severity: critical
+          category: http
+        annotations:
+          summary: "High error rate in {{ $labels.route }}"
+          description: "Error rate is {{ $value }} errors per second for route {{ $labels.route }}"
+
+      # High response time
+      - alert: HighResponseTime
+        expr: histogram_quantile(0.95, rate(anime_site_http_request_duration_seconds_bucket[5m])) > 5
+        for: 5m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "High response time in {{ $labels.route }}"
+          description: "95th percentile response time is {{ $value }} seconds for route {{ $labels.route }}"
+
+      # Low cache hit rate
+      - alert: LowCacheHitRate
+        expr: anime_site_cache_hit_rate < 0.7
+        for: 10m
+        labels:
+          severity: warning
+          category: cache
+        annotations:
+          summary: "Low cache hit rate"
+          description: "Cache hit rate is {{ $value }}"
+
+      # Service down
+      - alert: ServiceDown
+        expr: up{job="anime-site-server"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          category: availability
+        annotations:
+          summary: "Anime Site service is down"
+          description: "Service has been down for more than 1 minute"
+
+      # Database connection issues
+      - alert: DatabaseConnectionIssues
+        expr: anime_site_db_operations_total{status="error"} / anime_site_db_operations_total{status="success"} > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          category: database
+        annotations:
+          summary: "Database connection issues"
+          description: "Error rate is {{ $value }} for database operations"
+
+      # Redis connection issues
+      - alert: RedisConnectionIssues
+        expr: anime_site_redis_operations_total{status="error"} / anime_site_redis_operations_total{status="success"} > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          category: cache
+        annotations:
+          summary: "Redis connection issues"
+          description: "Error rate is {{ $value }} for Redis operations"
+
+      # High memory usage
+      - alert: HighMemoryUsage
+        expr: process_resident_memory_bytes{job="anime-site-server"} / process_virtual_memory_bytes{job="anime-site-server"} > 0.9
+        for: 5m
+        labels:
+          severity: warning
+          category: resources
+        annotations:
+          summary: "High memory usage"
+          description: "Memory usage is {{ $value | humanizePercentage }}"
+
+      # High CPU usage
+      - alert: HighCPUUsage
+        expr: 100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+          category: resources
+        annotations:
+          summary: "High CPU usage"
+          description: "CPU usage is {{ $value | humanizePercentage }}"
+
+      # Disk space usage
+      - alert: DiskSpaceUsage
+        expr: (1 - (node_filesystem_avail_bytes / node_filesystem_size_bytes)) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          category: resources
+        annotations:
+          summary: "High disk space usage"
+          description: "Disk usage is {{ $value | humanizePercentage }}"
+
+      # Too many open files
+      - alert: TooManyOpenFiles
+        expr: process_open_fds{job="anime-site-server"} > 1000
+        for: 5m
+        labels:
+          severity: warning
+          category: resources
+        annotations:
+          summary: "Too many open files"
+          description: "Number of open files is {{ $value }}"
+
+      # High error rate in database operations
+      - alert: HighDatabaseErrorRate
+        expr: sum(rate(anime_site_db_operations_total{status="error"}[5m])) by (operation) > 0.1
+        for: 5m
+        labels:
+          severity: critical
+          category: database
+        annotations:
+          summary: "High error rate in database operations"
+          description: "Error rate is {{ $value }} errors per second for operation {{ $labels.operation }}"
+
+      # High error rate in Redis operations
+      - alert: HighRedisErrorRate
+        expr: sum(rate(anime_site_redis_operations_total{status="error"}[5m])) by (operation) > 0.1
+        for: 5m
+        labels:
+          severity: critical
+          category: cache
+        annotations:
+          summary: "High error rate in Redis operations"
+          description: "Error rate is {{ $value }} errors per second for operation {{ $labels.operation }}"
+
+      # High error rate in external API calls
+      - alert: HighExternalAPIErrorRate
+        expr: sum(rate(anime_site_api_response_time_seconds{status_code=~"5.."}[5m])) by (api_name) > 0.1
+        for: 5m
+        labels:
+          severity: critical
+          category: external
+        annotations:
+          summary: "High error rate in external API calls"
+          description: "Error rate is {{ $value }} errors per second for API {{ $labels.api_name }}"
+
+      # Slow external API responses
+      - alert: SlowExternalAPIResponse
+        expr: histogram_quantile(0.95, rate(anime_site_api_response_time_seconds_bucket[5m])) by (api_name) > 10
+        for: 5m
+        labels:
+          severity: warning
+          category: external
+        annotations:
+          summary: "Slow external API responses"
+          description: "95th percentile response time is {{ $value }} seconds for API {{ $labels.api_name }}"
+
+      # High number of errors
+      - alert: HighErrorCount
+        expr: sum(rate(anime_site_errors_total[5m])) by (type, severity) > 1
+        for: 5m
+        labels:
+          severity: critical
+          category: errors
+        annotations:
+          summary: "High error count"
+          description: "Error rate is {{ $value }} errors per second for type {{ $labels.type }} and severity {{ $labels.severity }}"
+
+      # Health check failures
+      - alert: HealthCheckFailure
+        expr: anime_site_health_check_status{component=~".*", status="unhealthy"} == 1
+        for: 1m
+        labels:
+          severity: critical
+          category: health
+        annotations:
+          summary: "Health check failure"
+          description: "Health check failed for component {{ $labels.component }}"
+
+      # WebSocket connection issues
+      - alert: WebSocketConnectionIssues
+        expr: rate(anime_site_websocket_messages_total{direction="in"}[5m]) < 0.1
+        for: 5m
+        labels:
+          severity: warning
+          category: websocket
+        annotations:
+          summary: "Low WebSocket activity"
+          description: "WebSocket message rate is {{ $value }} messages per second"
+
+      # User login failures
+      - alert: HighLoginFailureRate
+        expr: sum(rate(anime_site_user_logins_total{success="false"}[5m])) / sum(rate(anime_site_user_logins_total[5m])) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          category: security
+        annotations:
+          summary: "High login failure rate"
+          description: "Login failure rate is {{ $value | humanizePercentage }}"
+
+      # Registration rate
+      - alert: HighRegistrationRate
+        expr: sum(rate(anime_site_user_registrations_total[5m])) > 1
+        for: 5m
+        labels:
+          severity: warning
+          category: security
+        annotations:
+          summary: "High registration rate"
+          description: "Registration rate is {{ $value }} registrations per second"
+
+      # Anime view rate
+      - alert: HighAnimeViewRate
+        expr: sum(rate(anime_site_anime_views_total[5m])) > 10
+        for: 5m
+        labels:
+          severity: info
+          category: business
+        annotations:
+          summary: "High anime view rate"
+          description: "Anime view rate is {{ $value }} views per second"
+
+      # Episode play rate
+      - alert: HighEpisodePlayRate
+        expr: sum(rate(anime_site_episode_plays_total[5m])) > 5
+        for: 5m
+        labels:
+          severity: info
+          category: business
+        annotations:
+          summary: "High episode play rate"
+          description: "Episode play rate is {{ $value }} plays per second"
+
+      # Search query rate
+      - alert: HighSearchQueryRate
+        expr: sum(rate(anime_site_search_queries_total[5m])) > 20
+        for: 5m
+        labels:
+          severity: info
+          category: business
+        annotations:
+          summary: "High search query rate"
+          description: "Search query rate is {{ $value }} queries per second"

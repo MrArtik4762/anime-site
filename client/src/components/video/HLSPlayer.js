@@ -235,6 +235,123 @@ const LiveIndicator = styled.div`
   }
 `;
 
+const SubtitleTrack = styled.div`
+  position: absolute;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 16px;
+  max-width: 80%;
+  text-align: center;
+  line-height: 1.4;
+  display: ${props => props.visible ? 'block' : 'none'};
+`;
+
+const SubtitleSelector = styled.select`
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  margin-left: 10px;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
+
+  option {
+    background: #333;
+    color: white;
+  }
+`;
+
+const PlaybackRateSelector = styled.select`
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  margin-left: 10px;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
+
+  option {
+    background: #333;
+    color: white;
+  }
+`;
+
+const SettingsButton = styled.button`
+  background: none;
+  border: none;
+  color: white;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+  position: relative;
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+`;
+
+const SettingsMenu = styled.div`
+  position: absolute;
+  bottom: 100%;
+  right: 0;
+  background: rgba(0, 0, 0, 0.9);
+  border-radius: 8px;
+  padding: 10px;
+  margin-bottom: 10px;
+  min-width: 200px;
+  display: ${props => props.visible ? 'block' : 'none'};
+  z-index: 1000;
+
+  .menu-item {
+    margin-bottom: 10px;
+    
+    label {
+      display: block;
+      color: white;
+      font-size: 12px;
+      margin-bottom: 5px;
+    }
+    
+    select, button {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: white;
+      padding: 5px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      
+      &:hover {
+        background: rgba(255, 255, 255, 0.2);
+      }
+    }
+  }
+
+  .menu-divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.2);
+    margin: 10px 0;
+  }
+`;
+
 const HLSPlayer = ({
   src,
   poster,
@@ -255,6 +372,8 @@ const HLSPlayer = ({
   maxBufferLength = 30,
   maxMaxBufferLength = 600,
   liveSyncDurationCount = 3,
+  subtitles = [],
+  playbackRates = [0.5, 0.75, 1, 1.25, 1.5, 2],
 }) => {
   const videoRef = useRef(null);
   const hlsRef = useRef(null);
@@ -274,6 +393,10 @@ const HLSPlayer = ({
   const [availableQualities, setAvailableQualities] = useState([]);
   const [isLive, setIsLive] = useState(false);
   const [networkInfo, setNetworkInfo] = useState({});
+  const [currentSubtitle, setCurrentSubtitle] = useState(null);
+  const [showSubtitles, setShowSubtitles] = useState(true);
+  const [playbackRate, setPlaybackRate] = useState(1);
+  const [showSettings, setShowSettings] = useState(false);
 
   // Скрытие контролов через 3 секунды бездействия
   const hideControlsTimeout = useRef(null);
@@ -304,11 +427,26 @@ const HLSPlayer = ({
   }, [src]);
 
   const initializeHLS = () => {
-    if (!Hls.isSupported()) {
-      // Fallback для браузеров без поддержки MSE
-      if (videoRef.current.canPlayType('application/vnd.apple.mpegurl')) {
+    // Проверка поддержки нативного HLS (для Safari)
+    const isSafari = /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
+    const hasNativeHLS = videoRef.current.canPlayType('application/vnd.apple.mpegurl');
+    
+    if (!Hls.isSupported() || isSafari) {
+      // Fallback для Safari и браузеров без поддержки MSE
+      if (hasNativeHLS) {
+        console.log('Используем нативный HLS для Safari');
         videoRef.current.src = src;
         setupVideoEvents();
+        
+        // Обработка ошибок для нативного HLS
+        videoRef.current.addEventListener('error', (e) => {
+          console.error('Ошибка нативного HLS:', e);
+          if (e.target.error && e.target.error.code === e.target.error.MEDIA_ERR_SRC_NOT_SUPPORTED) {
+            setError('Источник видео не поддерживается');
+          } else if (e.target.error && e.target.error.code === e.target.error.MEDIA_ERR_NETWORK) {
+            setError('Ошибка сети при загрузке видео');
+          }
+        });
       } else {
         setError('HLS не поддерживается в этом браузере');
       }
@@ -552,6 +690,49 @@ const HLSPlayer = ({
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
+  // Обработка субтитров
+  const handleSubtitleChange = (e) => {
+    const selectedIndex = parseInt(e.target.value);
+    if (selectedIndex === -1) {
+      setCurrentSubtitle(null);
+      videoRef.current.textTracks = [];
+    } else if (subtitles[selectedIndex]) {
+      setCurrentSubtitle(subtitles[selectedIndex]);
+      // Здесь можно добавить логику для загрузки субтитров
+      console.log('Выбраны субтитры:', subtitles[selectedIndex]);
+    }
+  };
+
+  // Переключение субтитров
+  const toggleSubtitles = () => {
+    setShowSubtitles(!showSubtitles);
+  };
+
+  // Изменение скорости воспроизведения
+  const handlePlaybackRateChange = (e) => {
+    const newRate = parseFloat(e.target.value);
+    setPlaybackRate(newRate);
+    if (videoRef.current) {
+      videoRef.current.playbackRate = newRate;
+    }
+  };
+
+  // Переключение скорости воспроизведения
+  const cyclePlaybackRate = () => {
+    const currentIndex = playbackRates.indexOf(playbackRate);
+    const nextIndex = (currentIndex + 1) % playbackRates.length;
+    const nextRate = playbackRates[nextIndex];
+    setPlaybackRate(nextRate);
+    if (videoRef.current) {
+      videoRef.current.playbackRate = nextRate;
+    }
+  };
+
+  // Переключение меню настроек
+  const toggleSettings = () => {
+    setShowSettings(!showSettings);
+  };
+
   // Горячие клавиши
   useHotkeys('space', (e) => {
     e.preventDefault();
@@ -572,6 +753,9 @@ const HLSPlayer = ({
   });
   useHotkeys('m', toggleMute);
   useHotkeys('f', toggleFullscreen);
+  useHotkeys('c', cyclePlaybackRate);
+  useHotkeys('s', toggleSubtitles);
+  useHotkeys('o', toggleSettings);
 
   // Форматирование времени
   const formatTime = (time) => {
@@ -613,6 +797,10 @@ const HLSPlayer = ({
       <QualityBadge visible={controlsVisible}>
         {currentQuality}
       </QualityBadge>
+
+      <SubtitleTrack visible={showSubtitles && currentSubtitle}>
+        {currentSubtitle?.text || 'Субтитры недоступны'}
+      </SubtitleTrack>
 
       {isLoading && <LoadingSpinner />}
 
@@ -670,11 +858,56 @@ const HLSPlayer = ({
             />
           </VolumeContainer>
 
+          <PlaybackRateSelector value={playbackRate} onChange={handlePlaybackRateChange}>
+            {playbackRates.map(rate => (
+              <option key={rate} value={rate}>
+                {rate}x
+              </option>
+            ))}
+          </PlaybackRateSelector>
+
+          <SettingsButton onClick={toggleSettings}>
+            ⚙️
+          </SettingsButton>
+
           <FullscreenButton onClick={toggleFullscreen}>
             {isFullscreen ? '⛶' : '⛶'}
           </FullscreenButton>
         </ControlsBar>
       </ControlsOverlay>
+
+      <SettingsMenu visible={showSettings}>
+        <div className="menu-item">
+          <label>Субтитры</label>
+          <select value={currentSubtitle ? subtitles.indexOf(currentSubtitle) : -1} onChange={handleSubtitleChange}>
+            <option value={-1}>Выключить</option>
+            {subtitles.map((subtitle, index) => (
+              <option key={index} value={index}>
+                {subtitle.label || `Субтитры ${index + 1}`}
+              </option>
+            ))}
+          </select>
+        </div>
+        
+        <div className="menu-divider"></div>
+        
+        <div className="menu-item">
+          <label>Скорость воспроизведения</label>
+          <select value={playbackRate} onChange={handlePlaybackRateChange}>
+            {playbackRates.map(rate => (
+              <option key={rate} value={rate}>
+                {rate}x
+              </option>
+            ))}
+          </select>
+        </div>
+        
+        <div className="menu-item">
+          <button onClick={toggleSubtitles}>
+            {showSubtitles ? 'Выключить субтитры' : 'Включить субтитры'}
+          </button>
+        </div>
+      </SettingsMenu>
     </PlayerContainer>
   );
 };

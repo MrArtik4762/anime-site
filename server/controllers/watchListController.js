@@ -1,36 +1,40 @@
-﻿const WatchList = require('../models/WatchList');
+﻿const WatchList = require('../models/WatchListKnex');
+const WatchProgress = require('../models/WatchProgressKnex');
 const Anime = require('../models/Anime');
-const { HTTP_STATUS, ERROR_MESSAGES } = require('/app/shared/constants/constants');
-const mongoose = require('mongoose');
+const { HTTP_STATUS, ERROR_MESSAGES } = require('../../shared/constants/constants');
+const knex = require('../db/knex');
 
 class WatchListController {
   // РџРѕР»СѓС‡РµРЅРёРµ СЃРїРёСЃРєР° РїСЂРѕСЃРјРѕС‚СЂР° РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
   async getWatchList(req, res) {
     try {
-      const { status, page = 1, limit = 20, sort = 'lastWatched', order = 'desc' } = req.query;
+      const { status, page = 1, limit = 20, sort = 'last_watched', order = 'desc' } = req.query;
       const userId = req.user.id;
 
       // РџРѕСЃС‚СЂРѕРµРЅРёРµ С„РёР»СЊС‚СЂР°
-      const filter = { userId };
+      const filter = { user_id: userId };
       if (status) {
         filter.status = status;
       }
 
       // РџРѕСЃС‚СЂРѕРµРЅРёРµ СЃРѕСЂС‚РёСЂРѕРІРєРё
-      const sortOrder = order === 'desc' ? -1 : 1;
-      const sortObj = {};
-      sortObj[sort] = sortOrder;
+      const sortOrder = order === 'desc' ? 'desc' : 'asc';
+      const sortBy = sort === 'lastWatched' ? 'last_watched' : sort;
 
       // Р’С‹РїРѕР»РЅРµРЅРёРµ Р·Р°РїСЂРѕСЃР°
       const skip = (parseInt(page) - 1) * parseInt(limit);
       
       const [watchList, total] = await Promise.all([
-        WatchList.find(filter)
-          .populate('animeId', 'title images rating episodes status type year genres')
-          .sort(sortObj)
-          .skip(skip)
-          .limit(parseInt(limit)),
-        WatchList.countDocuments(filter)
+        WatchList.findByUserAndStatus(userId, status || 'all', {
+          sort: [[sortBy, sortOrder]],
+          limit: parseInt(limit),
+          skip: skip
+        }),
+        // Для подсчета общего количества записей
+        knex('watchlist')
+          .where('user_id', userId)
+          .count('* as count')
+          .then(result => parseInt(result[0].count))
       ]);
 
       const totalPages = Math.ceil(total / parseInt(limit));
@@ -61,25 +65,16 @@ class WatchListController {
     }
   }
 
-  // Р”РѕР±Р°РІР»РµРЅРёРµ Р°РЅРёРјРµ РІ СЃРїРёСЃРѕРє РїСЂРѕСЃРјРѕС‚СЂР°
+  // Р"РѕР±Р°РІР»РµРЅРёРµ Р°РЅРёРјРµ РІ СЃРїРёСЃРѕРє РїСЂРѕСЃРјРѕС‚СЂР°
   async addToWatchList(req, res) {
     try {
       const { animeId } = req.params;
       const { status, rating, notes, priority, isPrivate } = req.body;
       const userId = req.user.id;
 
-      if (!mongoose.Types.ObjectId.isValid(animeId)) {
-        return res.status(HTTP_STATUS.BAD_REQUEST).json({
-          success: false,
-          error: {
-            message: 'РќРµРІРµСЂРЅС‹Р№ ID Р°РЅРёРјРµ'
-          }
-        });
-      }
-
       // РџСЂРѕРІРµСЂСЏРµРј СЃСѓС‰РµСЃС‚РІРѕРІР°РЅРёРµ Р°РЅРёРјРµ
-      const anime = await Anime.findById(animeId).where({ isActive: true, approved: true });
-      if (!anime) {
+      const anime = await Anime.findById(animeId);
+      if (!anime || !anime.is_active || !anime.approved) {
         return res.status(HTTP_STATUS.NOT_FOUND).json({
           success: false,
           error: {
@@ -89,7 +84,7 @@ class WatchListController {
       }
 
       // РџСЂРѕРІРµСЂСЏРµРј, РЅРµ РґРѕР±Р°РІР»РµРЅРѕ Р»Рё СѓР¶Рµ Р°РЅРёРјРµ РІ СЃРїРёСЃРѕРє
-      const existingEntry = await WatchList.findOne({ userId, animeId });
+      const existingEntry = await WatchList.findUserEntry(userId, animeId);
       if (existingEntry) {
         return res.status(HTTP_STATUS.BAD_REQUEST).json({
           success: false,
@@ -100,21 +95,23 @@ class WatchListController {
       }
 
       // РЎРѕР·РґР°РµРј РЅРѕРІСѓСЋ Р·Р°РїРёСЃСЊ
-      const watchListEntry = new WatchList({
-        userId,
-        animeId,
+      const watchListData = {
+        user_id: userId,
+        anime_id: animeId,
         status,
         rating,
         notes,
         priority,
-        isPrivate,
-        startDate: status === 'watching' ? new Date() : undefined
-      });
+        is_private: isPrivate,
+        start_date: status === 'watching' ? new Date() : null,
+        progress: {
+          episodes_watched: 0,
+          current_episode: 1,
+          time_watched: 0
+        }
+      };
 
-      await watchListEntry.save();
-
-      // Р—Р°РїРѕР»РЅСЏРµРј РґР°РЅРЅС‹Рµ Р°РЅРёРјРµ РґР»СЏ РѕС‚РІРµС‚Р°
-      await watchListEntry.populate('animeId', 'title images rating episodes status type');
+      const watchListEntry = await WatchList.create(watchListData);
 
       res.status(HTTP_STATUS.CREATED).json({
         success: true,
@@ -126,17 +123,6 @@ class WatchListController {
 
     } catch (error) {
       console.error('Add to watch list error:', error);
-      
-      if (error.name === 'ValidationError') {
-        return res.status(HTTP_STATUS.BAD_REQUEST).json({
-          success: false,
-          error: {
-            message: 'РћС€РёР±РєР° РІР°Р»РёРґР°С†РёРё РґР°РЅРЅС‹С…',
-            details: Object.values(error.errors).map(err => err.message)
-          }
-        });
-      }
-
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
         success: false,
         error: {

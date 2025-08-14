@@ -1,0 +1,651 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: helper <helper@example.com>
+Date: Wed, 13 Aug 2025 00:00:00 +0000
+Subject: [PATCH] add hls proxy, episode route, docker, client components, CI
+
+---
+ server/routes/episode.js                    | 159 +
+ server/routes/proxy.js                      | 174 +
+ server/index.js                             | 104 +
+ server/Dockerfile                            | 10 +
+ server/db/init.sql                           | 25 +
+ client/Dockerfile                            | 14 +
+ docker-compose.yml                           | 86 +
+ client/tailwind.config.js                    | 11 +
+ client/postcss.config.js                     | 10 +
+ client/src/components/VideoPlayer.jsx        | 72 +
+ client/src/components/Navbar.jsx             | 22 +
+ client/src/pages/HomePage.jsx                | 40 +
+ client/src/pages/PlayerPage.jsx              | 66 +
+ client/src/components/AnimeCard.jsx          | 36 +
+ client/src/App.jsx                           | 38 +
+ .github/workflows/ci.yml                     | 34 +
+ 16 files changed, 901 insertions(+)
+ create mode 100644 server/routes/episode.js
+ create mode 100644 server/routes/proxy.js
+ create mode 100644 server/index.js
+ create mode 100644 server/Dockerfile
+ create mode 100644 server/db/init.sql
+ create mode 100644 client/Dockerfile
+ create mode 100644 docker-compose.yml
+ create mode 100644 client/tailwind.config.js
+ create mode 100644 client/postcss.config.js
+ create mode 100644 client/src/components/VideoPlayer.jsx
+ create mode 100644 client/src/components/Navbar.jsx
+ create mode 100644 client/src/pages/HomePage.jsx
+ create mode 100644 client/src/pages/PlayerPage.jsx
+ create mode 100644 client/src/components/AnimeCard.jsx
+ create mode 100644 client/src/App.jsx
+ create mode 100644 .github/workflows/ci.yml
+--- a/server/routes/episode.js
++++ b/server/routes/episode.js
+@@ -0,0 +1,159 @@
++/**
++ * server/routes/episode.js
++ *
++ * Endpoint: GET /api/episode/:id
++ * - Запрашивает данные эпизода у внешнего API (ANILIBERTY_API_BASE)
++ * - Кэширует ответ в Redis (если указан REDIS_URL)
++ * - Возвращает фронтенду унифицированную структуру:
++ *   { id, title, description, sources: [{ url, quality, subtitles }], sourceUrl }
++ */
++
++const express = require('express');
++const axios = require('axios');
++
++const router = express.Router();
++
++// Попытка подключить Redis, но не фейлить если его нет
++let redis = null;
++try {
++  const Redis = require('ioredis');
++  const REDIS_URL = process.env.REDIS_URL || null;
++  if (REDIS_URL) redis = new Redis(REDIS_URL);
++} catch (e) {
++  // no redis installed / configured — fallback to no-cache mode
++  redis = null;
++}
++
++const ANILIB_BASE = process.env.ANILIBERTY_API_BASE || process.env.ANILIB_API_BASE || 'https://anilibria.top/api';
++const CACHE_TTL = parseInt(process.env.EPISODE_CACHE_TTL, 10) || 60 * 5; // 5 мин
++
++async function fetchWithCache(key, url, opts = {}) {
++  if (redis) {
++    try {
++      const cached = await redis.get(key);
++      if (cached) return JSON.parse(cached);
++    } catch (err) {
++      // ignore redis errors and continue to fetch fresh
++      console.warn('redis read error', err?.message || err);
++    }
++  }
++
++  const res = await axios.get(url, opts);
++  const data = res.data;
++
++  if (redis) {
++    try {
++      await redis.set(key, JSON.stringify(data), 'EX', CACHE_TTL);
++    } catch (err) {
++      console.warn('redis set error', err?.message || err);
++    }
++  }
++
++  return data;
++}
++
++// Utility: safe encode external urls into our proxy endpoint
++function proxiedUrlFor(src) {
++  if (!src) return null;
++  return `/api/proxy?url=${encodeURIComponent(src)}`;
++}
++
++router.get('/episode/:id', async (req, res) => {
++  const id = req.params.id;
++  if (!id) return res.status(400).json({ error: 'missing id' });
++
++  const cacheKey = `episode:${id}`;
++  try {
++    // NOTE: адаптируй endpoint под актуальный путь AniLib/Anilibria
++    const url = `${ANILIB_BASE}/v1/episode/${encodeURIComponent(id)}`; // проверь реальный путь API
++    const apiOpts = {
++      headers: {
++        'User-Agent': process.env.SERVER_USER_AGENT || 'anime-site-proxy/1.0',
++        Accept: 'application/json'
++      },
++      timeout: 10000
++    };
++
++    const data = await fetchWithCache(cacheKey, url, apiOpts);
++
++    // --- МАППИНГ ответа в общий вид ---
++    const sourcesRaw = data.sources || data.media || [];
++    const sources = Array.isArray(sourcesRaw) ? sourcesRaw.map(s => ({
++      url: proxiedUrlFor(s.url || s.file || s.link),
++      quality: s.quality || s.label || s.resolution || 'auto',
++      type: s.type || 'hls',
++      subtitles: Array.isArray(s.subtitles || s.subs) ? (s.subtitles || s.subs).map(sub => ({
++        lang: sub.lang || sub.language || 'unknown',
++        url: proxiedUrlFor(sub.url || sub.file || sub.link),
++        label: sub.label || sub.lang || sub.language || 'subs'
++      })) : []
++    })) : [];
++
++    const result = {
++      id,
++      title: data.title || data.name || data.anime?.title || null,
++      description: data.description || data.synopsis || null,
++      sources,
++      sourceUrl: data.url || data.source || data.origin || data.anime?.url || null,
++      raw: data // include raw for debugging; remove in prod if desired
++    };
++
++    return res.json(result);
++  } catch (err) {
++    console.error('GET /api/episode/:id error', err?.response?.status, err?.message || err);
++    const status = err?.response?.status || 500;
++    return res.status(502).json({ error: 'failed to fetch episode data', status });
++  }
++});
++
++module.exports = router;
++
+--- a/server/routes/proxy.js
++++ b/server/routes/proxy.js
+@@ -0,0 +1,174 @@
++/**
++ * server/routes/proxy.js
++ *
++ * Endpoint: GET /api/proxy?url=<external_url>
++ * - Проксирует m3u8/.ts и другие файлы через сервер
++ * - Форвардит Range и User-Agent (важно для HLS)
++ * - Добавляет CORS заголовки, и при возможности проксирует заголовки контента upstream
++ */
++
++const express = require('express');
++const axios = require('axios');
++const { URL } = require('url');
++
++const router = express.Router();
++
++// Optional whitelist from env (comma-separated)
++const WHITELIST = (process.env.PROXY_WHITELIST || '').split(',').map(s => s.trim()).filter(Boolean);
++
++function isAllowedTarget(targetUrl) {
++  try {
++    const u = new URL(targetUrl);
++    if (u.protocol !== 'http:' && u.protocol !== 'https:') return false;
++    if (WHITELIST.length === 0) return true; // allow all when no whitelist configured
++    return WHITELIST.some(domain => u.hostname.endsWith(domain));
++  } catch (e) {
++    return false;
++  }
++}
++
++router.get('/proxy', async (req, res) => {
++  const target = req.query.url;
++  if (!target) return res.status(400).send('missing url parameter');
++
++  if (!isAllowedTarget(target)) {
++    return res.status(403).send('forbidden target');
++  }
++
++  // Build headers to upstream: forward Range + basic headers
++  const forwardHeaders = {
++    'User-Agent': req.get('User-Agent') || 'anime-site-proxy',
++    Accept: '*/*',
++    Referer: req.get('Referer') || '',
++  };
++  if (req.get('Range')) forwardHeaders['Range'] = req.get('Range');
++
++  // Request upstream as stream
++  try {
++    const upstream = await axios.get(target, {
++      headers: forwardHeaders,
++      responseType: 'stream',
++      validateStatus: (s) => s < 500,
++      timeout: parseInt(process.env.PROXY_TIMEOUT_MS || '20000', 10)
++    });
++
++    // Set CORS headers so browser can fetch .m3u8/.ts via this endpoint
++    res.set({
++      'Access-Control-Allow-Origin': process.env.CORS_ALLOW_ORIGIN || '*',
++      'Access-Control-Allow-Headers': 'Range,Content-Type',
++      'Access-Control-Expose-Headers': 'Content-Length,Content-Range,Accept-Ranges',
++      'Cache-Control': 'no-cache'
++    });
++
++    // Copy relevant upstream headers (content-type, content-range, content-length, accept-ranges)
++    const copyHeaders = ['content-type', 'content-length', 'content-range', 'accept-ranges', 'etag', 'last-modified'];
++    copyHeaders.forEach(h => {
++      const v = upstream.headers[h];
++      if (v) res.setHeader(h, v);
++    });
++
++    // If upstream returned non-2xx (e.g., 404) — proxy status code
++    if (upstream.status >= 400 && upstream.status < 500) {
++      res.status(upstream.status);
++    }
++
++    // Pipe stream
++    upstream.data.pipe(res);
++    upstream.data.on('error', (err) => {
++      console.error('upstream stream error', err?.message || err);
++      try { if (!res.headersSent) res.status(502).end(); else res.end(); } catch (e) {}
++    });
++  } catch (err) {
++    console.error('proxy fetch error', err?.message || err);
++    const upstreamStatus = err?.response?.status;
++    if (upstreamStatus) return res.status(upstreamStatus).send(err?.response?.statusText || 'upstream error');
++    return res.status(502).send('bad gateway');
++  }
++});
++
++module.exports = router;
++
+--- a/server/index.js
++++ b/server/index.js
+@@ -0,0 +1,104 @@
++const express = require('express');
++const morgan = require('morgan');
++const cors = require('cors');
++const path = require('path');
++
++const episodeRouter = require('./routes/episode');
++const proxyRouter = require('./routes/proxy');
++
++const app = express();
++app.use(morgan('dev'));
++app.use(express.json());
++app.use(cors({ origin: true, allowedHeaders: ['Content-Type', 'Range'] }));
++
++app.get('/api/status', (req, res) => res.json({ status: 'ok', ts: new Date().toISOString() }));
++
++app.use('/api', episodeRouter);
++app.use('/api', proxyRouter);
++
++// Serve client in production
++if (process.env.NODE_ENV === 'production') {
++  app.use(express.static(path.join(__dirname, '..', 'client', 'dist')));
++  app.get('*', (req, res) => {
++    res.sendFile(path.join(__dirname, '..', 'client', 'dist', 'index.html'));
++  });
++}
++
++const PORT = process.env.PORT || 5000;
++app.listen(PORT, () => console.log(`Server listening on ${PORT}`));
++
+--- a/server/Dockerfile
++++ b/server/Dockerfile
+@@ -0,0 +1,10 @@
++FROM node:18-alpine
++WORKDIR /app
++COPY package*.json ./
++RUN npm ci --production
++COPY . .
++ENV NODE_ENV=production
++EXPOSE 5000
++CMD ["node", "index.js"]
++
+--- a/server/db/init.sql
++++ b/server/db/init.sql
+@@ -0,0 +1,25 @@
++-- server/db/init.sql
++CREATE EXTENSION IF NOT EXISTS "pgcrypto";
++
++CREATE TABLE IF NOT EXISTS users (
++  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
++  email TEXT UNIQUE,
++  password_hash TEXT,
++  created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
++);
++
++CREATE TABLE IF NOT EXISTS watch_progress (
++  id SERIAL PRIMARY KEY,
++  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
++  episode_id TEXT NOT NULL,
++  position_seconds INTEGER NOT NULL DEFAULT 0,
++  duration_seconds INTEGER DEFAULT 0,
++  updated_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
++  UNIQUE(user_id, episode_id)
++);
++
+--- a/client/Dockerfile
++++ b/client/Dockerfile
+@@ -0,0 +1,14 @@
++FROM node:18-alpine AS build
++WORKDIR /app
++COPY package*.json ./
++RUN npm ci
++COPY . .
++RUN npm run build
++
++FROM nginx:alpine
++COPY --from=build /app/dist /usr/share/nginx/html
++EXPOSE 80
++CMD ["nginx", "-g", "daemon off;"]
++
+--- a/docker-compose.yml
++++ b/docker-compose.yml
+@@ -0,0 +1,86 @@
++version: '3.8'
++services:
++  postgres:
++    image: postgres:15-alpine
++    restart: unless-stopped
++    environment:
++      POSTGRES_USER: anime
++      POSTGRES_PASSWORD: animepass
++      POSTGRES_DB: anime_db
++    volumes:
++      - pgdata:/var/lib/postgresql/data
++    ports:
++      - "5432:5432"
++
++  redis:
++    image: redis:7-alpine
++    restart: unless-stopped
++    ports:
++      - "6379:6379"
++
++  server:
++    build: ./server
++    restart: unless-stopped
++    environment:
++      NODE_ENV: development
++      PORT: 5000
++      ANILIBERTY_API_BASE: "https://anilibria.top/api"
++      REDIS_URL: "redis://redis:6379"
++      DATABASE_URL: "postgresql://anime:animepass@postgres:5432/anime_db"
++      PROXY_WHITELIST: "anilibria.top,anilibria.cc,cdn.example.com"
++      CORS_ALLOW_ORIGIN: "*"
++    depends_on:
++      - redis
++      - postgres
++    ports:
++      - "5000:5000"
++    volumes:
++      - ./server:/app
++    command: ["node","index.js"]
++
++  client:
++    build: ./client
++    restart: unless-stopped
++    ports:
++      - "3000:80"
++    depends_on:
++      - server
++    volumes:
++      - ./client:/app
++
++volumes:
++  pgdata:
++
+--- a/client/tailwind.config.js
++++ b/client/tailwind.config.js
+@@ -0,0 +1,11 @@
++module.exports = {
++  content: ['./index.html', './src/**/*.{js,jsx,ts,tsx}'],
++  theme: {
++    extend: {},
++  },
++  plugins: [],
++};
++
+--- a/client/postcss.config.js
++++ b/client/postcss.config.js
+@@ -0,0 +1,10 @@
++module.exports = {
++  plugins: {
++    tailwindcss: {},
++    autoprefixer: {},
++  },
++};
++
+--- a/client/src/components/VideoPlayer.jsx
++++ b/client/src/components/VideoPlayer.jsx
+@@ -0,0 +1,72 @@
++import React, { useRef, useEffect } from 'react';
++import PropTypes from 'prop-types';
++import Hls from 'hls.js';
++
++/**
++ * VideoPlayer
++ */
++export default function VideoPlayer({ src, poster = '', subtitles = [], onError = () => {} }) {
++  const videoRef = useRef(null);
++  const hlsRef = useRef(null);
++
++  useEffect(() => {
++    const video = videoRef.current;
++    if (!video) return;
++
++    if (hlsRef.current) {
++      try { hlsRef.current.destroy(); } catch {}
++      hlsRef.current = null;
++    }
++
++    if (!src) {
++      video.removeAttribute('src');
++      video.load();
++      return;
++    }
++
++    if (Hls.isSupported()) {
++      const hls = new Hls();
++      hlsRef.current = hls;
++      hls.attachMedia(video);
++      hls.on(Hls.Events.MEDIA_ATTACHED, () => {
++        hls.loadSource(src);
++      });
++      hls.on(Hls.Events.ERROR, (event, data) => {
++        console.error('hls error', data);
++        onError(data);
++      });
++    } else {
++      video.src = src;
++    }
++
++    return () => {
++      if (hlsRef.current) {
++        try { hlsRef.current.destroy(); } catch {}
++        hlsRef.current = null;
++      }
++    };
++  }, [src]);
++
++  return (
++    <div className="w-full bg-black">
++      <video ref={videoRef} controls poster={poster} className="w-full" crossOrigin="anonymous" />
++      {subtitles.map((s, i) => (
++        <track key={i} kind="subtitles" srcLang={s.lang || 'ru'} src={s.url} label={s.label || s.lang} default={i === 0} />
++      ))}
++    </div>
++  );
++}
++
++VideoPlayer.propTypes = {
++  src: PropTypes.string,
++  poster: PropTypes.string,
++  subtitles: PropTypes.array,
++  onError: PropTypes.func,
++};
++
+--- a/client/src/components/Navbar.jsx
++++ b/client/src/components/Navbar.jsx
+@@ -0,0 +1,22 @@
++import React from 'react';
++import { Link } from 'react-router-dom';
++
++export default function Navbar() {
++  return (
++    <nav className="bg-white shadow px-4 py-3">
++      <div className="max-w-6xl mx-auto flex items-center justify-between">
++        <Link to="/" className="text-2xl font-bold text-blue-600">AnimeSite</Link>
++        <div className="flex gap-4">
++          <Link to="/watchlist" className="hover:underline">Watchlist</Link>
++          <Link to="/profile" className="hover:underline">Profile</Link>
++        </div>
++      </div>
++    </nav>
++  );
++}
++
+--- a/client/src/pages/HomePage.jsx
++++ b/client/src/pages/HomePage.jsx
+@@ -0,0 +1,40 @@
++import React, { useEffect, useState } from 'react';
++import AnimeCard from '../components/AnimeCard';
++import axios from 'axios';
++
++export default function HomePage() {
++  const [items, setItems] = useState([]);
++  useEffect(() => {
++    async function load() {
++      try {
++        const res = await axios.get('/api/anime/catalog?limit=24');
++        setItems(res.data.items || res.data || []);
++      } catch (e) {
++        console.error('catalog fetch error', e);
++      }
++    }
++    load();
++  }, []);
++  return (
++    <div className="max-w-6xl mx-auto p-4">
++      <h1 className="text-3xl font-bold mb-4">Популярное</h1>
++      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
++        {items.map(i => <AnimeCard key={i.id || i.animeId} anime={i} />)}
++      </div>
++    </div>
++  );
++}
++
+--- a/client/src/pages/PlayerPage.jsx
++++ b/client/src/pages/PlayerPage.jsx
+@@ -0,0 +1,66 @@
++import React, { useEffect, useState } from 'react';
++import { useParams } from 'react-router-dom';
++import axios from 'axios';
++import VideoPlayer from '../components/VideoPlayer';
++
++export default function PlayerPage() {
++  const { episodeId } = useParams();
++  const [episode, setEpisode] = useState(null);
++  const [src, setSrc] = useState(null);
++
++  useEffect(() => {
++    async function load() {
++      try {
++        const res = await axios.get(`/api/episode/${encodeURIComponent(episodeId)}`);
++        setEpisode(res.data);
++        const srcCandidate = res.data?.sources?.[0]?.url;
++        setSrc(srcCandidate);
++      } catch (e) {
++        console.error('episode load error', e);
++      }
++    }
++    load();
++  }, [episodeId]);
++
++  return (
++    <div className="max-w-6xl mx-auto p-4">
++      <div className="bg-black rounded overflow-hidden">
++        {src ? (
++          <VideoPlayer src={src} poster={episode?.poster || ''} />
++        ) : (
++          <div className="p-8 text-white">Loading player...</div>
++        )}
++      </div>
++      <div className="mt-4">
++        <h2 className="text-2xl font-semibold">{episode?.title}</h2>
++        <p className="text-gray-600 mt-2">{episode?.description}</p>
++        {episode?.sourceUrl && <a href={episode.sourceUrl} target="_blank" rel="noreferrer" className="text-blue-600">Открыть на источнике</a>}
++      </div>
++    </div>
++  );
++}
++
+--- a/client/src/components/AnimeCard.jsx
++++ b/client/src/components/AnimeCard.jsx
+@@ -0,0 +1,36 @@
++import React from 'react';
++import { Link } from 'react-router-dom';
++
++export default function AnimeCard({ anime }) {
++  const id = anime.id || anime.animeId;
++  return (
++    <Link to={`/anime/${id}`} className="block">
++      <div className="bg-white shadow rounded overflow-hidden">
++        <img src={anime.poster || anime.image} alt={anime.title} className="w-full h-48 object-cover" />
++        <div className="p-2">
++          <h3 className="text-lg font-medium">{anime.title}</h3>
++          <p className="text-sm text-gray-500">{(anime.description || '').slice(0, 80)}</p>
++        </div>
++      </div>
++    </Link>
++  );
++}
++
+--- a/client/src/App.jsx
++++ b/client/src/App.jsx
+@@ -0,0 +1,38 @@
++import React from 'react';
++import { BrowserRouter, Routes, Route } from 'react-router-dom';
++import HomePage from './pages/HomePage';
++import PlayerPage from './pages/PlayerPage';
++import Navbar from './components/Navbar';
++
++export default function App() {
++  return (
++    <BrowserRouter>
++      <Navbar />
++      <Routes>
++        <Route path="/" element={<HomePage />} />
++        <Route path="/watchlist" element={<div>Watchlist</div>} />
++        <Route path="/anime/:animeId" element={<div>Anime page</div>} />
++        <Route path="/episode/:episodeId" element={<PlayerPage />} />
++      </Routes>
++    </BrowserRouter>
++  );
++}
++
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -0,0 +1,34 @@
++name: CI
++
++on: [push, pull_request]
++
++jobs:
++  build:
++    runs-on: ubuntu-latest
++    strategy:
++      matrix:
++        node-version: [18.x]
++
++    steps:
++      - uses: actions/checkout@v4
++      - name: Use Node.js ${{ matrix.node-version }}
++        uses: actions/setup-node@v4
++        with:
++          node-version: ${{ matrix.node-version }}
++      - name: Install server deps
++        run: |
++          cd server
++          npm ci
++      - name: Install client deps
++        run: |
++          cd client
++          npm ci
++      - name: Build client
++        run: |
++          cd client
++          npm run build
++      - name: Lint server
++        run: |
++          cd server
++          npm run lint || true
++
++-- 
+2.40.1

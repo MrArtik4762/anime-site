@@ -1,5 +1,4 @@
 ﻿const express = require('express');
-const mongoose = require('mongoose');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
@@ -8,7 +7,9 @@ const rateLimit = require('express-rate-limit');
 const { createServer } = require('http');
 const { Server } = require('socket.io');
 require('dotenv').config();
-const { HTTP_STATUS } = require('/app/shared/constants/constants');
+const { HTTP_STATUS } = require('../shared/constants/constants');
+const knexConfig = require('./knexfile');
+const knex = require('knex')(knexConfig[process.env.NODE_ENV || 'development']);
 
 // Import routes
 const authRoutes = require('./routes/auth');
@@ -20,6 +21,8 @@ const externalRoutes = require('./routes/external');
 const watchlistRoutes = require('./routes/watchlist');
 const anilibriaRoutes = require('./routes/anilibria');
 const videoRoutes = require('./routes/video');
+const episodeRoutes = require('./routes/episode');
+const proxyRoutes = require('./routes/proxy');
 // New AniLiberty API routes
 const apiRoutes = require('./routes/api');
 
@@ -89,16 +92,22 @@ app.use(cors(corsOptions));
 // Rate limiting
 const limiter = rateLimit({
   windowMs: (process.env.RATE_LIMIT_WINDOW || 15) * 60 * 1000, // 15 minutes
-  max: process.env.RATE_LIMIT_MAX_REQUESTS || 1000, // РЈРІРµР»РёС‡РµРЅРѕ РґР»СЏ СЂР°Р·СЂР°Р±РѕС‚РєРё
+  max: process.env.RATE_LIMIT_MAX_REQUESTS || 1000,
   message: {
-    error: 'РЎР»РёС€РєРѕРј РјРЅРѕРіРѕ Р·Р°РїСЂРѕСЃРѕРІ СЃ СЌС‚РѕРіРѕ IP, РїРѕРїСЂРѕР±СѓР№С‚Рµ РїРѕР·Р¶Рµ.'
+    error: process.env.NODE_ENV === 'development'
+      ? 'Rate limit exceeded for development testing'
+      : 'Too many requests from this IP, please try again later.'
   },
   standardHeaders: true,
   legacyHeaders: false,
   skip: (req) => {
-    // Skip rate limiting for most routes in development
-    if (process.env.NODE_ENV === 'development') {
-      return true; // РћС‚РєР»СЋС‡Р°РµРј rate limiting РІ СЂР°Р·СЂР°Р±РѕС‚РєРµ
+    // Skip rate limiting for health check and some critical routes in development
+    if (process.env.NODE_ENV === 'development' && (
+      req.path === '/health' ||
+      req.path.startsWith('/api/auth') ||
+      req.path.startsWith('/api/proxy')
+    )) {
+      return true;
     }
     return false;
   }
@@ -128,19 +137,39 @@ app.get('/favicon.ico', (req, res) => {
   res.status(204).end();
 });
 
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.status(200).json({
+// Enhanced health check endpoint
+app.get('/health', async (req, res) => {
+  const health = {
     status: 'OK',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     environment: process.env.NODE_ENV,
-    version: process.env.npm_package_version || '1.0.0'
-  });
+    version: process.env.npm_package_version || '1.0.0',
+    memory: process.memoryUsage(),
+    database: 'unknown'
+  };
+  
+  try {
+    // Check database connection
+    await knex.raw('SELECT 1');
+    health.database = 'connected';
+  } catch (error) {
+    health.database = 'error';
+    health.status = 'degraded';
+    health.databaseError = error.message;
+  }
+  
+  // Add Redis status if available
+  if (redisConnected !== undefined) {
+    health.redis = redisConnected ? 'connected' : 'disconnected';
+  }
+  
+  const statusCode = health.status === 'OK' ? 200 : 503;
+  res.status(statusCode).json(health);
 });
 
-// API routes  
-// AniLiberty API routes (РґРѕР»Р¶РЅС‹ Р±С‹С‚СЊ РїРµСЂРІС‹РјРё)
+// API routes
+// AniLiberty API routes (должны быть первыми)
 app.use('/api', apiRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/anime', animeRoutes);
@@ -151,6 +180,8 @@ app.use('/api/external', externalRoutes);
 app.use('/api/watchlist', watchlistRoutes);
 app.use('/api/anilibria', anilibriaRoutes);
 app.use('/api/video', videoRoutes);
+app.use('/api/episode', episodeRoutes);
+app.use('/api/proxy', proxyRoutes);
 
 // Socket.io connection handling
 io.on('connection', (socket) => {
@@ -165,23 +196,19 @@ app.use(errorHandler);
 // Database connection
 const connectDB = async () => {
   try {
-    const mongoURI = process.env.NODE_ENV === 'test' 
-      ? process.env.MONGODB_TEST_URI 
-      : process.env.MONGODB_URI;
+    // Test database connection
+    await knex.raw('SELECT 1');
+    console.log(`Database connected successfully`);
     
-    if (!mongoURI) {
-      throw new Error('MongoDB URI not provided');
+    // Run migrations if needed
+    if (process.env.NODE_ENV === 'development') {
+      const migrations = await knex.migrate.list();
+      if (migrations.length > 0) {
+        console.log('Running pending migrations...');
+        await knex.migrate.latest();
+        console.log('Migrations completed');
+      }
     }
-
-    const conn = await mongoose.connect(mongoURI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
-
-    console.log(`MongoDB Connected: ${conn.connection.host}`);
-    
-    // Create indexes
-    await createIndexes();
     
   } catch (error) {
     console.error('Database connection error:', error);
@@ -199,45 +226,62 @@ const createIndexes = async () => {
   }
 };
 
-// Graceful shutdown
-process.on('SIGTERM', async () => {
-  console.log('SIGTERM received. Shutting down gracefully...');
+// Enhanced graceful shutdown
+const gracefulShutdown = async (signal) => {
+  console.log(`${signal} received. Shutting down gracefully...`);
   
-  server.close(() => {
-    console.log('HTTP server closed.');
-    
-    mongoose.connection.close(false).then(() => {
-      console.log('MongoDB connection closed.');
+  try {
+    // Stop accepting new connections
+    server.close(async () => {
+      console.log('HTTP server closed.');
+      
+      // Close database connections
+      try {
+        await knex.destroy();
+        console.log('Database connection closed.');
+      } catch (dbError) {
+        console.error('Error closing database connection:', dbError.message);
+      }
+      
+      // Close Redis connection if available
+      if (redis && redisConnected) {
+        try {
+          await redis.quit();
+          console.log('Redis connection closed.');
+        } catch (redisError) {
+          console.error('Error closing Redis connection:', redisError.message);
+        }
+      }
+      
       process.exit(0);
     });
-  });
-});
+    
+    // Force shutdown after timeout
+    setTimeout(() => {
+      console.error('Force shutdown after timeout');
+      process.exit(1);
+    }, 10000); // 10 seconds timeout
+    
+  } catch (error) {
+    console.error('Error during graceful shutdown:', error);
+    process.exit(1);
+  }
+};
 
-process.on('SIGINT', async () => {
-  console.log('SIGINT received. Shutting down gracefully...');
-  
-  server.close(() => {
-    console.log('HTTP server closed.');
-    
-    mongoose.connection.close(false).then(() => {
-      console.log('MongoDB connection closed.');
-      process.exit(0);
-    });
-  });
-});
+// Handle shutdown signals
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err) => {
   console.error('Unhandled Promise Rejection:', err);
-  server.close(() => {
-    process.exit(1);
-  });
+  gracefulShutdown('UnhandledRejection');
 });
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (err) => {
   console.error('Uncaught Exception:', err);
-  process.exit(1);
+  gracefulShutdown('UncaughtException');
 });
 
 module.exports = { app, server, connectDB };

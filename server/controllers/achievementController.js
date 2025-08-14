@@ -2,7 +2,7 @@
 const UserAchievement = require('../models/UserAchievement');
 const User = require('../models/User');
 const WatchList = require('../models/WatchList');
-const { HTTP_STATUS, ERROR_MESSAGES } = require('/app/shared/constants/constants');
+const { HTTP_STATUS, ERROR_MESSAGES } = require('../../shared/constants/constants');
 
 class AchievementController {
   // РџРѕР»СѓС‡РµРЅРёРµ РІСЃРµС… РґРѕСЃС‚РёР¶РµРЅРёР№ РґР»СЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ

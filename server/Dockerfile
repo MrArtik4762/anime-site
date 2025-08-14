@@ -1,65 +1,79 @@
-﻿# РњРЅРѕРіРѕСЌС‚Р°РїРЅР°СЏ СЃР±РѕСЂРєР° РґР»СЏ РѕРїС‚РёРјРёР·Р°С†РёРё СЂР°Р·РјРµСЂР° РѕР±СЂР°Р·Р°
-FROM node:18-alpine AS base
-
-# РЈСЃС‚Р°РЅРѕРІРєР° СЃРёСЃС‚РµРјРЅС‹С… Р·Р°РІРёСЃРёРјРѕСЃС‚РµР№ РґР»СЏ sharp Рё РґСЂСѓРіРёС… РЅР°С‚РёРІРЅС‹С… РјРѕРґСѓР»РµР№
-RUN apk add --no-cache \
-    python3 \
-    make \
-    g++ \
-    libc6-compat \
-    vips-dev
-
+﻿# Multi-stage build for production
+# Используем конкретную версию вместо :latest для безопасности
+FROM node:18.18.0-alpine3.18 AS deps
 WORKDIR /app
 
-# РљРѕРїРёСЂРѕРІР°РЅРёРµ С„Р°Р№Р»РѕРІ Р·Р°РІРёСЃРёРјРѕСЃС‚РµР№
-COPY server/package*.json ./
+# Установка переменных окружения для безопасности
+ENV NODE_ENV=production \
+    NPM_CONFIG_LOGLEVEL=error \
+    NPM_CONFIG_PRODUCTION=true \
+    NPM_CONFIG_UNSAFE_PERM=false
 
-# РЈСЃС‚Р°РЅРѕРІРєР° Р·Р°РІРёСЃРёРјРѕСЃС‚РµР№
-RUN npm ci --only=production && npm cache clean --force
+# Установка временной зоны для UTC
+ENV TZ=UTC
 
-# РЎРѕР·РґР°РЅРёРµ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РґР»СЏ Р±РµР·РѕРїР°СЃРЅРѕСЃС‚Рё
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nodejs -u 1001
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies with enhanced security
+RUN npm ci --only=production --no-audit --no-fund --ignore-scripts
+
+# Build stage
+FROM node:18.18.0-alpine3.18 AS builder
+WORKDIR /app
+
+# Copy dependencies from deps stage
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/package*.json ./
+
+# Copy source code
+COPY . .
+
+# Build the application
+RUN npm run build
 
 # Production stage
-FROM node:18-alpine AS production
-
-# РЈСЃС‚Р°РЅРѕРІРєР° С‚РѕР»СЊРєРѕ РЅРµРѕР±С…РѕРґРёРјС‹С… СЃРёСЃС‚РµРјРЅС‹С… Р·Р°РІРёСЃРёРјРѕСЃС‚РµР№
-RUN apk add --no-cache \
-    dumb-init \
-    vips
-
-# РЎРѕР·РґР°РЅРёРµ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nodejs -u 1001
-
+FROM node:18.18.0-alpine3.18 AS production
 WORKDIR /app
 
-# РљРѕРїРёСЂРѕРІР°РЅРёРµ Р·Р°РІРёСЃРёРјРѕСЃС‚РµР№ РёР· Р±Р°Р·РѕРІРѕРіРѕ РѕР±СЂР°Р·Р°
-COPY --from=base --chown=nodejs:nodejs /app/node_modules ./node_modules
+# Установка переменных окружения
+ENV NODE_ENV=production \
+    PORT=5000 \
+    PATH=/usr/local/bin:$PATH
 
-# РљРѕРїРёСЂРѕРІР°РЅРёРµ РёСЃС…РѕРґРЅРѕРіРѕ РєРѕРґР° СЃРµСЂРІРµСЂР°
-COPY --chown=nodejs:nodejs server/ .
+# Create non-root user with restricted privileges
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S appuser -u 1001 -s /sbin/nologin -G nodejs && \
+    mkdir -p /app /app/logs /app/data /app/tmp && \
+    chown -R appuser:nodejs /app
 
-# РљРѕРїРёСЂРѕРІР°РЅРёРµ РѕР±С‰РёС… РјРѕРґСѓР»РµР№
-COPY --chown=nodejs:nodejs shared/ ./shared/
+# Copy built application
+COPY --from=builder --chown=appuser:nodejs /app/dist ./dist
+COPY --from=builder --chown=appuser:nodejs /app/node_modules ./node_modules
+COPY --from=builder --chown=appuser:nodejs /app/package*.json ./
 
-# РЎРѕР·РґР°РЅРёРµ РґРёСЂРµРєС‚РѕСЂРёР№ РґР»СЏ uploads Рё Р»РѕРіРѕРІ
-RUN mkdir -p uploads logs && \
-    chown -R nodejs:nodejs uploads logs
+# Create directories for logs and data with proper permissions
+RUN mkdir -p /app/logs /app/data /app/tmp && \
+    touch /app/logs/app.log && \
+    chmod 750 /app/logs /app/data /app/tmp && \
+    chown -R appuser:nodejs /app/logs /app/data /app/tmp
 
-# РџРµСЂРµРєР»СЋС‡РµРЅРёРµ РЅР° РЅРµРїСЂРёРІРёР»РµРіРёСЂРѕРІР°РЅРЅРѕРіРѕ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
-USER nodejs
+# Set correct permissions and remove unnecessary files
+RUN chown -R appuser:nodejs /app && \
+    find /app -type f -name "*.js" -exec chmod 640 {} \; && \
+    find /app -type f -name "*.json" -exec chmod 640 {} \; && \
+    find /app -type d -exec chmod 750 {} \; && \
+    rm -rf /app/.git /app/.npm /app/.cache /app/docs
 
-# РћС‚РєСЂС‹С‚РёРµ РїРѕСЂС‚Р°
+# Switch to non-root user
+USER appuser
+
+# Expose port
 EXPOSE 5000
 
-# РџСЂРѕРІРµСЂРєР° Р·РґРѕСЂРѕРІСЊСЏ РєРѕРЅС‚РµР№РЅРµСЂР°
+# Health check with enhanced security
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD node -e "require('http').get('http://localhost:5000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
+    CMD node -e "const http = require('http'); const options = { hostname: 'localhost', port: 5000, path: '/health', timeout: 5000, headers: { 'User-Agent': 'healthcheck' } }; const req = http.request(options, (res) => { process.exit(res.statusCode === 200 ? 0 : 1); }); req.on('error', () => process.exit(1)); req.end();"
 
-# РСЃРїРѕР»СЊР·РѕРІР°РЅРёРµ dumb-init РґР»СЏ РїСЂР°РІРёР»СЊРЅРѕР№ РѕР±СЂР°Р±РѕС‚РєРё СЃРёРіРЅР°Р»РѕРІ
-ENTRYPOINT ["dumb-init", "--"]
-
-# РљРѕРјР°РЅРґР° Р·Р°РїСѓСЃРєР°
-CMD ["node", "server.js"]
+# Start the application with enhanced security
+CMD ["node", "--max-old-space-size=512", "--no-deprecation", "--trace-warnings", "dist/index.js"]

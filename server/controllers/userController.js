@@ -1,6 +1,6 @@
 ﻿const User = require('../models/User');
 const WatchList = require('../models/WatchList');
-const { HTTP_STATUS, ERROR_MESSAGES } = require('/app/shared/constants/constants');
+const { HTTP_STATUS, ERROR_MESSAGES } = require('../../shared/constants/constants');
 const multer = require('multer');
 const sharp = require('../utils/sharpAdapter');
 const path = require('path');

@@ -1,5 +1,5 @@
 ﻿const anilibriaService = require('../services/anilibriaService');
-const { HTTP_STATUS } = require('/app/shared/constants/constants');
+const { HTTP_STATUS } = require('../../shared/constants/constants');
 
 /**
  * РџРѕР»СѓС‡РёС‚СЊ РїРѕРїСѓР»СЏСЂРЅС‹Рµ Р°РЅРёРјРµ РёР· AniLibria

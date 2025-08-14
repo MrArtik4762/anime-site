@@ -1,5 +1,5 @@
 ﻿const rateLimit = require('express-rate-limit');
-const { HTTP_STATUS, ERROR_MESSAGES } = require('/app/shared/constants/constants');
+const { HTTP_STATUS, ERROR_MESSAGES } = require('../../shared/constants/constants');
 
 /**
  * Временная правка: убран onLimitReached для тишины логов до обновления express-rate-limit v7.

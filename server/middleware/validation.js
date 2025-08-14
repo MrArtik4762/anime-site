@@ -1,5 +1,5 @@
 ﻿const Joi = require('joi');
-const { HTTP_STATUS, LIMITS, REGEX } = require('/app/shared/constants/constants');
+const { HTTP_STATUS, LIMITS, REGEX } = require('../../shared/constants/constants');
 
 // РћР±С‰Р°СЏ С„СѓРЅРєС†РёСЏ РІР°Р»РёРґР°С†РёРё
 const validate = (schema) => {

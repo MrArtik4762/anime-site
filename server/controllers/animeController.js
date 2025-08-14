@@ -1,7 +1,7 @@
 ﻿const Anime = require('../models/Anime');
 const WatchList = require('../models/WatchList');
 const Comment = require('../models/Comment');
-const { HTTP_STATUS, ERROR_MESSAGES } = require('/app/shared/constants/constants');
+const { HTTP_STATUS, ERROR_MESSAGES } = require('../../shared/constants/constants');
 const mongoose = require('mongoose');
 const anilibriaService = require('../services/anilibriaService');
 

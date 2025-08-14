@@ -1,0 +1,134 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: 'prometheus'
+          scrape_interval: 5s
+          static_configs:
+            - targets: ['localhost:9090']
+        - job_name: 'node-exporter'
+          scrape_interval: 5s
+          static_configs:
+            - targets: ['node-exporter:9100']
+        - job_name: 'cadvisor'
+          scrape_interval: 5s
+          static_configs:
+            - targets: ['cadvisor:8080']
+
+  jaeger:
+    protocols:
+      thrift_http:
+        endpoint: "0.0.0.0:14268"
+
+  zipkin:
+    endpoint: "0.0.0.0:9411"
+
+  fluentforward:
+    endpoint: "0.0.0.0:24224"
+
+  filelog:
+    include: [*.log]
+    include_file_path: true
+    operators:
+      - type: regex_parser
+        regex: '^(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) \[(?P<level>\w+)\] (?P<message>.*)$'
+      - type: timestamp_parser
+        timestamp_from: timestamp
+        layout: '2006-01-02 15:04:05'
+      - type: json_parser
+        parse_from: message
+
+processors:
+  batch:
+    timeout: 1s
+    send_batch_size: 1000
+
+  memory_limiter:
+    limit_mib: 256
+    spike_limit_mib: 128
+    check_interval: 5s
+
+  resourcedetection:
+    detectors: [env, system, gcp]
+    timeout: 2s
+
+  attributes:
+    actions:
+      - key: service.name
+        action: insert
+        from: resource.service.name
+        if_not_exists: true
+
+exporters:
+  prometheusremotewrite:
+    endpoint: "http://prometheus:9090/api/v1/write"
+    headers:
+      X-Scope-OrgID: "anime-site"
+
+  jaeger:
+    endpoint: jaeger:14250
+    tls:
+      insecure: true
+
+  zipkin:
+    endpoint: http://zipkin:9411/api/v2/spans
+    format: proto
+
+  otlp:
+    endpoint: "http://tempo:3200"
+    tls:
+      insecure: true
+
+  logging:
+    loglevel: debug
+
+  loki:
+    endpoint: http://loki:3100/loki/api/v1/push
+    labels:
+      service: anime-site
+
+  elasticsearch:
+    hosts: ["elasticsearch:9200"]
+    index: "otel-anime-site"
+    tls:
+      insecure: true
+
+  file:
+    path: /tmp/otel-logs.json
+    rotation:
+      filename: /tmp/otel-logs-%{time.now()}-%{uuid}.json
+
+extensions:
+  health_check:
+    endpoint: "0.0.0.0:13133"
+  pprof:
+    endpoint: "0.0.0.0:1777"
+  zpages:
+    endpoint: "0.0.0.0:55679"
+
+service:
+  extensions: [health_check, pprof, zpages]
+  pipelines:
+    traces:
+      receivers: [otlp, jaeger, zipkin]
+      processors: [memory_limiter, batch, attributes]
+      exporters: [jaeger, zipkin, otlp, logging]
+    metrics:
+      receivers: [otlp, prometheus]
+      processors: [memory_limiter, batch, attributes]
+      exporters: [prometheusremotewrite, logging]
+    logs:
+      receivers: [otlp, filelog]
+      processors: [memory_limiter, batch, attributes]
+      exporters: [loki, elasticsearch, logging]
+    flows:
+      receivers: [fluentforward]
+      processors: [memory_limiter, batch]
+      exporters: [logging, elasticsearch]

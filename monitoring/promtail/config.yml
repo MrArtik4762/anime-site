@@ -1,0 +1,224 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+- job_name: system
+  static_configs:
+  - targets:
+      - localhost
+    labels:
+      job: varlogs
+      __path__: /var/log/*log
+
+- job_name: docker
+  docker_sd_configs:
+    - host: unix:///var/run/docker.sock
+      refresh_interval: 5s
+  relabel_configs:
+    - source_labels: [__meta_docker_container_log_stream]
+      target_label: stream
+    - source_labels: [__meta_docker_container_name]
+      target_label: container_name
+    - source_labels: [__meta_docker_container_label_compose_service]
+      target_label: service
+    - source_labels: [__meta_docker_container_label_compose_project]
+      target_label: project
+
+- job_name: kubernetes-pods
+  pipeline_stages:
+    - cri: {}
+  kubernetes_sd_configs:
+    - role: pod
+  relabel_configs:
+    - source_labels: [__meta_kubernetes_pod_annotation_present_prometheus_io_scrape]
+      action: keep
+      regex: true
+    - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+      action: replace
+      target_label: __metrics_path__
+      regex: (.+)
+    - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+      action: replace
+      regex: ([^:]+)(?::\d+)?;(\d+)
+      replacement: $1:$2
+      target_label: __address__
+    - action: labelmap
+      regex: __meta_kubernetes_pod_label_(.+)
+    - source_labels: [__meta_kubernetes_namespace]
+      action: replace
+      target_label: kubernetes_namespace
+    - source_labels: [__meta_kubernetes_pod_name]
+      action: replace
+      target_label: kubernetes_pod_name
+    - source_labels: [__meta_kubernetes_pod_container_name]
+      action: replace
+      target_label: kubernetes_pod_container_name
+    - source_labels: [__meta_kubernetes_pod_container_name]
+      action: replace
+      target_label: container
+    - source_labels: [__meta_kubernetes_pod_node_name]
+      action: replace
+      target_label: node_name
+
+# Конфигурация для anime-site
+- job_name: anime-site
+  static_configs:
+    - targets: [localhost]
+      labels:
+        job: anime-site
+        service: anime-site
+        __path__: /var/log/containers/*anime-site*.log
+  pipeline_stages:
+    - cri: {}
+    - regex:
+        expression: '^(?P<timestamp>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+Z) (?P<level>\w+) (?P<message>.*)$'
+    - timestamp:
+        source: timestamp
+        format: RFC3339
+    - labels:
+        level:
+    - output:
+        source: message
+
+- job_name: nginx
+  static_configs:
+    - targets: [localhost]
+      labels:
+        job: nginx
+        service: nginx
+        __path__: /var/log/containers/*nginx*.log
+  pipeline_stages:
+    - cri: {}
+    - regex:
+        expression: '^(?P<timestamp>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+Z) (?P<ip>\S+) (?P<user>\S+) (?P<method>\S+) (?P<path>\S+) (?P<protocol>\S+) (?P<status>\d+) (?P<size>\d+) "(?P<referer>[^"]*)" "(?P<user_agent>[^"]*)"'
+    - timestamp:
+        source: timestamp
+        format: RFC3339
+    - labels:
+        ip:
+        method:
+        path:
+        status:
+        user_agent:
+    - output:
+        source: message
+
+- job_name: postgres
+  static_configs:
+    - targets: [localhost]
+      labels:
+        job: postgres
+        service: postgres
+        __path__: /var/log/containers/*postgres*.log
+  pipeline_stages:
+    - cri: {}
+    - regex:
+        expression: '^(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d+) \[(?P<level>\w+)\] (?P<message>.*)$'
+    - timestamp:
+        source: timestamp
+        format: '2006-01-02 15:04:05.000000'
+    - labels:
+        level:
+    - output:
+        source: message
+
+- job_name: redis
+  static_configs:
+    - targets: [localhost]
+      labels:
+        job: redis
+        service: redis
+        __path__: /var/log/containers/*redis*.log
+  pipeline_stages:
+    - cri: {}
+    - regex:
+        expression: '^(?P<timestamp>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+Z) (?P<level>\w+) (?P<message>.*)$'
+    - timestamp:
+        source: timestamp
+        format: RFC3339
+    - labels:
+        level:
+    - output:
+        source: message
+
+# Конфигурация для приложений
+- job_name: applications
+  static_configs:
+    - targets: [localhost]
+      labels:
+        job: applications
+        __path__: /var/log/containers/*.log
+  pipeline_stages:
+    - cri: {}
+    - regex:
+        expression: '^(?P<timestamp>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+Z) (?P<level>\w+) (?P<message>.*)$'
+    - timestamp:
+        source: timestamp
+        format: RFC3339
+    - labels:
+        level:
+    - output:
+        source: message
+
+# Конфигурация для системных логов
+- job_name: syslog
+  static_configs:
+    - targets: [localhost]
+      labels:
+        job: syslog
+        __path__: /var/log/syslog
+  pipeline_stages:
+    - regex:
+        expression: '^(?P<timestamp>\w{3}\s+\d{1,2}\s+\d{2}:\d{2}:\d{2}) (?P<hostname>\S+) (?P<program>\S+)(?:\[(?P<pid>\d+)\])?: (?P<message>.*)$'
+    - timestamp:
+        source: timestamp
+        format: 'Jan 2 15:04:05'
+    - labels:
+        hostname:
+        program:
+    - output:
+        source: message
+
+# Конфигурация для auth логов
+- job_name: auth
+  static_configs:
+    - targets: [localhost]
+      labels:
+        job: auth
+        __path__: /var/log/auth.log
+  pipeline_stages:
+    - regex:
+        expression: '^(?P<timestamp>\w{3}\s+\d{1,2}\s+\d{2}:\d{2}:\d{2}) (?P<hostname>\S+) (?P<program>\S+)(?:\[(?P<pid>\d+)\])?: (?P<message>.*)$'
+    - timestamp:
+        source: timestamp
+        format: 'Jan 2 15:04:05'
+    - labels:
+        hostname:
+        program:
+    - output:
+        source: message
+
+# Конфигурация для kernel логов
+- job_name: kernel
+  static_configs:
+    - targets: [localhost]
+      labels:
+        job: kernel
+        __path__: /var/log/kern.log
+  pipeline_stages:
+    - regex:
+        expression: '^(?P<timestamp>\w{3}\s+\d{1,2}\s+\d{2}:\d{2}:\d{2}) (?P<hostname>\S+) kernel: (?P<message>.*)$'
+    - timestamp:
+        source: timestamp
+        format: 'Jan 2 15:04:05'
+    - labels:
+        hostname:
+    - output:
+        source: message

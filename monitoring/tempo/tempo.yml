@@ -1,0 +1,103 @@
+storage:
+  trace:
+    backend: local
+    local:
+      path: /tmp/tempo/traces
+  wal:
+    path: /tmp/tempo/wal
+
+compactor:
+  compaction:
+    block_retention: 1h
+    block_downsample_enabled: false
+    block_downsample_from: 5m
+    block_downsample_to: 1m
+  compactor_ring:
+    kvstore:
+      store: inmemory
+  wal_compression: false
+
+distributor:
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: 0.0.0.0:4317
+        http:
+          endpoint: 0.0.0.0:4318
+
+ingester:
+  lifecycler:
+    ring:
+      replication_factor: 1
+      kvstore:
+        store: inmemory
+    final_sleep: 0s
+  max_block_bytes: 1073741824
+  max_block_duration: 1h
+  wal:
+    path: /tmp/tempo/wal
+    wal_compression: false
+
+overrides:
+  metrics_generator_processors:
+    - spanmetrics
+    - service-graphs
+    - local-rate-limits
+  metrics_generator:
+    collection_interval: 15s
+    processor:
+      service_graphs:
+        enabled: true
+        max_workers: 4
+        wait_for_dependencies: true
+      spanmetrics:
+        enabled: true
+        metrics:
+          - counter:
+              name: tempo_spans_total
+              description: "Total number of spans ingested"
+              value_type: Double
+              match_type: regexp
+              metric_name: tempo_spans_total
+              span_name: .*
+          - histogram:
+              name: tempo_span_duration_seconds
+              description: "Duration of spans in seconds"
+              buckets: [0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1, 2.5, 5, 7.5, 10]
+              value_type: Double
+              match_type: regexp
+              metric_name: tempo_span_duration_seconds
+              span_name: .*
+              value: duration_seconds
+          - gauge:
+              name: tempo_spans_in_progress
+              description: "Number of spans currently being processed"
+              value_type: Double
+              match_type: regexp
+              metric_name: tempo_spans_in_progress
+              span_name: .*
+              value: 1
+
+query:
+  frontend_worker:
+    frontend_address: localhost:3100
+  search:
+    trace_by_name: |
+      {service.name=~".+"}
+    max_duration: 5m
+    max_wait: 1m
+    parallelism: 100
+    cache:
+      cache:
+        embedded_cache:
+          enabled: true
+          max_size_mb: 100
+
+# Конфигурация для различных бэкендов хранения
+storage_types:
+  local:
+    local:
+      path: /tmp/tempo/traces
+    wal:
+      path: /tmp/tempo/wal

@@ -1,257 +1,197 @@
+version: '3.8'
 services:
-  # Nginx Reverse Proxy
+  # PostgreSQL база данных
+  postgres:
+    # Используем конкретную версию вместо :latest для безопасности
+    image: postgres:15.5-alpine3.18
+    restart: unless-stopped
+    environment:
+      # Database configuration with improved security and maintainability
+      POSTGRES_USER: ${POSTGRES_USER:-anime_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-anime_site_db}
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256 --auth-local=scram-sha-256"
+      PGDATA: /var/lib/postgresql/data/pgdata
+      
+      # Security enhancement: Force password usage in production
+      environment:
+        - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./server/db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-anime} -d ${POSTGRES_DB:-anime_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - anime-network
+    # Установка ограничений ресурсов для безопасности
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  # Redis для кеширования и сессий
+  redis:
+    # Используем конкретную версию вместо :latest для безопасности
+    image: redis:7.2.3-alpine3.18
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redispass}
+    volumes:
+      - redisdata:/data
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    networks:
+      - anime-network
+    # Установка ограничений ресурсов для безопасности
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  # Frontend (Next.js приложение)
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+      target: production
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - REACT_APP_API_URL=http://localhost:8080
+    ports:
+      - "${CLIENT_PORT:-3000}:80"
+    depends_on:
+      - nginx
+    networks:
+      - anime-network
+    # Установка ограничений ресурсов для безопасности
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+
+  # Backend API сервер
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      ANILIBERTY_API_BASE: ${ANILIBERTY_API_BASE:-"https://anilibria.top/api"}
+      REDIS_URL: ${REDIS_URL:-"redis://redis:6379"}
+      DATABASE_URL: ${DATABASE_URL:-"postgresql://anime:animepass@postgres:5432/anime_db"}
+      PROXY_WHITELIST: ${PROXY_WHITELIST:-"anilibria.top,anilibria.cc,cdn.anilibria.tv"}
+      CORS_ALLOW_ORIGIN: ${CORS_ALLOW_ORIGIN:-"*"}
+      JWT_SECRET: ${JWT_SECRET:-"your-super-secret-jwt-key"}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-"your-super-secret-refresh-key"}
+      RATE_LIMIT_WINDOW_MS: ${RATE_LIMIT_WINDOW_MS:-900000}
+      RATE_LIMIT_MAX_REQUESTS: ${RATE_LIMIT_MAX_REQUESTS:-100}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "${SERVER_PORT:-5000}:5000"
+    volumes:
+      - ./server:/app
+      - /app/node_modules
+    networks:
+      - anime-network
+    # Установка ограничений ресурсов для безопасности
+    deploy:
+      resources:
+        limits:
+          cpus: '1.5'
+          memory: 1G
+        reservations:
+          cpus: '0.75'
+          memory: 512M
+
+  # Nginx reverse proxy
   nginx:
-    image: nginx:1.25-alpine
-    container_name: anime-site-nginx
+    # Используем конкретную версию вместо :latest для безопасности
+    image: nginx:1.25.3-alpine3.18
     restart: unless-stopped
     ports:
-      - "80:80"
-      - "443:443"
+      - "${NGINX_PORT:-8080}:80"
+      - "${NGINX_HTTPS_PORT:-8443}:443"
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/conf.d:/etc/nginx/conf.d:ro
-      - ./nginx/ssl:/etc/nginx/ssl:ro
-      - nginx_logs:/var/log/nginx
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./ssl:/etc/nginx/ssl
     depends_on:
       - client
       - server
     networks:
-      - anime-site-network
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
+      - anime-network
+    # Установка ограничений ресурсов для безопасности
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
 
-  # React Frontend
-  client:
-    build: 
-      context: ./client
-      dockerfile: Dockerfile
-    image: anime-site-client:latest
-    container_name: anime-site-client
-    restart: unless-stopped
-    expose:
-      - "80"
-    volumes:
-      - ./client/nginx.conf:/etc/nginx/nginx.conf:ro
-      - client_static:/usr/share/nginx/html
-    environment:
-      - NODE_ENV=${NODE_ENV:-production}
-    depends_on:
-      - server
-    networks:
-      - anime-site-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost/"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
-  # Node.js Backend API
-  server:
-    build:
-      context: .
-      dockerfile: server/Dockerfile
-      target: production
-    image: anime-site-server:latest
-    container_name: anime-site-server
-    restart: unless-stopped
-    expose:
-      - "5000"
-    volumes:
-      - ./server/uploads:/app/uploads
-      - server_logs:/app/logs
-      - ./shared:/app/shared
-    environment:
-      - NODE_ENV=${NODE_ENV:-production}
-      - PORT=5000
-      - MONGODB_URI=mongodb://admin:${MONGO_PASSWORD:-password}@mongodb:27017/anime-site?authSource=admin
-      - REDIS_URL=redis://redis:6379
-      - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
-      - JWT_EXPIRE=${JWT_EXPIRE:-30d}
-      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET:-your-refresh-token-secret-change-in-production}
-      - JWT_REFRESH_EXPIRE=${JWT_REFRESH_EXPIRE:-7d}
-      - CLIENT_URL=${CLIENT_URL:-http://localhost}
-      - SOCKET_CORS_ORIGIN=${CLIENT_URL:-http://localhost}
-      - MAX_FILE_SIZE=${MAX_FILE_SIZE:-5242880}
-      - UPLOAD_PATH=/app/uploads
-      - RATE_LIMIT_WINDOW=${RATE_LIMIT_WINDOW:-15}
-      - RATE_LIMIT_MAX_REQUESTS=${RATE_LIMIT_MAX_REQUESTS:-100}
-      # External API Keys (??????????????????????)
-      - MAL_CLIENT_ID=${MAL_CLIENT_ID:-}
-      - MAL_CLIENT_SECRET=${MAL_CLIENT_SECRET:-}
-      - ANILIST_CLIENT_ID=${ANILIST_CLIENT_ID:-}
-      - ANILIST_CLIENT_SECRET=${ANILIST_CLIENT_SECRET:-}
-      - KITSU_API_KEY=${KITSU_API_KEY:-}
-      # Email Configuration (??????????????????????)
-      - EMAIL_HOST=${EMAIL_HOST:-}
-      - EMAIL_PORT=${EMAIL_PORT:-587}
-      - EMAIL_USER=${EMAIL_USER:-}
-      - EMAIL_PASS=${EMAIL_PASS:-}
-    init: true
-    depends_on:
-      mongodb:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    networks:
-      - anime-site-network
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-
-  # MongoDB Database
-  mongodb:
-    image: mongo:6.0
-    container_name: anime-site-mongodb
-    restart: unless-stopped
-    expose:
-      - "27017"
-    volumes:
-      - mongodb_data:/data/db
-      - mongodb_config:/data/configdb
-      - ./scripts/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
-      - mongodb_logs:/var/log/mongodb
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-password}
-      MONGO_INITDB_DATABASE: anime-site
-    command: ["mongod", "--bind_ip_all"]
-    networks:
-      - anime-site-network
-    healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-
-  # Redis Cache
-  redis:
-    image: redis:7.0-alpine
-    container_name: anime-site-redis
-    restart: unless-stopped
-    user: "root"  # ???????????????? ?? 1000:1000 ???? root
-    expose:
-      - "6379"
-    volumes:
-      - ./logs/redis:/var/log/redis
-      - redis_data:/data
-    command: redis-server --appendonly yes --logfile /var/log/redis/redis.log
-    networks:
-      - anime-site-network
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
-  # Monitoring ?? Prometheus (??????????????????????)
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: anime-site-prometheus
+  # HLS Media Server (для обработки видео)
+  hls:
+    # Используем конкретную версию вместо :latest для безопасности
+    image: ant-media-server/ant-media-server-ce:2.5.1
     restart: unless-stopped
     ports:
-      - "9090:9090"
+      - "1935:1935"  # RTMP
+      - "8080:8080"  # WebRTC
+      - "8888:8888"  # HLS
     volumes:
-      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - prometheus_data:/prometheus
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/etc/prometheus/console_libraries'
-      - '--web.console.templates=/etc/prometheus/consoles'
-      - '--storage.tsdb.retention.time=200h'
-      - '--web.enable-lifecycle'
+      - hlsdata:/usr/local/antmedia/webapps/root
     networks:
-      - anime-site-network
-    profiles:
-      - monitoring
+      - anime-network
+    # Установка ограничений ресурсов для безопасности
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '1.0'
+          memory: 1G
 
-  # Grafana Dashboard (??????????????????????)
-  grafana:
-    image: grafana/grafana:latest
-    container_name: anime-site-grafana
-    restart: unless-stopped
-    ports:
-      - "3001:3000"
-    volumes:
-      - grafana_data:/var/lib/grafana
-      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
-    environment:
-      - GF_SECURITY_ADMIN_USER=${GRAFANA_USER:-admin}
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
-      - GF_USERS_ALLOW_SIGN_UP=false
-    networks:
-      - anime-site-network
-    profiles:
-      - monitoring
-
-  # AniCLI API Service
-  anicli_api:
-    build:
-      context: ./python-service
-      dockerfile: Dockerfile
-    image: anime-site-anicli:latest
-    container_name: anime-site-anicli
-    restart: unless-stopped
-    expose:
-      - "8000"
-    environment:
-      - PORT=8000
-      - REDIS_URL=redis://redis:6379
-      - LOG_LEVEL=info
-      - UVICORN_WORKERS=4
-      - UVICORN_TIMEOUT=120
-      - CACHE_TTL=3600
-      - PYTHONPATH=/app
-      - PYTHONUNBUFFERED=1
-      - FASTAPI_ENV=production
-    depends_on:
-      redis:
-        condition: service_healthy
-    networks:
-      - anime-site-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 15s
-
-# ?????????????????????? ???????? ?????? ?????????????????????????????? ????????????
 volumes:
-  mongodb_data:
+  pgdata:
     driver: local
-  mongodb_config:
+  redisdata:
     driver: local
-  mongodb_logs:
-    driver: local
-  redis_data:
-    driver: local
-  redis_logs:
-    driver: local
-  server_logs:
-    driver: local
-  nginx_logs:
-    driver: local
-  client_static:
-    driver: local
-  prometheus_data:
-    driver: local
-  grafana_data:
+  hlsdata:
     driver: local
 
-# ???????? ?????? ???????????????? ????????????????
 networks:
-  anime-site-network:
+  anime-network:
     driver: bridge
     ipam:
       config:
         - subnet: 172.20.0.0/16
-

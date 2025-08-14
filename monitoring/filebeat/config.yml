@@ -1,0 +1,165 @@
+filebeat.inputs:
+
+# Логи приложения
+- type: log
+  enabled: true
+  paths:
+    - /logs/*.log
+  fields:
+    app: anime-site
+    env: production
+  fields_under_root: true
+  json.add_error_key: true
+  json.keys_under_root: true
+  json.overwrite_keys: true
+
+# Доступ логи Nginx
+- type: log
+  enabled: true
+  paths:
+    - /var/log/nginx/access.log
+  fields:
+    app: nginx
+    env: production
+    type: access
+  fields_under_root: true
+  processors:
+    - dissect:
+        tokenizer: "%{clientip} - %{ident} %{auth} [%{timestamp}] \"%{verb} %{request} %{httpversion}\" %{status} %{size} \"%{referrer}\" \"%{agent}\""
+
+# Ошибки Nginx
+- type: log
+  enabled: true
+  paths:
+    - /var/log/nginx/error.log
+  fields:
+    app: nginx
+    env: production
+    type: error
+  fields_under_root: true
+
+# Метрики Prometheus
+- type: log
+  enabled: true
+  paths:
+    - /var/log/prometheus/*.log
+  fields:
+    app: prometheus
+    env: production
+  fields_under_root: true
+
+# Логи Docker контейнеров
+- type: docker
+  enabled: true
+  containers.ids:
+    - "anime-site-server"
+    - "anime-site-client"
+  paths:
+    - /var/lib/docker/containers/*/*/*.log
+  fields:
+    app: docker
+    env: production
+  fields_under_root: true
+  processors:
+    - add_docker_metadata:
+        host: "unix:///var/run/docker.sock"
+
+# Настройка вывода
+output.elasticsearch:
+  hosts: ["elasticsearch:9200"]
+  index: "anime-site-logs-%{+yyyy.MM.dd}"
+  template.name: "anime-site-logs"
+  template.pattern: "anime-site-logs-*"
+  template.settings:
+    index.number_of_shards: 1
+    index.codec: best_compression
+
+# Настройка Kibana
+setup.kibana:
+  host: "kibana:5601"
+
+# Настройка шаблона
+setup.template.enabled: true
+setup.template.name: "anime-site-logs"
+setup.template.pattern: "anime-site-logs-*"
+setup.template.settings:
+  index.number_of_shards: 1
+  index.codec: best_compression
+
+# Настройка потоков
+stream:
+  enabled: true
+
+# Настройка процессоров
+processors:
+  - add_cloud_metadata: ~
+  - add_docker_metadata: ~
+  - add_host_metadata: ~
+  - add_observer_metadata:
+      module: prometheus
+  - add_kubernetes_metadata: ~
+  - decode_json_fields:
+      fields: ["message"]
+      target: "log"
+      overwrite_keys: true
+      max_depth: 1
+
+# Настройка журнала
+logging.level: info
+logging.to_files: true
+logging.files:
+  path: /var/log/filebeat
+  name: filebeat
+  keepfiles: 7
+  permissions: 0644
+
+# Настройка мониторинга
+monitoring.enabled: true
+monitoring.elasticsearch:
+  hosts: ["elasticsearch:9200"]
+
+# Настройка метрик
+metricbeat.modules:
+  - module: system
+    metricsets:
+      - cpu
+      - load
+      - memory
+      - network
+      - process
+      - process_summary
+    enabled: true
+    period: 10s
+    processes: ['.*']
+
+  - module: elasticsearch
+    metricsets:
+      - node
+      - node_stats
+    enabled: true
+    period: 10s
+    hosts: ["elasticsearch:9200"]
+
+  - module: kibana
+    metricsets:
+      - node
+      - node_stats
+    enabled: true
+    period: 10s
+    hosts: ["kibana:5601"]
+
+  - module: prometheus
+    enabled: true
+    metricsets:
+      - collector
+      - node
+    period: 10s
+    hosts: ["prometheus:9090"]
+
+# Настройка уведомлений
+alert:
+  enabled: true
+  filebeat.alerts.enabled: true
+content>
+<line_count>130</line_count>
+</write_to_file>

@@ -1,0 +1,136 @@
+name: Notifications
+
+on:
+  issues:
+    types: [opened, edited, labeled, unlabeled, closed, reopened, assigned, unassigned]
+  pull_request:
+    types: [opened, edited, synchronize, reopened, closed, labeled, unlabeled, assigned, unassigned]
+  push:
+    branches: [ main, develop, staging ]
+  workflow_run:
+    workflows: [ "CI/CD Pipeline", "Dependency Updates" ]
+    types: [completed, requested]
+
+jobs:
+  send-notifications:
+    name: Send Notifications
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Send issue notification
+        if: github.event_name == 'issues'
+        run: |
+          echo "📝 Issue Event: ${{ github.event.action }}"
+          echo "Issue Title: ${{ github.event.issue.title }}"
+          echo "Issue URL: ${{ github.event.issue.html_url }}"
+          echo "🔗 Repository: ${{ github.repository }}"
+          echo "👤 Author: ${{ github.event.issue.user.login }}"
+          echo "📅 Date: $(date -u)"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+      - name: Send pull request notification
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "🔄 Pull Request Event: ${{ github.event.action }}"
+          echo "PR Title: ${{ github.event.pull_request.title }}"
+          echo "PR URL: ${{ github.event.pull_request.html_url }}"
+          echo "🔗 Repository: ${{ github.repository }}"
+          echo "👤 Author: ${{ github.event.pull_request.user.login }}"
+          echo "📅 Date: $(date -u)"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+      - name: Send push notification
+        if: github.event_name == 'push'
+        run: |
+          echo "🚀 Push Event"
+          echo "🔗 Repository: ${{ github.repository }}"
+          echo "🌿 Branch: ${{ github.ref }}"
+          echo "💾 Commit: ${{ github.sha }}"
+          echo "👤 Author: ${{ github.actor }}"
+          echo "📅 Date: $(date -u)"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+      - name: Send workflow run notification
+        if: github.event_name == 'workflow_run'
+        run: |
+          echo "🏃 Workflow Run Event: ${{ github.event.action }}"
+          echo "Workflow: ${{ github.event.workflow_run.name }}"
+          echo "Status: ${{ github.event.workflow_run.conclusion }}"
+          echo "URL: ${{ github.event.workflow_run.html_url }}"
+          echo "🔗 Repository: ${{ github.repository }}"
+          echo "👤 Triggered by: ${{ github.event.workflow_run.triggering_actor.login }}"
+          echo "📅 Date: $(date -u)"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+      - name: Send Slack notification
+        if: (success() || failure()) && (github.event_name == 'issues' || github.event_name == 'pull_request' || github.event_name == 'push' || github.event_name == 'workflow_run')
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_COLOR: ${{ job.status }}
+          SLACK_MESSAGE: 'GitHub Event: ${{ github.event_name }} - Status: ${{ job.status }}'
+          SLACK_TITLE: 'Anime Site GitHub Activity'
+          SLACK_USERNAME: 'GitHub Bot'
+          SLACK_ICON_EMOJI: ':github:'
+          SLACK_FOOTER: 'Anime Site Project'
+          SLACK_FIELDS: 'repo,commit,author,action,eventName,ref,workflow'
+          MSG_MINIMAL: 'false'
+
+      - name: Log GitHub activity
+        if: (success() || failure()) && (github.event_name == 'issues' || github.event_name == 'pull_request' || github.event_name == 'push' || github.event_name == 'workflow_run')
+        run: |
+          echo "🔄 GitHub Activity Event: ${{ github.event_name }}"
+          echo "📊 Status: ${{ job.status }}"
+          echo "🔗 Repository: ${{ github.repository }}"
+          echo "🌿 Branch: ${{ github.ref }}"
+          echo "💾 Commit: ${{ github.sha }}"
+          echo "👤 Author: ${{ github.actor }}"
+          echo "📅 Date: $(date -u)"
+
+  deployment-notifications:
+    name: Deployment Notifications
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_run' && github.event.workflow_run.name == 'CI/CD Pipeline' && github.event.action == 'completed'
+    steps:
+      - name: Send deployment notification
+        run: |
+          echo "🚀 Deployment Notification"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          
+          # Extract deployment information from workflow run
+          if [ "${{ github.event.workflow_run.conclusion }}" = "success" ]; then
+            echo "✅ Deployment completed successfully!"
+            echo "🎉 Environment: ${{ github.event.workflow_run.event }}"
+            echo "🔗 Repository: ${{ github.repository }}"
+            echo "👤 Triggered by: ${{ github.event.workflow_run.triggering_actor.login }}"
+            echo "📅 Date: $(date -u)"
+          else
+            echo "❌ Deployment failed!"
+            echo "💥 Environment: ${{ github.event.workflow_run.event }}"
+            echo "🔗 Repository: ${{ github.repository }}"
+            echo "👤 Triggered by: ${{ github.event.workflow_run.triggering_actor.login }}"
+            echo "📅 Date: $(date -u)"
+          fi
+
+      - name: Send deployment Slack notification
+        if: success() || failure()
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_COLOR: ${{ github.event.workflow_run.conclusion == 'success' && 'good' || 'danger' }}
+          SLACK_MESSAGE: 'Deployment ${{ github.event.workflow_run.conclusion }} for ${{ github.event.workflow_run.event }} environment'
+          SLACK_TITLE: 'Deployment Status'
+          SLACK_USERNAME: 'Deployment Bot'
+          SLACK_ICON_EMOJI: ':rocket:'
+          SLACK_FOOTER: 'Anime Site Project'
+          SLACK_FIELDS: 'repo,commit,author,action,eventName,ref,workflow'
+          MSG_MINIMAL: 'false'
+
+      - name: Log deployment status
+        if: success() || failure()
+        run: |
+          echo "🚀 Deployment Status: ${{ github.event.workflow_run.conclusion }}"
+          echo "🎉 Environment: ${{ github.event.workflow_run.event }}"
+          echo "🔗 Repository: ${{ github.repository }}"
+          echo "👤 Triggered by: ${{ github.event.workflow_run.triggering_actor.login }}"
+          echo "📅 Date: $(date -u)"

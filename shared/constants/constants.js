@@ -38,7 +38,7 @@ const LIMITS = {
   // Пользователи
   USERNAME_MIN_LENGTH: 3,
   USERNAME_MAX_LENGTH: 20,
-  PASSWORD_MIN_LENGTH: 8,
+  PASSWORD_MIN_LENGTH: 12,
   BIO_MAX_LENGTH: 500,
   
   // Комментарии
@@ -68,7 +68,7 @@ const LIMITS = {
 // Регулярные выражения
 const REGEX = {
   USERNAME: /^[a-zA-Z0-9_]+$/,
-  PASSWORD: /^(?=.*[a-zA-Z])(?=.*\d).+$/,
+  PASSWORD: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{12,}$/,
   EMAIL: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
   OBJECT_ID: /^[0-9a-fA-F]{24}$/
 };

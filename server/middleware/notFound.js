@@ -1,4 +1,4 @@
-const { HTTP_STATUS } = require('/app/shared/constants/constants');
+const { HTTP_STATUS } = require('../../shared/constants/constants');
 
 const notFound = (req, res, next) => {
   const error = new Error(`Маршрут ${req.originalUrl} не найден`);

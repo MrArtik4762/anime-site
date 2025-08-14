@@ -1,6 +1,6 @@
 ﻿const AnimeLiberty = require('../models/AnimeLiberty');
 const anilibertyService = require('../services/anilibertyService');
-const { HTTP_STATUS, ERROR_MESSAGES } = require('/app/shared/constants/constants');
+const { HTTP_STATUS, ERROR_MESSAGES } = require('../../shared/constants/constants');
 
 /**
  * РљРѕРЅС‚СЂРѕР»Р»РµСЂ РґР»СЏ СЂР°Р±РѕС‚С‹ СЃ AniLiberty API

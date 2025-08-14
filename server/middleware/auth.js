@@ -1,6 +1,6 @@
 ﻿const jwt = require('jsonwebtoken');
-const User = require('../models/User');
-const { HTTP_STATUS, ERROR_MESSAGES } = require('/app/shared/constants/constants');
+const User = require('../models/UserKnex');
+const { HTTP_STATUS, ERROR_MESSAGES } = require('../../shared/constants/constants');
 // Middleware РґР»СЏ РїСЂРѕРІРµСЂРєРё JWT С‚РѕРєРµРЅР°
 const authenticate = async (req, res, next) => {
   try {
@@ -26,7 +26,7 @@ const authenticate = async (req, res, next) => {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
       // РџРѕР»СѓС‡Р°РµРј РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РёР· Р±Р°Р·С‹ РґР°РЅРЅС‹С…
-      const user = await User.findById(decoded.id).select('-password');
+      const user = await User.findById(decoded.id);
 
       if (!user) {
         return res.status(HTTP_STATUS.UNAUTHORIZED).json({
@@ -38,7 +38,7 @@ const authenticate = async (req, res, next) => {
       }
 
       // РџСЂРѕРІРµСЂСЏРµРј Р°РєС‚РёРІРЅРѕСЃС‚СЊ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
-      if (!user.isUserActive()) {
+      if (!user.is_active) {
         return res.status(HTTP_STATUS.FORBIDDEN).json({
           success: false,
           error: {
@@ -117,9 +117,9 @@ const optionalAuth = async (req, res, next) => {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
       // РџРѕР»СѓС‡Р°РµРј РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РёР· Р±Р°Р·С‹ РґР°РЅРЅС‹С…
-      const user = await User.findById(decoded.id).select('-password');
+      const user = await User.findById(decoded.id);
 
-      if (user && user.isUserActive()) {
+      if (user && user.is_active) {
         req.user = user;
       } else {
         req.user = null;
@@ -156,7 +156,7 @@ const checkOwnership = (resourceModel, resourceIdParam = 'id') => {
       }
 
       // РџСЂРѕРІРµСЂСЏРµРј, СЏРІР»СЏРµС‚СЃСЏ Р»Рё РїРѕР»СЊР·РѕРІР°С‚РµР»СЊ РІР»Р°РґРµР»СЊС†РµРј СЂРµСЃСѓСЂСЃР°
-      const isOwner = resource.userId && resource.userId.toString() === req.user._id.toString();
+      const isOwner = resource.user_id && resource.user_id.toString() === req.user.id.toString();
       const isAdmin = req.user.role === 'admin';
       const isModerator = req.user.role === 'moderator';
 
@@ -190,7 +190,7 @@ const checkOwnership = (resourceModel, resourceIdParam = 'id') => {
 const checkSelfOrAdmin = (userIdParam = 'userId') => {
   return (req, res, next) => {
     const targetUserId = req.params[userIdParam];
-    const currentUserId = req.user._id.toString();
+    const currentUserId = req.user.id.toString();
     const isAdmin = req.user.role === 'admin';
 
     if (targetUserId !== currentUserId && !isAdmin) {
