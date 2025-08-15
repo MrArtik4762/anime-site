@@ -93,12 +93,8 @@ const PopularSection = ({
 
       let animeList = [];
       
-      if (response?.data && Array.isArray(response.data)) {
-        animeList = response.data.map(anime => 
-          anilibriaV2Service.convertAnimeToFormat(anime)
-        );
-      } else if (response && Array.isArray(response)) {
-        animeList = response.map(anime => 
+      if (response && Array.isArray(response)) {
+        animeList = response.map(anime =>
           anilibriaV2Service.convertAnimeToFormat(anime)
         );
       }

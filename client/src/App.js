@@ -1,130 +1,32 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { Toaster } from 'react-hot-toast';
-import { HelmetProvider } from 'react-helmet-async';
-import { AuthProvider } from './context/AuthContext';
-import { ThemeProvider, useTheme } from './components/common/ThemeProvider';
+import { ThemeProvider } from './components/common/ThemeProvider';
 import { GlobalStyles } from './styles/GlobalStyles';
-
-// Components
-import Header from './components/common/Header';
-import ProtectedRoute from './components/common/ProtectedRoute';
-
-// Pages
 import HomePage from './pages/HomePage';
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
 import AnimePage from './pages/AnimePage';
-import WatchPage from './pages/WatchPage';
-import PlayerPage from './pages/PlayerPage';
+import LoginPage from './pages/LoginPage';
 import ProfilePage from './pages/ProfilePage';
-import CatalogPageV2 from './pages/CatalogPageV2';
-import AdminPage from './pages/AdminPage';
-import NotFoundPage from './pages/NotFoundPage';
-import VideoPlayerDemo from './pages/VideoPlayerDemo';
-import AnilibriaV2Test from './pages/AnilibriaV2Test';
-import VoiceSelectorTest from './pages/VoiceSelectorTest';
-
-// Компонент для динамических стилей Toast
-const ToastContainer = () => {
-  const { currentTheme } = useTheme();
-
-  return (
-    <Toaster
-      position="top-right"
-      toastOptions={{
-        duration: 4000,
-        style: {
-          background: currentTheme.colors.surface,
-          color: currentTheme.colors.text,
-          border: `1px solid ${currentTheme.colors.border}`,
-          borderRadius: '8px',
-          boxShadow: `0 8px 32px ${currentTheme.colors.shadow}`,
-        },
-        success: {
-          iconTheme: {
-            primary: currentTheme.colors.success,
-            secondary: 'white',
-          },
-        },
-        error: {
-          iconTheme: {
-            primary: currentTheme.colors.error,
-            secondary: 'white',
-          },
-        },
-      }}
-    />
-  );
-};
+import Header from './components/common/Header';
+import { Toaster } from 'react-hot-toast';
+import { AuthProvider } from './context/AuthContext';
 
 function App() {
   return (
-    <HelmetProvider>
+    <AuthProvider>
       <ThemeProvider>
         <GlobalStyles />
-        <AuthProvider>
-          <Router>
-            <div className="App">
-              <Header />
-
-              <Routes>
-                {/* Публичные маршруты */}
-                <Route path="/" element={<HomePage />} />
-                <Route path="/login" element={<LoginPage />} />
-                <Route path="/register" element={<RegisterPage />} />
-                <Route path="/catalog" element={<CatalogPageV2 />} />
-                <Route path="/popular" element={<CatalogPageV2 filter="popular" />} />
-                <Route path="/latest" element={<CatalogPageV2 filter="latest" />} />
-                <Route path="/anime/:id" element={<AnimePage />} />
-                <Route path="/watch/:episodeId" element={<WatchPage />} />
-                <Route path="/episode/:episodeId" element={<PlayerPage />} />
-                {/* Обратная совместимость со старым форматом */}
-                <Route path="/watch/:animeId/:episodeId" element={<WatchPage />} />
-                <Route path="/demo/video-player" element={<VideoPlayerDemo />} />
-                <Route path="/test/anilibria-v2" element={<AnilibriaV2Test />} />
-                <Route path="/test/voice-selector" element={<VoiceSelectorTest />} />
-
-                {/* Защищенные маршруты */}
-                <Route path="/profile" element={
-                  <ProtectedRoute>
-                    <ProfilePage />
-                  </ProtectedRoute>
-                } />
-                <Route path="/watchlist" element={
-                  <ProtectedRoute>
-                    <ProfilePage tab="watchlist" />
-                  </ProtectedRoute>
-                } />
-                <Route path="/favorites" element={
-                  <ProtectedRoute>
-                    <ProfilePage tab="favorites" />
-                  </ProtectedRoute>
-                } />
-                <Route path="/settings" element={
-                  <ProtectedRoute>
-                    <ProfilePage tab="settings" />
-                  </ProtectedRoute>
-                } />
-
-                {/* Админские маршруты */}
-                <Route path="/admin/*" element={
-                  <ProtectedRoute adminOnly>
-                    <AdminPage />
-                  </ProtectedRoute>
-                } />
-
-                {/* 404 страница */}
-                <Route path="*" element={<NotFoundPage />} />
-              </Routes>
-
-              {/* Toast уведомления с динамической темой */}
-              <ToastContainer />
-            </div>
-          </Router>
-        </AuthProvider>
+        <Router>
+          <Header />
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/anime/:id" element={<AnimePage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/profile" element={<ProfilePage />} />
+          </Routes>
+        </Router>
+        <Toaster />
       </ThemeProvider>
-    </HelmetProvider>
+    </AuthProvider>
   );
 }
 

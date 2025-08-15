@@ -16,7 +16,7 @@ const HomeContainer = styled.div`
 `;
 
 const HeroSection = styled.section`
-  background: ${props => props.theme.colors.gradientPrimary};
+  background: ${props => props.theme.colors.gradients.primary};
   color: white;
   padding: 80px 0;
   text-align: center;

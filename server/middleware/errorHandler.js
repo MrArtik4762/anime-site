@@ -219,3 +219,6 @@ module.exports = {
   wsErrorHandler,
   hlsErrorHandler
 };
+
+// Экспортируем errorHandler как отдельную функцию для app.js
+module.exports.errorHandler = errorHandler;

@@ -121,9 +121,9 @@ class READMEUpdater {
     
     themeSection += `\n### Технические детали\n`;
     themeSection += `Исправления включают:\n`;
-    themeSection += `- Обновление файла [`client/src/styles/theme.js`](client/src/styles/theme.js) с полной переработкой структуры темы\n`;
-    themeSection += `- Улучшение компонента [`client/src/components/common/ThemeProvider.jsx`](client/src/components/common/ThemeProvider.jsx) для корректной инициализации\n`;
-    themeSection += `- Добавление утилит для автоматического переключения темы в [`client/src/utils/autoThemeSwitch.js`](client/src/utils/autoThemeSwitch.js)\n`;
+    themeSection += `- Обновление файла [client/src/styles/theme.js](client/src/styles/theme.js) с полной переработкой структуры темы\n`;
+    themeSection += `- Улучшение компонента [client/src/components/common/ThemeProvider.jsx](client/src/components/common/ThemeProvider.jsx) для корректной инициализации\n`;
+    themeSection += `- Добавление утилит для автоматического переключения темы в [client/src/utils/autoThemeSwitch.js](client/src/utils/autoThemeSwitch.js)\n`;
     themeSection += `- Оптимизация компонентов переключателя темы для лучшей производительности\n`;
     themeSection += `- Добавление безопасных обращений к свойствам темы во всех компонентах\n`;
     
@@ -198,8 +198,8 @@ class READMEUpdater {
       if (!updatedReadme.includes('## 🎨 Исправления и улучшения темы')) {
         const updatesEnd = updatedReadme.indexOf('## 🛠 Технологический стек');
         if (updatesEnd !== -1) {
-          updatedReadme = updatedReadme.substring(0, updatesEnd) +
-                         themeFixes + '\n\n' +
+          updatedReadme = updatedReadme.substring(0, updatesEnd) + 
+                         themeFixes + '\n\n' + 
                          updatedReadme.substring(updatesEnd);
         }
       }
@@ -208,8 +208,8 @@ class READMEUpdater {
       if (!updatedReadme.includes('## 📊 Статистика проекта')) {
         const techStackStart = updatedReadme.indexOf('## 🛠 Технологический стек');
         if (techStackStart !== -1) {
-          updatedReadme = updatedReadme.substring(0, techStackStart) +
-                         projectStats + '\n\n' +
+          updatedReadme = updatedReadme.substring(0, techStackStart) + 
+                         projectStats + '\n\n' + 
                          updatedReadme.substring(techStackStart);
         }
       }

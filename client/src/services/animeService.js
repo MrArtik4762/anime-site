@@ -450,3 +450,42 @@ export const getAnimeByReleaseYear = async (releaseYear, page = 1, limit = 20) =
 };
 
 // Получение аниме по месяцу выпуска
+
+// Экспорт animeService как объекта для совместимости
+export const animeService = {
+  getAnimeList,
+  getAnimeById,
+  searchAnime,
+  getPopularAnime,
+  getRecentAnime,
+  getAnimeByGenres,
+  getAnimeByStudio,
+  getAnimeByYear,
+  getAnimeBySeason,
+  getAnimeByType,
+  getAnimeByStatus,
+  getAnimeByRating,
+  getAnimeByFilters,
+  getAnimeBySort,
+  getAnimeByFiltersAndSort,
+  getRecommendedAnime,
+  getWatchlistAnime,
+  getFavoritesAnime,
+  getHistoryAnime,
+  addToWatchlist,
+  removeFromWatchlist,
+  addToFavorites,
+  removeFromFavorites,
+  checkInWatchlist,
+  checkInFavorites,
+  getSimilarAnime,
+  getAnimeByTags,
+  getAnimeByCategories,
+  getAnimeByLanguage,
+  getAnimeByQuality,
+  getAnimeByFormat,
+  getAnimeByDuration,
+  getAnimeByAgeRating,
+  getAnimeByCountry,
+  getAnimeByReleaseYear
+};

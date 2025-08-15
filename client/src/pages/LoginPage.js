@@ -12,7 +12,7 @@ const LoginContainer = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  background: ${props => props.theme.colors.gradientPrimary};
+  background: ${props => props.theme.colors.gradients.primary};
   padding: 20px;
 `;
 

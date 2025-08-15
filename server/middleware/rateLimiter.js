@@ -83,14 +83,7 @@ const authLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
-  skipSuccessfulRequests: true, // РќРµ СЃС‡РёС‚Р°РµРј СѓСЃРїРµС€РЅС‹Рµ Р·Р°РїСЂРѕСЃС‹
-  onLimitReached: (req, res, options) => {
-    console.warn(`Auth rate limit exceeded for ${req.ip}`, {
-      ip: req.ip,
-      endpoint: req.path,
-      userAgent: req.get('User-Agent')
-    });
-  }
+  skipSuccessfulRequests: true // РќРµ СЃС‡РёС‚Р°РµРј СѓСЃРїРµС€РЅС‹Рµ Р·Р°РїСЂРѕСЃС‹
 });
 
 /**

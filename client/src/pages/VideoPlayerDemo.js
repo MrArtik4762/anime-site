@@ -3,7 +3,7 @@ import styled from 'styled-components';
 import { VideoPlayer } from '../components/video';
 import QualityController from '../components/video/QualityController';
 import VoiceSelector from '../components/video/VoiceSelector';
-import { useTheme } from '../context/ThemeContext';
+import { useTheme } from '../components/common/ThemeProvider';
 
 const DemoContainer = styled.div`
   min-height: 100vh;

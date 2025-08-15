@@ -159,10 +159,7 @@ app.get('/health', async (req, res) => {
     health.databaseError = error.message;
   }
   
-  // Add Redis status if available
-  if (redisConnected !== undefined) {
-    health.redis = redisConnected ? 'connected' : 'disconnected';
-  }
+  // Redis status not implemented in this version
   
   const statusCode = health.status === 'OK' ? 200 : 503;
   res.status(statusCode).json(health);
@@ -243,15 +240,7 @@ const gracefulShutdown = async (signal) => {
         console.error('Error closing database connection:', dbError.message);
       }
       
-      // Close Redis connection if available
-      if (redis && redisConnected) {
-        try {
-          await redis.quit();
-          console.log('Redis connection closed.');
-        } catch (redisError) {
-          console.error('Error closing Redis connection:', redisError.message);
-        }
-      }
+      // Redis connection not implemented in this version
       
       process.exit(0);
     });

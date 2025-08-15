@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import styled from 'styled-components';
 import { useAuth } from '../context/AuthContext';
-import { Container, Card, Button } from '../styles/GlobalStyles';
+import { Container, Card } from '../styles/GlobalStyles';
 
 const ProfileContainer = styled.div`
   min-height: 100vh;
@@ -18,7 +18,7 @@ const Avatar = styled.div`
   width: 120px;
   height: 120px;
   border-radius: 50%;
-  background: ${props => props.theme.colors.gradientPrimary};
+  background: ${props => props.theme.colors.gradients.primary};
   display: flex;
   align-items: center;
   justify-content: center;

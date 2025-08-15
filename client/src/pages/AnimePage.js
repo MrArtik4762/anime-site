@@ -44,7 +44,7 @@ const Poster = styled.img`
 const PosterPlaceholder = styled.div`
   width: 100%;
   height: 420px;
-  background: ${props => props.theme.colors.gradientPrimary};
+  background: ${props => props.theme.colors.gradients.primary};
   border-radius: 12px;
   display: flex;
   align-items: center;
@@ -209,7 +209,7 @@ const EpisodeImage = styled.div`
   position: relative;
   width: 100%;
   height: 160px;
-  background: ${props => props.theme.colors.gradientPrimary};
+  background: ${props => props.theme.colors.gradients.primary};
   display: flex;
   align-items: center;
   justify-content: center;

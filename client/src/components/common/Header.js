@@ -11,10 +11,10 @@ const HeaderContainer = styled.header`
   top: 0;
   left: 0;
   right: 0;
-  background: ${props => props.theme.colors.surface};
+  background: ${props => props.theme?.colors?.surface || '#FFFFFF'};
   backdrop-filter: blur(10px);
-  border-bottom: 1px solid ${props => props.theme.colors.border};
-  z-index: ${props => props.theme.zIndex.sticky};
+  border-bottom: 1px solid ${props => props.theme?.colors?.border || '#E0E0E0'};
+  z-index: ${props => props.theme?.zIndex?.sticky || 1000};
   transition: all 0.3s ease;
 `;
 
@@ -28,7 +28,7 @@ const HeaderContent = styled(Container)`
 const Logo = styled(Link)`
   font-size: 1.5rem;
   font-weight: 700;
-  color: ${props => props.theme.colors.primary};
+  color: ${props => props.theme?.colors?.primary || '#FF4D4D'};
   text-decoration: none;
   display: flex;
   align-items: center;
@@ -46,18 +46,18 @@ const Nav = styled.nav`
 `;
 
 const NavLink = styled(Link)`
-  color: ${props => props.theme.colors.text};
+  color: ${props => props.theme?.colors?.text || '#333333'};
   text-decoration: none;
   font-weight: 500;
   transition: color 0.3s ease;
   position: relative;
   
   &:hover {
-    color: ${props => props.theme.colors.primary};
+    color: ${props => props.theme?.colors?.primary || '#FF4D4D'};
   }
   
   &.active {
-    color: ${props => props.theme.colors.primary};
+    color: ${props => props.theme?.colors?.primary || '#FF4D4D'};
     
     &::after {
       content: '';
@@ -66,7 +66,7 @@ const NavLink = styled(Link)`
       left: 0;
       right: 0;
       height: 2px;
-      background: ${props => props.theme.colors.primary};
+      background: ${props => props.theme?.colors?.primary || '#FF4D4D'};
       border-radius: 1px;
     }
   }
@@ -88,14 +88,14 @@ const UserButton = styled.button`
   gap: 8px;
   padding: 8px 12px;
   border-radius: 8px;
-  background: ${props => props.theme.colors.surface};
-  border: 1px solid ${props => props.theme.colors.border};
-  color: ${props => props.theme.colors.text};
+  background: ${props => props.theme?.colors?.surface || '#FFFFFF'};
+  border: 1px solid ${props => props.theme?.colors?.border || '#E0E0E0'};
+  color: ${props => props.theme?.colors?.text || '#333333'};
   cursor: pointer;
   transition: all 0.3s ease;
   
   &:hover {
-    background: ${props => props.theme.colors.surfaceSecondary};
+    background: ${props => props.theme?.colors?.surfaceSecondary || '#F5F5F5'};
   }
 `;
 
@@ -103,7 +103,7 @@ const Avatar = styled.div`
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: ${props => props.theme.colors.gradientPrimary};
+  background: ${props => props.theme?.colors?.gradients?.primary || 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -117,10 +117,10 @@ const DropdownMenu = styled(motion.div)`
   top: 100%;
   right: 0;
   margin-top: 8px;
-  background: ${props => props.theme.colors.surface};
-  border: 1px solid ${props => props.theme.colors.border};
+  background: ${props => props.theme?.colors?.surface || '#FFFFFF'};
+  border: 1px solid ${props => props.theme?.colors?.border || '#E0E0E0'};
   border-radius: 8px;
-  box-shadow: 0 8px 32px ${props => props.theme.colors.shadow};
+  box-shadow: 0 8px 32px ${props => props.theme?.colors?.shadow || 'rgba(0, 0, 0, 0.1)'};
   min-width: 200px;
   overflow: hidden;
 `;
@@ -128,18 +128,18 @@ const DropdownMenu = styled(motion.div)`
 const DropdownItem = styled(Link)`
   display: block;
   padding: 12px 16px;
-  color: ${props => props.theme.colors.text};
+  color: ${props => props.theme?.colors?.text || '#333333'};
   text-decoration: none;
   transition: background-color 0.3s ease;
   
   &:hover {
-    background: ${props => props.theme.colors.surfaceSecondary};
+    background: ${props => props.theme?.colors?.surfaceSecondary || '#F5F5F5'};
   }
 `;
 
 const DropdownDivider = styled.div`
   height: 1px;
-  background: ${props => props.theme.colors.border};
+  background: ${props => props.theme?.colors?.border || '#E0E0E0'};
   margin: 4px 0;
 `;
 
@@ -149,12 +149,12 @@ const LogoutButton = styled.button`
   text-align: left;
   background: none;
   border: none;
-  color: ${props => props.theme.colors.error};
+  color: ${props => props.theme?.colors?.error || '#FF4D4D'};
   cursor: pointer;
   transition: background-color 0.3s ease;
   
   &:hover {
-    background: ${props => props.theme.colors.surfaceSecondary};
+    background: ${props => props.theme?.colors?.surfaceSecondary || '#F5F5F5'};
   }
 `;
 
@@ -174,7 +174,7 @@ const MobileMenuButton = styled.button`
   span {
     width: 24px;
     height: 2px;
-    background: ${props => props.theme.colors.text};
+    background: ${props => props.theme?.colors?.text || '#333333'};
     transition: all 0.3s ease;
     transform-origin: center;
     
@@ -197,8 +197,8 @@ const MobileMenu = styled(motion.div)`
   top: 100%;
   left: 0;
   right: 0;
-  background: ${props => props.theme.colors.surface};
-  border-bottom: 1px solid ${props => props.theme.colors.border};
+  background: ${props => props.theme?.colors?.surface || '#FFFFFF'};
+  border-bottom: 1px solid ${props => props.theme?.colors?.border || '#E0E0E0'};
   padding: 20px;
   
   @media (min-width: 769px) {
@@ -209,17 +209,17 @@ const MobileMenu = styled(motion.div)`
 const MobileNavLink = styled(Link)`
   display: block;
   padding: 12px 0;
-  color: ${props => props.theme.colors.text};
+  color: ${props => props.theme?.colors?.text || '#333333'};
   text-decoration: none;
   font-weight: 500;
-  border-bottom: 1px solid ${props => props.theme.colors.border};
+  border-bottom: 1px solid ${props => props.theme?.colors?.border || '#E0E0E0'};
   
   &:last-child {
     border-bottom: none;
   }
   
   &:hover {
-    color: ${props => props.theme.colors.primary};
+    color: ${props => props.theme?.colors?.primary || '#FF4D4D'};
   }
 `;
 

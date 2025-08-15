@@ -59,9 +59,9 @@ export const colors = {
   background: {
     primary: '#FFFFFF',
     secondary: '#F5F5F5',
-      tertiary: '#EEEEEE',
+    tertiary: '#EEEEEE',
     dark: '#121212',
-      darkSecondary: '#1E1E1E',
+    darkSecondary: '#1E1E1E',
     darkTertiary: '#2A2A2A',
   },
   
@@ -401,6 +401,27 @@ export const card = {
     transform: 'translateY(-4px)',
     boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
   },
+};
+
+// Транзиции
+export const transitions = {
+  // Транзиции для интерактивных элементов
+  interactive: 'all 0.2s ease',
+  
+  // Транзиции для анимаций
+  animation: 'all 0.3s ease',
+  
+  // Транзиции для модальных окон
+  modal: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+  
+  // Транзиции для карточек
+  card: 'all 0.3s ease',
+  
+  // Транзиции для кнопок
+  button: 'all 0.2s ease',
+  
+  // Транзиции для форм
+  form: 'all 0.2s ease',
 };
 
 // Утилиты

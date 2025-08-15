@@ -44,7 +44,7 @@ const AnimeImage = styled.img`
 const ImagePlaceholder = styled.div`
   width: 100%;
   height: 100%;
-  background: ${props => props.theme.colors.gradientPrimary};
+  background: ${props => props.theme.colors.gradients.primary};
   display: flex;
   align-items: center;
   justify-content: center;

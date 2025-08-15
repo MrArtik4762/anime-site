@@ -47,7 +47,7 @@ const EpisodeImage = styled.div`
   position: relative;
   width: 100%;
   height: 180px;
-  background: ${props => props.theme.colors.gradientPrimary};
+  background: ${props => props.theme.colors.gradients.primary};
   overflow: hidden;
 
   img {
@@ -232,9 +232,7 @@ const NewEpisodesSection = ({
 
       let episodesList = [];
 
-      if (response?.data && Array.isArray(response.data)) {
-        episodesList = response.data;
-      } else if (response && Array.isArray(response)) {
+      if (response && Array.isArray(response)) {
         episodesList = response;
       }
 
