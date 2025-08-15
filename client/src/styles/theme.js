@@ -149,7 +149,7 @@ export const lightTheme = {
         &:focus {
           outline: none;
           border-color: ${colors.primary};
-          box-shadow: 0 0 0 3px ${colors.opacity['20']};
+          box-shadow: 0 0 0 3px ${opacity['20']};
         }
         
         &:disabled {
@@ -192,7 +192,7 @@ export const lightTheme = {
         &:focus {
           outline: none;
           border-color: ${colors.primary};
-          box-shadow: 0 0 0 3px ${colors.opacity['20']};
+          box-shadow: 0 0 0 3px ${opacity['20']};
         }
         
         &:disabled {
@@ -226,7 +226,7 @@ export const lightTheme = {
         &:focus {
           outline: none;
           border-color: ${colors.primary};
-          box-shadow: 0 0 0 3px ${colors.opacity['20']};
+          box-shadow: 0 0 0 3px ${opacity['20']};
         }
         
         &:disabled {
@@ -274,7 +274,7 @@ export const lightTheme = {
         
         &:focus {
           outline: none;
-          box-shadow: 0 0 0 3px ${colors.opacity['20']};
+          box-shadow: 0 0 0 3px ${opacity['20']};
         }
         
         &:disabled {
@@ -321,7 +321,7 @@ export const lightTheme = {
         
         &:focus {
           outline: none;
-          box-shadow: 0 0 0 3px ${colors.opacity['20']};
+          box-shadow: 0 0 0 3px ${opacity['20']};
         }
         
         &:disabled {
@@ -385,7 +385,7 @@ export const lightTheme = {
         }
         
         input:focus + .slider {
-          box-shadow: 0 0 0 3px ${colors.opacity['20']};
+          box-shadow: 0 0 0 3px ${opacity['20']};
         }
         
         input:disabled + .slider {
@@ -648,7 +648,7 @@ export const lightTheme = {
       margin-bottom: ${spacing[4]};
       
       &.info {
-        background-color: ${colors.opacity['10']};
+        background-color: ${opacity['10']};
         border-left-color: ${colors.info};
         color: ${colors.text.primary};
       }
@@ -1313,13 +1313,208 @@ export const darkTheme = {
   elevation: elevation,
   
   // Стили для форм (остаются теми же)
-  form: form,
+  form: {
+    ...form,
+    // Добавляем стили для наших компонентов форм (темная версия)
+    input: `
+      width: 100%;
+      padding: ${spacing[3]} ${spacing[4]};
+      border: 1px solid ${colors.border.mediumDark};
+      border-radius: ${borderRadius.md};
+      font-size: ${typography.fontSize.sm};
+      background-color: ${colors.surface.dark};
+      color: ${colors.text.primary};
+      transition: all ${transitions.normal};
+      
+      &:focus {
+        outline: none;
+        border-color: ${colors.primary};
+        box-shadow: 0 0 0 3px ${opacity['20']};
+      }
+      
+      &:disabled {
+        background-color: ${colors.surface.darkTertiary};
+        cursor: not-allowed;
+        opacity: 0.6;
+      }
+      
+      &.error {
+        border-color: ${colors.error};
+      }
+      
+      &.success {
+        border-color: ${colors.success};
+      }
+    `,
+  },
   
   // Стили для карточек (остаются теми же)
-  card: card,
+  card: {
+    ...card,
+    // Добавляем стили для наших компонентов карточек (темная версия)
+    base: `
+      background-color: ${colors.surface.dark};
+      border-radius: ${borderRadius.lg};
+      box-shadow: ${colors.shadow.dark};
+      transition: all ${transitions.normal};
+      overflow: hidden;
+      
+      &:hover {
+        box-shadow: ${colors.shadow.lg};
+        transform: translateY(-2px);
+      }
+    `,
+    header: `
+      padding: ${spacing[4]};
+      border-bottom: 1px solid ${colors.border.mediumDark};
+    `,
+    body: `
+      padding: ${spacing[4]};
+    `,
+    footer: `
+      padding: ${spacing[4]};
+      border-top: 1px solid ${colors.border.mediumDark};
+    `,
+    image: `
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      border-radius: ${borderRadius.md} ${borderRadius.md} 0 0;
+    `,
+    badge: `
+      position: absolute;
+      top: ${spacing[3]};
+      right: ${spacing[3]};
+      padding: ${spacing[1]} ${spacing[3]};
+      border-radius: ${borderRadius.full};
+      font-size: ${typography.fontSize.xs};
+      font-weight: ${typography.fontWeight.medium};
+    `,
+  },
   
   // Утилиты (остаются теми же)
-  utils: utils,
+  utils: {
+    ...utils,
+    // Добавляем утилиты для наших компонентов (темная версия)
+    tooltip: `
+      position: relative;
+      
+      .tooltip-content {
+        position: absolute;
+        background-color: ${colors.surface.dark};
+        color: ${colors.text.primary};
+        padding: ${spacing[2]} ${spacing[3]};
+        border-radius: ${borderRadius.md};
+        font-size: ${typography.fontSize.xs};
+        white-space: nowrap;
+        z-index: ${zIndex.tooltip};
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity ${transitions.normal};
+        box-shadow: ${colors.shadow.dark};
+        
+        &::before {
+          content: '';
+          position: absolute;
+          width: 0;
+          height: 0;
+        }
+      }
+      
+      &:hover .tooltip-content {
+        opacity: 1;
+      }
+    `,
+    
+    avatar: `
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid ${colors.border.mediumDark};
+      
+      &.small {
+        width: 32px;
+        height: 32px;
+      }
+      
+      &.large {
+        width: 48px;
+        height: 48px;
+      }
+      
+      &.circle {
+        border-radius: 50%;
+      }
+      
+      &.square {
+        border-radius: ${borderRadius.md};
+      }
+    `,
+    
+    badge: `
+      display: inline-flex;
+      align-items: center;
+      padding: ${spacing[1]} ${spacing[3]};
+      border-radius: ${borderRadius.full};
+      font-size: ${typography.fontSize.xs};
+      font-weight: ${typography.fontWeight.medium};
+      line-height: 1;
+      
+      &.primary {
+        background-color: ${colors.primary};
+        color: ${colors.text.inverse};
+      }
+      
+      &.secondary {
+        background-color: ${colors.secondary};
+        color: ${colors.text.inverse};
+      }
+      
+      &.success {
+        background-color: ${colors.success};
+        color: ${colors.text.inverse};
+      }
+      
+      &.warning {
+        background-color: ${colors.warning};
+        color: ${colors.text.inverse};
+      }
+      
+      &.error {
+        background-color: ${colors.error};
+        color: ${colors.text.inverse};
+      }
+      
+      &.info {
+        background-color: ${colors.info};
+        color: ${colors.text.inverse};
+      }
+      
+      &.ghost {
+        background-color: transparent;
+        color: ${colors.text.secondary};
+        border: 1px solid ${colors.border.mediumDark};
+      }
+      
+      &.pill {
+        border-radius: ${borderRadius.full};
+      }
+      
+      &.dot {
+        padding: ${spacing[1]};
+        border-radius: 50%;
+        width: 8px;
+        height: 8px;
+        min-width: 8px;
+        min-height: 8px;
+      }
+      
+      &.with-icon {
+        padding-left: ${spacing[2]};
+      }
+    `,
+  },
   
   // Дополнительные настройки
   transitions: {

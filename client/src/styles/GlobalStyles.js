@@ -17,8 +17,8 @@ export const GlobalStyles = createGlobalStyle`
       'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    background-color: ${props => props.theme.colors.background};
-    color: ${props => props.theme.colors.text};
+    background-color: ${props => props.theme?.colors?.background?.primary || '#FFFFFF'};
+    color: ${props => props.theme?.colors?.text?.primary || '#000000'};
     line-height: 1.6;
     overflow-x: hidden;
   }
@@ -34,7 +34,7 @@ export const GlobalStyles = createGlobalStyle`
   }
 
   a:hover {
-    color: ${props => props.theme.colors.primary};
+    color: ${props => props.theme?.colors?.primary || '#FF4D4D'};
   }
 
   button {
@@ -68,16 +68,16 @@ export const GlobalStyles = createGlobalStyle`
   }
 
   ::-webkit-scrollbar-track {
-    background: ${props => props.theme.colors.surface};
+    background: ${props => props.theme?.colors?.surface?.primary || '#FAFAFA'};
   }
 
   ::-webkit-scrollbar-thumb {
-    background: ${props => props.theme.colors.primary};
+    background: ${props => props.theme?.colors?.primary || '#FF4D4D'};
     border-radius: 4px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: ${props => props.theme.colors.primaryDark};
+    background: ${props => props.theme?.colors?.primaryDark || '#E55555'};
   }
 
   /* Loading animation */
@@ -156,7 +156,7 @@ export const Container = styled.div`
 `;
 
 export const Card = styled.div`
-  background: ${props => props.theme.colors.surface};
+  background: ${props => props.theme?.colors?.surface || '#FFFFFF'};
   border-radius: 12px;
   padding: 24px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
@@ -171,12 +171,12 @@ export const Card = styled.div`
 export const Button = styled.button`
   background: ${props => props.variant === 'outline'
     ? 'transparent'
-    : props.theme.colors.primary};
+    : props.theme?.colors?.primary || '#FF4D4D'};
   color: ${props => props.variant === 'outline'
-    ? props.theme.colors.primary
+    ? props.theme?.colors?.primary || '#FF4D4D'
     : 'white'};
   border: ${props => props.variant === 'outline'
-    ? `2px solid ${props.theme.colors.primary}`
+    ? `2px solid ${props.theme?.colors?.primary || '#FF4D4D'}`
     : 'none'};
   padding: 12px 24px;
   border-radius: 8px;
@@ -192,8 +192,8 @@ export const Button = styled.button`
 
   &:hover {
     background: ${props => props.variant === 'outline'
-    ? props.theme.colors.primary
-    : props.theme.colors.primaryDark};
+    ? props.theme?.colors?.primary || '#FF4D4D'
+    : props.theme?.colors?.primaryDark || '#E55555'};
     color: white;
     transform: translateY(-1px);
   }
@@ -222,21 +222,21 @@ export const Button = styled.button`
 `;
 
 export const Input = styled.input`
-  background: ${props => props.theme.colors.surface};
-  border: 2px solid ${props => props.theme.colors.border};
+  background: ${props => props.theme?.colors?.surface || '#FFFFFF'};
+  border: 2px solid ${props => props.theme?.colors?.border || '#E0E0E0'};
   border-radius: 8px;
   padding: 12px 16px;
   font-size: 14px;
-  color: ${props => props.theme.colors.text};
+  color: ${props => props.theme?.colors?.text || '#000000'};
   transition: border-color 0.3s ease;
   width: 100%;
 
   &:focus {
-    border-color: ${props => props.theme.colors.primary};
+    border-color: ${props => props.theme?.colors?.primary || '#FF4D4D'};
   }
 
   &::placeholder {
-    color: ${props => props.theme.colors.textSecondary};
+    color: ${props => props.theme?.colors?.textSecondary || '#666666'};
   }
 
   &:disabled {
@@ -246,23 +246,23 @@ export const Input = styled.input`
 `;
 
 export const Textarea = styled.textarea`
-  background: ${props => props.theme.colors.surface};
-  border: 2px solid ${props => props.theme.colors.border};
+  background: ${props => props.theme?.colors?.surface || '#FFFFFF'};
+  border: 2px solid ${props => props.theme?.colors?.border || '#E0E0E0'};
   border-radius: 8px;
   padding: 12px 16px;
   font-size: 14px;
-  color: ${props => props.theme.colors.text};
+  color: ${props => props.theme?.colors?.text || '#000000'};
   transition: border-color 0.3s ease;
   width: 100%;
   min-height: 120px;
   resize: vertical;
 
   &:focus {
-    border-color: ${props => props.theme.colors.primary};
+    border-color: ${props => props.theme?.colors?.primary || '#FF4D4D'};
   }
 
   &::placeholder {
-    color: ${props => props.theme.colors.textSecondary};
+    color: ${props => props.theme?.colors?.textSecondary || '#666666'};
   }
 
   &:disabled {
@@ -274,8 +274,8 @@ export const Textarea = styled.textarea`
 export const LoadingSpinner = styled.div`
   width: ${props => props.size || '24px'};
   height: ${props => props.size || '24px'};
-  border: 2px solid ${props => props.theme.colors.border};
-  border-top: 2px solid ${props => props.theme.colors.primary};
+  border: 2px solid ${props => props.theme?.colors?.border || '#E0E0E0'};
+  border-top: 2px solid ${props => props.theme?.colors?.primary || '#FF4D4D'};
   border-radius: 50%;
   animation: spin 1s linear infinite;
 `;

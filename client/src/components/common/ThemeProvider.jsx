@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { lightTheme, darkTheme, getTheme } from '../../styles/theme';
+import { lightTheme, getTheme } from '../../styles/theme';
+import { ThemeProvider as StyledThemeProvider } from 'styled-components';
 
 // Создаем контекст темы
 const ThemeContext = createContext();
@@ -7,35 +8,41 @@ const ThemeContext = createContext();
 // Провайдер темы
 export const ThemeProvider = ({ children }) => {
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const [theme, setTheme] = useState(lightTheme);
+  const [theme, setTheme] = useState(lightTheme); // Инициализируем с светлой темой
+  const [isInitialized, setIsInitialized] = useState(false);
 
-  // Инициализация темы при загрузке
+  // Инициализация темы при загрузке (только на клиенте)
   useEffect(() => {
-    const savedTheme = localStorage.getItem('theme');
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    
-    if (savedTheme) {
-      setIsDarkMode(savedTheme === 'dark');
-    } else {
-      setIsDarkMode(prefersDark);
+    if (typeof window !== 'undefined') {
+      const savedTheme = localStorage.getItem('theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      
+      if (savedTheme) {
+        setIsDarkMode(savedTheme === 'dark');
+      } else {
+        setIsDarkMode(prefersDark);
+      }
+      setIsInitialized(true);
     }
   }, []);
 
   // Обновление темы при изменении isDarkMode
   useEffect(() => {
-    const newTheme = getTheme(isDarkMode);
-    setTheme(newTheme);
-    
-    // Сохраняем предпочтение пользователя
-    localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
-    
-    // Применяем класс к body для CSS-селекторов
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
+    if (isInitialized && typeof window !== 'undefined') {
+      const newTheme = getTheme(isDarkMode);
+      setTheme(newTheme);
+      
+      // Сохраняем предпочтение пользователя
+      localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
+      
+      // Применяем класс к body для CSS-селекторов
+      if (isDarkMode) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
     }
-  }, [isDarkMode]);
+  }, [isDarkMode, isInitialized]);
 
   // Переключение темы
   const toggleTheme = () => {
@@ -62,11 +69,14 @@ export const ThemeProvider = ({ children }) => {
     opacity: theme.opacity,
     elevation: theme.elevation,
     transitions: theme.transitions,
+    isInitialized,
   };
 
   return (
     <ThemeContext.Provider value={value}>
-      {children}
+      <StyledThemeProvider theme={theme}>
+        {children}
+      </StyledThemeProvider>
     </ThemeContext.Provider>
   );
 };
