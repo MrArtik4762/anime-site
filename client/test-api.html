@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тест API поиска аниме</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .search-container {
+            margin-bottom: 20px;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .results {
+            margin-top: 20px;
+        }
+        .anime-card {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 10px;
+        }
+        .error {
+            color: red;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Тест API поиска аниме</h1>
+    
+    <div class="search-container">
+        <input type="text" id="searchInput" placeholder="Введите название аниме...">
+        <button onclick="searchAnime()">Поиск</button>
+    </div>
+    
+    <div id="results" class="results"></div>
+    <div id="error" class="error"></div>
+
+    <script>
+        async function searchAnime() {
+            const query = document.getElementById('searchInput').value.trim();
+            const resultsDiv = document.getElementById('results');
+            const errorDiv = document.getElementById('error');
+            
+            if (!query) {
+                errorDiv.textContent = 'Введите поисковый запрос';
+                resultsDiv.innerHTML = '';
+                return;
+            }
+            
+            errorDiv.textContent = '';
+            resultsDiv.innerHTML = '<p>Идет поиск...</p>';
+            
+            try {
+                // Используем fetch для прямого обращения к API
+                const response = await fetch(`http://127.0.0.1:7000/api/anime/search?q=${encodeURIComponent(query)}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayResults(data.data);
+                } else {
+                    errorDiv.textContent = 'Ошибка поиска: ' + (data.error || 'Неизвестная ошибка');
+                    resultsDiv.innerHTML = '';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                errorDiv.textContent = 'Ошибка при выполнении запроса: ' + error.message;
+                resultsDiv.innerHTML = '';
+            }
+        }
+        
+        function displayResults(data) {
+            const resultsDiv = document.getElementById('results');
+            
+            if (data.anime.length === 0) {
+                resultsDiv.innerHTML = '<p>Ничего не найдено</p>';
+                return;
+            }
+            
+            let html = `<p>Найдено ${data.count} результатов для "${data.query}":</p>`;
+            
+            data.anime.forEach(anime => {
+                html += `
+                    <div class="anime-card">
+                        <h3>${anime.title}</h3>
+                        <p>Год: ${anime.year}</p>
+                    </div>
+                `;
+            });
+            
+            resultsDiv.innerHTML = html;
+        }
+        
+        // Обработка нажатия Enter в поле ввода
+        document.getElementById('searchInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchAnime();
+            }
+        });
+    </script>
+</body>
+</html>

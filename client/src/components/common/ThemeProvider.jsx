@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { lightTheme, getTheme } from '../../styles/theme';
 import { ThemeProvider as StyledThemeProvider } from 'styled-components';
+import { useAutoThemeSwitch } from '../../utils/autoThemeSwitch';
 
 // Создаем контекст темы
 const ThemeContext = createContext();
@@ -10,18 +11,23 @@ export const ThemeProvider = ({ children }) => {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [theme, setTheme] = useState(lightTheme); // Инициализируем с светлой темой
   const [isInitialized, setIsInitialized] = useState(false);
+  const [autoThemeEnabled, setAutoThemeEnabled] = useState(false);
 
   // Инициализация темы при загрузке (только на клиенте)
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const savedTheme = localStorage.getItem('theme');
+      const savedAutoTheme = localStorage.getItem('autoThemeEnabled') === 'true';
       const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
       
+      // Проверяем системные предпочтения, если нет сохраненных настроек
       if (savedTheme) {
         setIsDarkMode(savedTheme === 'dark');
       } else {
         setIsDarkMode(prefersDark);
       }
+      
+      setAutoThemeEnabled(savedAutoTheme);
       setIsInitialized(true);
     }
   }, []);
@@ -45,14 +51,44 @@ export const ThemeProvider = ({ children }) => {
   }, [isDarkMode, isInitialized]);
 
   // Переключение темы
-  const toggleTheme = () => {
-    setIsDarkMode(!isDarkMode);
-  };
+  const toggleTheme = useCallback(() => {
+    setIsDarkMode(prevMode => {
+      const newMode = !prevMode;
+      // Отключаем автотему при ручном переключении
+      if (autoThemeEnabled) {
+        setAutoThemeEnabled(false);
+        localStorage.setItem('autoThemeEnabled', 'false');
+      }
+      return newMode;
+    });
+  }, [autoThemeEnabled]);
 
   // Установка конкретной темы
-  const setMode = (mode) => {
+  const setMode = useCallback((mode) => {
     setIsDarkMode(mode === 'dark');
-  };
+    // Отключаем автотему при ручном переключении
+    if (autoThemeEnabled) {
+      setAutoThemeEnabled(false);
+      localStorage.setItem('autoThemeEnabled', 'false');
+    }
+  }, [autoThemeEnabled]);
+
+  // Включение/выключение автоматического переключения темы
+  const toggleAutoTheme = useCallback(() => {
+    setAutoThemeEnabled(prev => {
+      const newAutoTheme = !prev;
+      localStorage.setItem('autoThemeEnabled', newAutoTheme.toString());
+      return newAutoTheme;
+    });
+  }, []);
+
+  // Обработка автоматического переключения темы
+  const handleAutoThemeChange = useCallback((newTheme) => {
+    setIsDarkMode(newTheme === 'dark');
+  }, []);
+
+  // Инициализация автоматического переключения темы
+  useAutoThemeSwitch(handleAutoThemeChange);
 
   // Контекст значения
   const value = {
@@ -60,6 +96,8 @@ export const ThemeProvider = ({ children }) => {
     isDarkMode,
     toggleTheme,
     setMode,
+    toggleAutoTheme,
+    autoThemeEnabled,
     colors: theme.colors,
     typography: theme.typography,
     spacing: theme.spacing,

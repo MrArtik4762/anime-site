@@ -24,6 +24,10 @@ class User {
     this.created_at = user.created_at;
     this.updated_at = user.updated_at;
     this.deleted_at = user.deleted_at;
+    // Поля для 2FA
+    this.is_2fa_enabled = user.is_2fa_enabled || false;
+    this.secret_2fa = user.secret_2fa;
+    this.backup_codes_2fa = user.backup_codes_2fa;
   }
 
   // Создание пользователя
@@ -312,6 +316,122 @@ class User {
       return !existingUser;
     } catch (error) {
       console.error('Error checking username uniqueness:', error);
+      throw error;
+    }
+  }
+
+  // Проверка активности пользователя
+  isUserActive() {
+    if (this.deleted_at) return false;
+    return true;
+  }
+
+  // Статический метод для поиска пользователя по refresh токену
+  static async findByRefreshToken(refreshToken) {
+    try {
+      const user = await db('users')
+        .select('*')
+        .where({ refresh_token: refreshToken })
+        .whereNull('deleted_at')
+        .first();
+      
+      return user ? new User(user) : null;
+    } catch (error) {
+      console.error('Error finding user by refresh token:', error);
+      throw error;
+    }
+  }
+
+  // Статический метод для поиска пользователя по email
+  static async findByEmail(email, selectFields = []) {
+    try {
+      const fieldMap = {
+        id: 'id',
+        username: 'username',
+        email: 'email',
+        password_hash: 'password_hash',
+        role: 'role',
+        avatar: 'avatar',
+        bio: 'bio',
+        preferences: 'preferences',
+        isEmailVerified: 'is_email_verified',
+        emailVerifiedAt: 'email_verified_at',
+        emailVerificationToken: 'email_verification_token',
+        emailVerificationExpires: 'email_verification_expires',
+        passwordResetToken: 'password_reset_token',
+        passwordResetExpires: 'password_reset_expires',
+        refreshToken: 'refresh_token',
+        lastLogin: 'last_login',
+        createdAt: 'created_at',
+        updatedAt: 'updated_at',
+        deletedAt: 'deleted_at',
+        is2faEnabled: 'is_2fa_enabled',
+        secret2fa: 'secret_2fa',
+        backupCodes2fa: 'backup_codes_2fa'
+      };
+
+      const fields = selectFields.length > 0
+        ? selectFields.map(field => fieldMap[field] || field)
+        : ['*'];
+
+      const user = await db('users')
+        .select(...fields)
+        .where({ email: email.toLowerCase() })
+        .whereNull('deleted_at')
+        .first();
+
+      return user ? new User(user) : null;
+    } catch (error) {
+      console.error('Error finding user by email:', error);
+      throw error;
+    }
+  }
+
+  // Статический метод для обновления пользователя по ID
+  static async findByIdAndUpdate(id, updateData) {
+    try {
+      const [updatedUser] = await db('users')
+        .update({
+          ...updateData,
+          updated_at: new Date()
+        })
+        .where({ id })
+        .whereNull('deleted_at')
+        .returning('*');
+
+      return updatedUser ? new User(updatedUser) : null;
+    } catch (error) {
+      console.error('Error updating user by ID:', error);
+      throw error;
+    }
+  }
+
+  // Статический метод для поиска пользователя по условию
+  static async findOne(conditions) {
+    try {
+      let query = db('users').select('*').whereNull('deleted_at');
+      
+      // Добавляем условия поиска
+      if (conditions.password_reset_token) {
+        query = query.where('password_reset_token', conditions.password_reset_token);
+      }
+      
+      if (conditions.password_reset_expires) {
+        query = query.where('password_reset_expires', '>', conditions.password_reset_expires);
+      }
+      
+      if (conditions.email_verification_token) {
+        query = query.where('email_verification_token', conditions.email_verification_token);
+      }
+      
+      if (conditions.email_verification_expires) {
+        query = query.where('email_verification_expires', '>', conditions.email_verification_expires);
+      }
+
+      const user = await query.first();
+      return user ? new User(user) : null;
+    } catch (error) {
+      console.error('Error finding user by conditions:', error);
       throw error;
     }
   }

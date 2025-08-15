@@ -1,17 +1,23 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import PropTypes from 'prop-types';
 
-// Базовый компонент иконки
-const Icon = ({ 
-  name, 
-  size = 24, 
-  color = 'currentColor', 
-  className = '', 
+// Базовый компонент иконки с полной адаптивностью
+const Icon = ({
+  name,
+  size = 24,
+  color = 'currentColor',
+  className = '',
   style = {},
   onClick,
   title,
   ariaLabel,
-  role = 'img'
+  role = 'img',
+  responsive = true,
+  mobileSize,
+  tabletSize,
+  desktopSize,
+  touchTarget = false,
+  loading = 'eager'
 }) => {
   // Определяем SVG для каждой иконки
   const icons = {
@@ -1152,26 +1158,70 @@ const Icon = ({
     // Добавьте больше иконок по мере необходимости
   };
 
+  // Вычисляем размер иконки с учетом адаптивности
+  const getResponsiveSize = () => {
+    if (!responsive) return size;
+    
+    // Если указаны конкретные размеры для разных устройств, используем их
+    if (mobileSize || tabletSize || desktopSize) {
+      // В реальном приложении здесь был бы хук для определения размера экрана
+      // Для простоты используем медиа-запросы в CSS
+      return size;
+    }
+    
+    // Адаптивный размер по умолчанию
+    if (typeof size === 'number') {
+      return size;
+    }
+    
+    return size;
+  };
+
+  // Вычисляем размер для touch-целей
+  const getTouchTargetSize = () => {
+    if (!touchTarget) return getResponsiveSize();
+    return Math.max(48, getResponsiveSize()); // Минимальный размер 48px для touch-целей
+  };
+
+  // Оптимизация с помощью useMemo
+  const iconProps = useMemo(() => ({
+    width: getTouchTargetSize(),
+    height: getTouchTargetSize(),
+    fill: 'none',
+    stroke: color,
+    strokeWidth: 2,
+    strokeLinecap: 'round',
+    strokeLinejoin: 'round',
+    className: `${className} ${responsive ? 'icon-responsive' : ''} ${touchTarget ? 'icon-touch-target' : ''}`.trim(),
+    style: {
+      ...style,
+      // Адаптивные стили
+      fontSize: responsive ? 'clamp(16px, 2vw, 24px)' : undefined,
+      width: responsive ? 'clamp(20px, 3vw, 48px)' : undefined,
+      height: responsive ? 'clamp(20px, 3vw, 48px)' : undefined,
+    },
+    onClick,
+    title,
+    'aria-label': ariaLabel,
+    role,
+    loading,
+  }), [name, size, color, className, style, onClick, title, ariaLabel, role, responsive, touchTarget, loading]);
+
   // Проверяем, существует ли иконка
   if (!icons[name]) {
     console.warn(`Icon "${name}" not found. Using fallback icon.`);
     return (
-      <svg 
-        xmlns="http://www.w3.org/2000/svg" 
-        width={size} 
-        height={size} 
-        viewBox="0 0 24 24" 
-        fill="none" 
-        stroke="currentColor" 
-        strokeWidth="2" 
-        strokeLinecap="round" 
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width={getTouchTargetSize()}
+        height={getTouchTargetSize()}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
         strokeLinejoin="round"
-        className={className}
-        style={style}
-        onClick={onClick}
-        title={title || 'Иконка'}
-        aria-label={ariaLabel || 'Иконка'}
-        role={role}
+        {...iconProps}
       >
         <circle cx="12" cy="12" r="10"></circle>
         <line x1="12" y1="8" x2="12" y2="12"></line>
@@ -1181,21 +1231,7 @@ const Icon = ({
   }
 
   // Клонируем SVG и добавляем пропсы
-  const iconElement = React.cloneElement(icons[name], {
-    width: size,
-    height: size,
-    fill: 'none',
-    stroke: color,
-    strokeWidth: 2,
-    strokeLinecap: 'round',
-    strokeLinejoin: 'round',
-    className,
-    style,
-    onClick,
-    title,
-    'aria-label': ariaLabel,
-    role,
-  });
+  const iconElement = React.cloneElement(icons[name], iconProps);
 
   return iconElement;
 };
@@ -1211,6 +1247,25 @@ Icon.propTypes = {
   title: PropTypes.string,
   ariaLabel: PropTypes.string,
   role: PropTypes.string,
+  responsive: PropTypes.bool,
+  mobileSize: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+  tabletSize: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+  desktopSize: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+  touchTarget: PropTypes.bool,
+  loading: PropTypes.oneOf(['eager', 'lazy']),
 };
 
+// Значения по умолчанию
+Icon.defaultProps = {
+  size: 24,
+  color: 'currentColor',
+  className: '',
+  style: {},
+  role: 'img',
+  responsive: true,
+  touchTarget: false,
+  loading: 'eager',
+};
+
+// Экспортируем компонент
 export default Icon;

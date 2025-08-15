@@ -246,6 +246,7 @@ const DashPlayer = ({
   longFormContentDurationThreshold = 600,
   maxBitrate = null,
   minBitrate = null,
+  setVideoElementRef,
 }) => {
   const videoRef = useRef(null);
   const dashRef = useRef(null);

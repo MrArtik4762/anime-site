@@ -23,12 +23,22 @@ const anilibriaRoutes = require('./routes/anilibria');
 const videoRoutes = require('./routes/video');
 const episodeRoutes = require('./routes/episode');
 const proxyRoutes = require('./routes/proxy');
+const searchRoutes = require('./routes/search');
+const streamRoutes = require('./routes/stream');
+const watchRoutes = require('./routes/watchRoutes');
+const sourcesRoutes = require('./routes/sources');
 // New AniLiberty API routes
 const apiRoutes = require('./routes/api');
 
 // Import middleware
 const errorHandler = require('./middleware/errorHandler');
 const notFound = require('./middleware/notFound');
+
+// Import monitoring and logging
+const { logger, httpLogger, logRequest } = require('./config/logger');
+const { metricsMiddleware } = require('./utils/metrics');
+const healthRoutes = require('./routes/health');
+const metricsRoutes = require('./routes/metrics');
 
 // Import socket handlers
 const socketHandler = require('./socket/socketHandler');
@@ -129,6 +139,9 @@ if (process.env.NODE_ENV === 'development') {
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Metrics middleware (must be before routes)
+app.use(metricsMiddleware);
+
 // Static files
 app.use('/uploads', express.static('uploads'));
 
@@ -137,8 +150,12 @@ app.get('/favicon.ico', (req, res) => {
   res.status(204).end();
 });
 
-// Enhanced health check endpoint
-app.get('/health', async (req, res) => {
+// Health check routes
+app.use('/health', healthRoutes);
+app.use('/metrics', metricsRoutes);
+
+// Enhanced health check endpoint (keeping for backward compatibility)
+app.get('/health/simple', async (req, res) => {
   const health = {
     status: 'OK',
     timestamp: new Date().toISOString(),
@@ -171,6 +188,7 @@ app.use('/api', apiRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/anime', animeRoutes);
 app.use('/api/anime', animeApiRoutes);
+app.use('/api/anime', searchRoutes); // Маршруты поиска
 app.use('/api/users', userRoutes);
 app.use('/api/comments', commentRoutes);
 app.use('/api/external', externalRoutes);
@@ -178,7 +196,9 @@ app.use('/api/watchlist', watchlistRoutes);
 app.use('/api/anilibria', anilibriaRoutes);
 app.use('/api/video', videoRoutes);
 app.use('/api/episode', episodeRoutes);
+app.use('/api/stream', streamRoutes); // Маршруты стриминга
 app.use('/api/proxy', proxyRoutes);
+app.use('/api/sources', sourcesRoutes); // Маршруты источников эпизодов
 
 // Socket.io connection handling
 io.on('connection', (socket) => {
@@ -188,7 +208,19 @@ io.on('connection', (socket) => {
 
 // Error handling middleware (must be last)
 app.use(notFound);
-app.use(errorHandler);
+app.use((err, req, res, next) => {
+  logger.error('Unhandled error', {
+    error: err.message,
+    stack: err.stack,
+    url: req.url,
+    method: req.method,
+    ip: req.ip,
+    userAgent: req.get('User-Agent'),
+    userId: req.user?.id || 'anonymous'
+  });
+  
+  errorHandler(err, req, res, next);
+});
 
 // Database connection
 const connectDB = async () => {

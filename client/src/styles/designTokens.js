@@ -2,42 +2,42 @@
 
 // Цветовая палитра
 export const colors = {
-  // Основные цвета
+  // Основные цвета - современная минималистичная палитра
   primary: {
-    50: '#FFF5F5',
-    100: '#FFE4E4',
-    200: '#FFCCCC',
-    300: '#FF9999',
-    400: '#FF6666',
-    500: '#FF4D4D', // Основной красный
-    600: '#E55555', // Темный красный
-    700: '#CC4444',
-    800: '#B33333',
-    900: '#992222',
+    50: '#F8FAFC',
+    100: '#F1F5F9',
+    200: '#E2E8F0',
+    300: '#CBD5E1',
+    400: '#94A3B8',
+    500: '#64748B', // Серый основной
+    600: '#475569',
+    700: '#334155',
+    800: '#1E293B',
+    900: '#0F172A',
   },
   
   secondary: {
-    50: '#F0FFFE',
-    100: '#CCFFFE',
-    200: '#99FFFE',
-    300: '#66FFFE',
-    400: '#33FFFE',
-    500: '#00FFFF', // Циановый
-    600: '#00CCCC',
-    700: '#009999',
-    800: '#006666',
-    900: '#003333',
+    50: '#FEF3C7',
+    100: '#FDE68A',
+    200: '#FCD34D',
+    300: '#FBBF24',
+    400: '#F59E0B',
+    500: '#D97706', // Амбровый
+    600: '#B45309',
+    700: '#92400E',
+    800: '#78350F',
+    900: '#451A03',
   },
   
   accent: {
-    pink: '#FF6B9D',
-    purple: '#C44569',
-    blue: '#4ECDC4',
-    teal: '#44A08D',
-    orange: '#FFA726',
-    yellow: '#FFD54F',
-    green: '#66BB6A',
-    red: '#EF5350',
+    blue: '#3B82F6', // Современный синий
+    purple: '#8B5CF6', // Фиолетовый
+    pink: '#EC4899', // Розовый
+    teal: '#14B8A6', // Бирюзовый
+    indigo: '#6366F1', // Индиго
+    cyan: '#06B6D4', // Голубой
+    emerald: '#10B981', // Изумрудный
+    rose: '#F43F5E', // Розовый оттенок
   },
   
   // Семантические цвета
@@ -46,43 +46,51 @@ export const colors = {
   error: '#F44336',
   info: '#2196F3',
   
-  // Текстовые цвета
+  // Текстовые цвета - улучшенная контрастность для темной темы
   text: {
-    primary: '#1A1A1A',
-    secondary: '#4A4A4A',
-    tertiary: '#7A7A7A',
-    disabled: '#BDBDBD',
+    primary: '#0F172A',
+    secondary: '#475569',
+    tertiary: '#64748B',
+    disabled: '#94A3B8',
     inverse: '#FFFFFF',
+    dark: {
+      primary: '#F8FAFC',
+      secondary: '#CBD5E1',
+      tertiary: '#94A3B8',
+      disabled: '#64748B',
+    },
   },
   
-  // Фоновые цвета
+  // Фоновые цвета - современные минималистичные цвета
   background: {
     primary: '#FFFFFF',
-    secondary: '#F5F5F5',
-    tertiary: '#EEEEEE',
-    dark: '#121212',
-    darkSecondary: '#1E1E1E',
-    darkTertiary: '#2A2A2A',
+    secondary: '#F8FAFC',
+    tertiary: '#F1F5F9',
+    dark: '#0F172A',
+    darkSecondary: '#1E293B',
+    darkTertiary: '#334155',
   },
   
-  // Поверхности
+  // Поверхности - улучшенные для темной темы
   surface: {
     primary: '#FFFFFF',
-    secondary: '#FAFAFA',
-    tertiary: '#F5F5F5',
-    dark: '#1E1E1E',
-    darkSecondary: '#2A2A2A',
-    darkTertiary: '#363636',
+    secondary: '#FFFFFF',
+    tertiary: '#F8FAFC',
+    dark: '#1E293B',
+    darkSecondary: '#334155',
+    darkTertiary: '#475569',
   },
   
-  // Границы и разделители
+  // Границы и разделители - улучшенные для темной темы
   border: {
-    light: '#E0E0E0',
-    medium: '#BDBDBD',
-    dark: '#9E9E9E',
-    lightDark: '#2F2F2F',
-    mediumDark: '#424242',
-    darkDark: '#616161',
+    light: '#E2E8F0',
+    medium: '#CBD5E1',
+    dark: '#94A3B8',
+    lightDark: '#334155',
+    mediumDark: '#475569',
+    darkDark: '#64748B',
+    focused: '#3B82F6',
+    focusedDark: '#60A5FA',
   },
   
   // Тени
@@ -99,35 +107,37 @@ export const colors = {
     }
   },
   
-  // Градиенты
+  // Градиенты - современные минималистичные градиенты
   gradients: {
-    primary: 'linear-gradient(135deg, #FF6B6B 0%, #4ECDC4 100%)',
-    secondary: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    sunset: 'linear-gradient(135deg, #FA8BFF 0%, #2BD2FF 52%, #2BFF88 90%)',
-    ocean: 'linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%)',
-    fire: 'linear-gradient(135deg, #f12711 0%, #f5af19 100%)',
-    dark: 'linear-gradient(135deg, #0F1419 0%, #1A1F29 100%)',
+    primary: 'linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%)',
+    secondary: 'linear-gradient(135deg, #10B981 0%, #3B82F6 100%)',
+    sunset: 'linear-gradient(135deg, #F59E0B 0%, #EF4444 100%)',
+    ocean: 'linear-gradient(135deg, #06B6D4 0%, #3B82F6 100%)',
+    fire: 'linear-gradient(135deg, #EF4444 0%, #F59E0B 100%)',
+    dark: 'linear-gradient(135deg, #1E293B 0%, #0F172A 100%)',
+    purple: 'linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%)',
+    teal: 'linear-gradient(135deg, #14B8A6 0%, #06B6D4 100%)',
   },
   
-  // Аниме-специфичные цвета
+  // Аниме-специфичные цвета - обновленные для новой схемы
   anime: {
     // Статусы
-    ongoing: '#4CAF50', // Зеленый
-    completed: '#2196F3', // Синий
-    upcoming: '#FF9800', // Оранжевый
-    hiatus: '#9C27B0', // Фиолетовый
+    ongoing: '#10B981', // Изумрудный
+    completed: '#3B82F6', // Синий
+    upcoming: '#F59E0B', // Амбровый
+    hiatus: '#8B5CF6', // Фиолетовый
     
     // Рейтинги
-    masterpiece: '#FFD700', // Золотой
-    great: '#4CAF50', // Зеленый
-    good: '#2196F3', // Синий
-    average: '#FF9800', // Оранжевый
-    bad: '#F44336', // Красный
+    masterpiece: '#FCD34D', // Светло-золотой
+    great: '#10B981', // Изумрудный
+    good: '#3B82F6', // Синий
+    average: '#F59E0B', // Амбровый
+    bad: '#EF4444', // Красный
     
     // Типы контента
-    sub: '#00BCD4', // Бирюзовый
-    dub: '#9C27B0', // Фиолетовый
-    raw: '#795548', // Коричневый
+    sub: '#06B6D4', // Голубой
+    dub: '#8B5CF6', // Фиолетовый
+    raw: '#6B7280', // Серый
   },
 };
 
@@ -217,6 +227,48 @@ export const spacing = {
   48: '192px',
   56: '224px',
   64: '256px',
+  
+  // Дополнительные размеры для мобильных устройств
+  mobile: '16px',
+  mobileSm: '12px',
+  mobileMd: '20px',
+  mobileLg: '24px',
+  mobileXl: '32px',
+  
+  // Дополнительные размеры для планшетов
+  tablet: '24px',
+  tabletSm: '20px',
+  tabletMd: '28px',
+  tabletLg: '32px',
+  tabletXl: '40px',
+  
+  // Дополнительные размеры для десктопов
+  desktop: '32px',
+  desktopSm: '28px',
+  desktopMd: '36px',
+  desktopLg: '48px',
+  desktopXl: '64px',
+  
+  // Дополнительные размеры для больших экранов
+  large: '40px',
+  largeSm: '36px',
+  largeMd: '48px',
+  largeLg: '64px',
+  largeXl: '80px',
+  
+  // Очень большие размеры
+  xlarge: '48px',
+  xlargeSm: '44px',
+  xlargeMd: '56px',
+  xlargeLg: '72px',
+  xlargeXl: '96px',
+  
+  // Экстремально большие размеры
+  xxlarge: '64px',
+  xxlargeSm: '60px',
+  xxlargeMd: '80px',
+  xxlargeLg: '96px',
+  xxlargeXl: '128px',
 };
 
 // Радиусы скругления
@@ -253,7 +305,7 @@ export const animation = {
     bounce: 'cubic-bezier(0.68, -0.55, 0.265, 1.55)',
   },
   
-  // Ключевые кадры
+  // Ключевые кадры - расширенные для современных анимаций
   keyframes: {
     fadeIn: {
       '0%': { opacity: '0' },
@@ -283,6 +335,14 @@ export const animation = {
       '0%': { transform: 'scale(0.95)', opacity: '0' },
       '100%': { transform: 'scale(1)', opacity: '1' },
     },
+    scaleUp: {
+      '0%': { transform: 'scale(1)' },
+      '100%': { transform: 'scale(1.05)' },
+    },
+    scaleDown: {
+      '0%': { transform: 'scale(1.05)' },
+      '100%': { transform: 'scale(1)' },
+    },
     bounce: {
       '0%, 100%': { transform: 'translateY(0)' },
       '50%': { transform: 'translateY(-10px)' },
@@ -294,6 +354,27 @@ export const animation = {
     spin: {
       '0%': { transform: 'rotate(0deg)' },
       '100%': { transform: 'rotate(360deg)' },
+    },
+    shimmer: {
+      '0%': { transform: 'translateX(-100%)' },
+      '100%': { transform: 'translateX(100%)' },
+    },
+    float: {
+      '0%, 100%': { transform: 'translateY(0px)' },
+      '50%': { transform: 'translateY(-20px)' },
+    },
+    wiggle: {
+      '0%, 7%': { transform: 'rotateZ(0)' },
+      '15%': { transform: 'rotateZ(-15deg)' },
+      '20%': { transform: 'rotateZ(10deg)' },
+      '25%': { transform: 'rotateZ(-10deg)' },
+      '30%': { transform: 'rotateZ(6deg)' },
+      '35%': { transform: 'rotateZ(-4deg)' },
+      '40%, 100%': { transform: 'rotateZ(0)' },
+    },
+    slideFadeIn: {
+      '0%': { transform: 'translateY(20px)', opacity: '0' },
+      '100%': { transform: 'translateY(0)', opacity: '1' },
     },
   },
 };

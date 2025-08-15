@@ -1,41 +1,23 @@
-import React from 'react';
-import styled from 'styled-components';
+import React, { memo } from 'react';
 import PropTypes from 'prop-types';
+import { styled } from 'styled-components';
 
-// Линейный прогресс-бар
-const LinearProgressContainer = styled.div`
+// Стилизованный компонент для прогресс-бара
+const StyledProgressBar = styled.div`
   width: 100%;
-  background-color: ${props => props.theme.colors.border.light};
-  border-radius: ${props => props.theme.borderRadius.full};
+  height: ${props => {
+    if (props.size === 'small') return props.theme.sizes.progressHeightSmall;
+    if (props.size === 'large') return props.theme.sizes.progressHeightLarge;
+    return props.theme.sizes.progressHeight;
+  }};
+  background-color: ${props => props.theme.colors.border};
+  border-radius: ${props => props.theme.border.radius.sm};
   overflow: hidden;
-  height: ${props => props.size === 'small' ? '4px' : props.size === 'medium' ? '8px' : '12px'};
+  position: relative;
   
-  .progress-bar {
-    height: 100%;
-    background-color: ${props => {
-      if (props.color) {
-        return props.theme.colors[props.color];
-      }
-      
-      switch (props.variant) {
-        case 'primary':
-          return props.theme.colors.primary;
-        case 'success':
-          return props.theme.colors.success;
-        case 'danger':
-          return props.theme.colors.danger;
-        case 'warning':
-          return props.theme.colors.warning;
-        case 'info':
-          return props.theme.colors.info;
-        default:
-          return props.theme.colors.primary;
-      }
-    }};
-    border-radius: ${props => props.theme.borderRadius.full};
-    transition: ${props => props.theme.transitions.normal};
+  ${props => props.animated && `
     position: relative;
-    overflow: hidden;
+    overflow: visible;
     
     &::after {
       content: '';
@@ -45,50 +27,199 @@ const LinearProgressContainer = styled.div`
       bottom: 0;
       right: 0;
       background-image: linear-gradient(
-        -45deg,
-        rgba(255, 255, 255, 0.2) 25%,
+        45deg,
+        rgba(255, 255, 255, 0.15) 25%,
         transparent 25%,
         transparent 50%,
-        rgba(255, 255, 255, 0.2) 50%,
-        rgba(255, 255, 255, 0.2) 75%,
+        rgba(255, 255, 255, 0.15) 50%,
+        rgba(255, 255, 255, 0.15) 75%,
         transparent 75%,
         transparent
       );
-      background-size: 50px 50px;
-      animation: progress-animation 1s linear infinite;
+      background-size: ${props.theme.sizes.progressStripesSize};
+      animation: progress-bar-stripes ${props.theme.animations.progressDuration} linear infinite;
     }
-  }
+  `}
   
-  @keyframes progress-animation {
+  ${props => props.striped && `
+    background-image: linear-gradient(
+      45deg,
+      rgba(255, 255, 255, 0.15) 25%,
+      transparent 25%,
+      transparent 50%,
+      rgba(255, 255, 255, 0.15) 50%,
+      rgba(255, 255, 255, 0.15) 75%,
+      transparent 75%,
+      transparent
+    );
+    background-size: ${props.theme.sizes.progressStripesSize};
+  `}
+  
+  ${props => props.variant === 'success' && `
+    background-color: ${props.theme.colors.successBg};
+  `}
+  
+  ${props => props.variant === 'warning' && `
+    background-color: ${props.theme.colors.warningBg};
+  `}
+  
+  ${props => props.variant === 'error' && `
+    background-color: ${props.theme.colors.errorBg};
+  `}
+  
+  ${props => props.variant === 'info' && `
+    background-color: ${props.theme.colors.infoBg};
+  `}
+  
+  ${props => props.showValue && `
+    position: relative;
+    
+    &::after {
+      content: '${props => props.value}%';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: ${props => props.theme.colors.text};
+      font-size: ${props.theme.fontSizes.sm};
+      font-weight: ${props.theme.fontWeights.semibold};
+      text-shadow: 0 0 3px rgba(255, 255, 255, 0.5);
+    }
+  `}
+  
+  ${props => props.size === 'small' && `
+    height: ${props.theme.sizes.progressHeightSmall};
+    
+    ${props => props.showValue && `
+      &::after {
+        font-size: ${props.theme.fontSizes.xs};
+      }
+    `}
+  `}
+  
+  ${props => props.size === 'large' && `
+    height: ${props.theme.sizes.progressHeightLarge};
+    
+    ${props => props.showValue && `
+      &::after {
+        font-size: ${props.theme.fontSizes.base};
+      }
+    `}
+  `}
+  
+  @keyframes progress-bar-stripes {
     0% {
-      background-position: 0 0;
+      background-position: 40px 0;
     }
     100% {
-      background-position: 50px 50px;
+      background-position: 0 0;
     }
   }
 `;
 
-// Контейнер для прогресс-бара с меткой
-const ProgressWithLabelContainer = styled.div`
-  display: flex;
-  align-items: center;
-  gap: ${props => props.theme.spacing[3]};
+// Стилизованный заполнитель прогресса
+const ProgressFill = styled.div`
+  height: 100%;
+  background-color: ${props => {
+    if (props.variant === 'success') return props.theme.colors.success;
+    if (props.variant === 'warning') return props.theme.colors.warning;
+    if (props.variant === 'error') return props.theme.colors.error;
+    if (props.variant === 'info') return props.theme.colors.info;
+    return props.theme.colors.primary;
+  }};
+  border-radius: ${props => props.theme.border.radius.sm};
+  transition: width ${props => props.theme.transitions.medium} ease;
   
-  .progress-container {
-    flex: 1;
-  }
+  ${props => props.animated && `
+    background-image: linear-gradient(
+      45deg,
+      rgba(255, 255, 255, 0.15) 25%,
+      transparent 25%,
+      transparent 50%,
+      rgba(255, 255, 255, 0.15) 50%,
+      rgba(255, 255, 255, 0.15) 75%,
+      transparent 75%,
+      transparent
+    );
+    background-size: ${props.theme.sizes.progressStripesSize};
+    animation: progress-bar-stripes ${props.theme.animations.progressDuration} linear infinite;
+  `}
   
-  .progress-label {
-    font-size: ${props => props.theme.typography.fontSize.sm[0]};
-    font-weight: ${props => props.theme.typography.fontWeight.medium};
-    color: ${props => props.theme.colors.text.primary};
-    min-width: ${props => props.showPercentage ? '45px' : 'auto'};
-    text-align: ${props => props.showPercentage ? 'right' : 'left'};
-  }
+  ${props => props.striped && `
+    background-image: linear-gradient(
+      45deg,
+      rgba(255, 255, 255, 0.15) 25%,
+      transparent 25%,
+      transparent 50%,
+      rgba(255, 255, 255, 0.15) 50%,
+      rgba(255, 255, 255, 0.15) 75%,
+      transparent 75%,
+      transparent
+    );
+    background-size: ${props.theme.sizes.progressStripesSize};
+  `}
+  
+  ${props => props.multicolor && `
+    background: linear-gradient(
+      to right,
+      ${props.theme.colors.primary} 0%,
+      ${props.theme.colors.info} 33%,
+      ${props.theme.colors.success} 66%,
+      ${props.theme.colors.warning} 100%
+    );
+  `}
+  
+  ${props => props.size === 'small' && `
+    height: ${props.theme.sizes.progressHeightSmall};
+  `}
+  
+  ${props => props.size === 'large' && `
+    height: ${props.theme.sizes.progressHeightLarge};
+  `}
 `;
 
-// Круговой прогресс-бар
+// Стилизованный контейнер для прогресса
+const ProgressContainer = styled.div`
+  width: 100%;
+  margin-bottom: ${props => props.theme.spacing.medium};
+  
+  ${props => props.multi && `
+    display: flex;
+    flex-direction: column;
+    gap: ${props.theme.spacing.small};
+  `}
+  
+  ${props => props.vertical && `
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    height: ${props => props.theme.sizes.progressVerticalHeight};
+    
+    ${props => props.multi && `
+      flex-direction: column;
+      height: auto;
+    `}
+  `}
+  
+  ${props => props.stacked && `
+    position: relative;
+    height: ${props => {
+      if (props.size === 'small') return props.theme.sizes.progressHeightSmall;
+      if (props.size === 'large') return props.theme.sizes.progressHeightLarge;
+      return props.theme.sizes.progressHeight;
+    }};
+    
+    > div {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      border-radius: ${props => props.theme.border.radius.sm};
+    }
+  `}
+`;
+
+// Стилизованный контейнер для кольцевого прогресса
 const CircularProgressContainer = styled.div`
   position: relative;
   display: inline-flex;
@@ -98,372 +229,364 @@ const CircularProgressContainer = styled.div`
   svg {
     transform: rotate(-90deg);
   }
-  
-  .progress-text {
-    position: absolute;
-    font-size: ${props => {
-      if (props.size === 'small') return '12px';
-      if (props.size === 'medium') return '16px';
-      return '20px';
-    }};
-    font-weight: ${props => props.theme.typography.fontWeight.semibold};
-    color: ${props => props.theme.colors.text.primary};
-  }
 `;
 
-// Компонент LinearProgress
-const LinearProgress = ({
-  value,
+// Стилизованный фон кольцевого прогресса
+const CircularProgressBackground = styled.circle`
+  fill: none;
+  stroke: ${props => props.theme.colors.border};
+  stroke-width: ${props => props.size === 'small' ? 4 : props.size === 'large' ? 8 : 6};
+`;
+
+// Стилизованный прогресс кольца
+const CircularProgressValue = styled.circle`
+  fill: none;
+  stroke: ${props => {
+    if (props.variant === 'success') return props.theme.colors.success;
+    if (props.variant === 'warning') return props.theme.colors.warning;
+    if (props.variant === 'error') return props.theme.colors.error;
+    if (props.variant === 'info') return props.theme.colors.info;
+    return props.theme.colors.primary;
+  }};
+  stroke-width: ${props => props.size === 'small' ? 4 : props.size === 'large' ? 8 : 6};
+  stroke-linecap: round;
+  transition: stroke-dashoffset ${props => props.theme.transitions.medium} ease;
+  
+  ${props => props.animated && `
+    animation: progress-circle ${props.theme.animations.progressDuration} ease-in-out infinite;
+  `}
+  
+  ${props => props.striped && `
+    stroke-dasharray: ${props.theme.sizes.progressStripesSize};
+    stroke-dashoffset: 0;
+  `}
+`;
+
+// Стилизованный текст для кольцевого прогресса
+const CircularProgressText = styled.div`
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: ${props => {
+    if (props.size === 'small') return props.theme.fontSizes.sm;
+    if (props.size === 'large') return props.theme.fontSizes.xl;
+    return props.theme.fontSizes.base;
+  }};
+  font-weight: ${props => props.theme.fontWeights.semibold};
+  color: ${props => props.theme.colors.text};
+`;
+
+// Основной компонент ProgressBar
+export const ProgressBar = memo(({
+  value = 0,
   max = 100,
+  animated = false,
+  striped = false,
+  showValue = false,
   variant = 'primary',
-  color,
   size = 'medium',
-  showLabel = false,
-  showPercentage = false,
-  className = '',
+  className,
+  style,
   ...props
 }) => {
-  const percentage = Math.round((value / max) * 100);
-  
-  if (showLabel) {
-    return (
-      <ProgressWithLabelContainer
-        showPercentage={showPercentage}
-        className={`${className} progress-with-label`}
-        {...props}
-      >
-        <div className="progress-container">
-          <LinearProgressContainer
-            value={value}
-            max={max}
-            variant={variant}
-            color={color}
-            size={size}
-            className="linear-progress"
-          >
-            <div
-              className="progress-bar"
-              style={{ width: `${percentage}%` }}
-            ></div>
-          </LinearProgressContainer>
-        </div>
-        <div className="progress-label">
-          {showPercentage && `${percentage}%`}
-        </div>
-      </ProgressWithLabelContainer>
-    );
-  }
+  const percentage = Math.min(Math.max((value / max) * 100, 0), 100);
   
   return (
-    <LinearProgressContainer
-      value={value}
-      max={max}
+    <StyledProgressBar
+      value={Math.round(percentage)}
+      animated={animated}
+      striped={striped}
+      showValue={showValue}
       variant={variant}
-      color={color}
       size={size}
-      className={`${className} linear-progress`}
+      className={className}
+      style={style}
       {...props}
     >
-      <div
-        className="progress-bar"
-        style={{ width: `${percentage}%` }}
-      ></div>
-    </LinearProgressContainer>
+      <ProgressFill
+        width={`${percentage}%`}
+        animated={animated}
+        striped={striped}
+        variant={variant}
+        size={size}
+      />
+    </StyledProgressBar>
   );
-};
+});
 
-// Пропс-types для LinearProgress
-LinearProgress.propTypes = {
-  value: PropTypes.number.isRequired,
+ProgressBar.propTypes = {
+  value: PropTypes.number,
   max: PropTypes.number,
-  variant: PropTypes.oneOf(['primary', 'success', 'danger', 'warning', 'info']),
-  color: PropTypes.string,
+  animated: PropTypes.bool,
+  striped: PropTypes.bool,
+  showValue: PropTypes.bool,
+  variant: PropTypes.oneOf(['primary', 'success', 'warning', 'error', 'info']),
   size: PropTypes.oneOf(['small', 'medium', 'large']),
-  showLabel: PropTypes.bool,
-  showPercentage: PropTypes.bool,
   className: PropTypes.string,
+  style: PropTypes.object,
 };
 
-// Компонент CircularProgress
-const CircularProgress = ({
-  value,
+// Компонент для вертикального прогресса
+export const VerticalProgressBar = memo(({
+  value = 0,
   max = 100,
+  animated = false,
+  striped = false,
+  showValue = false,
   variant = 'primary',
-  color,
   size = 'medium',
-  thickness = 10,
-  showLabel = false,
-  showPercentage = false,
-  className = '',
+  className,
+  style,
   ...props
 }) => {
-  const percentage = Math.round((value / max) * 100);
-  const radius = size === 'small' ? 20 : size === 'medium' ? 30 : 40;
-  const normalizedRadius = radius - thickness / 2;
-  const circumference = normalizedRadius * 2 * Math.PI;
-  const strokeDashoffset = circumference - (percentage / 100) * circumference;
+  const percentage = Math.min(Math.max((value / max) * 100, 0), 100);
   
-  if (showLabel) {
-    return (
-      <ProgressWithLabelContainer
-        showPercentage={showPercentage}
-        className={`${className} circular-progress-with-label`}
-        {...props}
+  return (
+    <ProgressContainer
+      vertical
+      className={className}
+      style={style}
+      {...props}
+    >
+      <StyledProgressBar
+        value={Math.round(percentage)}
+        animated={animated}
+        striped={striped}
+        showValue={showValue}
+        variant={variant}
+        size={size}
+        style={{ width: '100%', height: 'auto' }}
       >
-        <div className="progress-container">
-          <CircularProgressContainer
+        <ProgressFill
+          width={`${percentage}%`}
+          animated={animated}
+          striped={striped}
+          variant={variant}
+          size={size}
+        />
+      </StyledProgressBar>
+      <div style={{ marginLeft: '10px', fontSize: '14px' }}>
+        {Math.round(percentage)}%
+      </div>
+    </ProgressContainer>
+  );
+});
+
+VerticalProgressBar.propTypes = {
+  value: PropTypes.number,
+  max: PropTypes.number,
+  animated: PropTypes.bool,
+  striped: PropTypes.bool,
+  showValue: PropTypes.bool,
+  variant: PropTypes.oneOf(['primary', 'success', 'warning', 'error', 'info']),
+  size: PropTypes.oneOf(['small', 'medium', 'large']),
+  className: PropTypes.string,
+  style: PropTypes.object,
+};
+
+// Компонент для многоуровневого прогресса
+export const MultiProgressBar = memo(({
+  values = [],
+  labels = [],
+  animated = false,
+  striped = false,
+  showValue = false,
+  variant = 'primary',
+  size = 'medium',
+  className,
+  style,
+  ...props
+}) => {
+  const total = values.reduce((sum, val) => sum + val, 0);
+  
+  return (
+    <ProgressContainer
+      multi
+      className={className}
+      style={style}
+      {...props}
+    >
+      {values.map((value, index) => (
+        <div key={index}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+            <span style={{ fontSize: '12px' }}>{labels[index] || `Item ${index + 1}`}</span>
+            <span style={{ fontSize: '12px' }}>{value}%</span>
+          </div>
+          <ProgressBar
             value={value}
-            max={max}
+            animated={animated}
+            striped={striped}
+            showValue={false}
             variant={variant}
-            color={color}
             size={size}
-            className="circular-progress"
-          >
-            <svg width={radius * 2} height={radius * 2}>
-              <circle
-                className="progress-background"
-                stroke={props.theme.colors.border.light}
-                strokeWidth={thickness}
-                r={normalizedRadius}
-                cx={radius}
-                cy={radius}
-              />
-              <circle
-                className="progress-bar"
-                stroke={color ? props.theme.colors[color] : 
-                        variant === 'primary' ? props.theme.colors.primary :
-                        variant === 'success' ? props.theme.colors.success :
-                        variant === 'danger' ? props.theme.colors.danger :
-                        variant === 'warning' ? props.theme.colors.warning :
-                        variant === 'info' ? props.theme.colors.info :
-                        props.theme.colors.primary}
-                strokeWidth={thickness}
-                strokeDasharray={circumference}
-                strokeDashoffset={strokeDashoffset}
-                strokeLinecap="round"
-                r={normalizedRadius}
-                cx={radius}
-                cy={radius}
-                fill="transparent"
-              />
-            </svg>
-            <div className="progress-text">{percentage}%</div>
-          </CircularProgressContainer>
+          />
         </div>
-        <div className="progress-label">
-          {showPercentage && `${percentage}%`}
-        </div>
-      </ProgressWithLabelContainer>
-    );
-  }
+      ))}
+    </ProgressContainer>
+  );
+});
+
+MultiProgressBar.propTypes = {
+  values: PropTypes.arrayOf(PropTypes.number),
+  labels: PropTypes.arrayOf(PropTypes.string),
+  animated: PropTypes.bool,
+  striped: PropTypes.bool,
+  showValue: PropTypes.bool,
+  variant: PropTypes.oneOf(['primary', 'success', 'warning', 'error', 'info']),
+  size: PropTypes.oneOf(['small', 'medium', 'large']),
+  className: PropTypes.string,
+  style: PropTypes.object,
+};
+
+// Компонент для стопки прогресса
+export const StackedProgressBar = memo(({
+  values = [],
+  variants = ['primary', 'success', 'warning', 'error', 'info'],
+  animated = false,
+  striped = false,
+  showValue = false,
+  size = 'medium',
+  className,
+  style,
+  ...props
+}) => {
+  const total = values.reduce((sum, val) => sum + val, 0);
+  
+  return (
+    <ProgressContainer
+      stacked
+      className={className}
+      style={style}
+      {...props}
+    >
+      {values.map((value, index) => (
+        <ProgressFill
+          key={index}
+          width={`${(value / total) * 100}%`}
+          animated={animated}
+          striped={striped}
+          variant={variants[index % variants.length]}
+          size={size}
+        />
+      ))}
+    </ProgressContainer>
+  );
+});
+
+StackedProgressBar.propTypes = {
+  values: PropTypes.arrayOf(PropTypes.number),
+  variants: PropTypes.arrayOf(PropTypes.oneOf(['primary', 'success', 'warning', 'error', 'info'])),
+  animated: PropTypes.bool,
+  striped: PropTypes.bool,
+  showValue: PropTypes.bool,
+  size: PropTypes.oneOf(['small', 'medium', 'large']),
+  className: PropTypes.string,
+  style: PropTypes.object,
+};
+
+// Компонент для кольцевого прогресса
+export const CircularProgress = memo(({
+  value = 0,
+  max = 100,
+  animated = false,
+  striped = false,
+  showValue = true,
+  variant = 'primary',
+  size = 'medium',
+  className,
+  style,
+  ...props
+}) => {
+  const percentage = Math.min(Math.max((value / max) * 100, 0), 100);
+  const radius = size === 'small' ? 20 : size === 'large' ? 40 : 30;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference - (percentage / 100) * circumference;
   
   return (
     <CircularProgressContainer
-      value={value}
-      max={max}
-      variant={variant}
-      color={color}
       size={size}
-      className={`${className} circular-progress`}
+      className={className}
+      style={style}
       {...props}
     >
-      <svg width={radius * 2} height={radius * 2}>
-        <circle
-          className="progress-background"
-          stroke={props.theme.colors.border.light}
-          strokeWidth={thickness}
-          r={normalizedRadius}
-          cx={radius}
-          cy={radius}
+      <svg width={radius * 2 + 10} height={radius * 2 + 10}>
+        <CircularProgressBackground
+          r={radius}
+          cx={radius + 5}
+          cy={radius + 5}
+          size={size}
         />
-        <circle
-          className="progress-bar"
-          stroke={color ? props.theme.colors[color] : 
-                  variant === 'primary' ? props.theme.colors.primary :
-                  variant === 'success' ? props.theme.colors.success :
-                  variant === 'danger' ? props.theme.colors.danger :
-                  variant === 'warning' ? props.theme.colors.warning :
-                  variant === 'info' ? props.theme.colors.info :
-                  props.theme.colors.primary}
-          strokeWidth={thickness}
+        <CircularProgressValue
+          r={radius}
+          cx={radius + 5}
+          cy={radius + 5}
           strokeDasharray={circumference}
           strokeDashoffset={strokeDashoffset}
-          strokeLinecap="round"
-          r={normalizedRadius}
-          cx={radius}
-          cy={radius}
-          fill="transparent"
+          animated={animated}
+          striped={striped}
+          variant={variant}
+          size={size}
         />
       </svg>
-      {showLabel && (
-        <div className="progress-text">{percentage}%</div>
+      {showValue && (
+        <CircularProgressText size={size}>
+          {Math.round(percentage)}%
+        </CircularProgressText>
       )}
     </CircularProgressContainer>
   );
-};
+});
 
-// Пропс-types для CircularProgress
 CircularProgress.propTypes = {
-  value: PropTypes.number.isRequired,
+  value: PropTypes.number,
   max: PropTypes.number,
-  variant: PropTypes.oneOf(['primary', 'success', 'danger', 'warning', 'info']),
-  color: PropTypes.string,
+  animated: PropTypes.bool,
+  striped: PropTypes.bool,
+  showValue: PropTypes.bool,
+  variant: PropTypes.oneOf(['primary', 'success', 'warning', 'error', 'info']),
   size: PropTypes.oneOf(['small', 'medium', 'large']),
-  thickness: PropTypes.number,
-  showLabel: PropTypes.bool,
-  showPercentage: PropTypes.bool,
   className: PropTypes.string,
+  style: PropTypes.object,
 };
 
-// Компонент Progress для совместимости
-const Progress = ({
-  type = 'linear',
+// Компонент для спиннера загрузки
+export const ProgressSpinner = memo(({
+  size = 'medium',
+  variant = 'primary',
+  className,
+  style,
   ...props
 }) => {
-  if (type === 'circular') {
-    return <CircularProgress {...props} />;
-  }
+  const spinnerSize = size === 'small' ? 20 : size === 'large' ? 40 : 30;
   
-  return <LinearProgress {...props} />;
-};
-
-// Пропс-types для Progress
-Progress.propTypes = {
-  type: PropTypes.oneOf(['linear', 'circular']),
-  value: PropTypes.number.isRequired,
-  max: PropTypes.number,
-  variant: PropTypes.oneOf(['primary', 'success', 'danger', 'warning', 'info']),
-  color: PropTypes.string,
-  size: PropTypes.oneOf(['small', 'medium', 'large']),
-  thickness: PropTypes.number,
-  showLabel: PropTypes.bool,
-  showPercentage: PropTypes.bool,
-  className: PropTypes.string,
-};
-
-// Компонент ProgressSteps для шагового прогресса
-const ProgressStepsContainer = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  
-  .step {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    flex: 1;
-    
-    &:not(:last-child) {
-      position: relative;
-      
-      &::after {
-        content: '';
-        position: absolute;
-        top: 15px;
-        left: 50%;
-        width: 100%;
-        height: 2px;
-        background-color: ${props => props.theme.colors.border.light};
-        z-index: 0;
-      }
-      
-      ${props => props.activeStep > props.stepIndex && `
-        &::after {
-          background-color: ${props => props.theme.colors.primary};
-        }
-      `}
-    }
-    
-    .step-circle {
-      width: ${props => props.theme.spacing[5]};
-      height: ${props => props.theme.spacing[5]};
-      border-radius: 50%;
-      background-color: ${props => props.theme.colors.border.light};
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: ${props => props.theme.typography.fontSize.sm[0]};
-      font-weight: ${props => props.theme.typography.fontWeight.semibold};
-      color: ${props => props.theme.colors.text.tertiary};
-      position: relative;
-      z-index: 1;
-      transition: ${props => props.theme.transitions.normal};
-      
-      ${props => props.activeStep > props.stepIndex && `
-        background-color: ${props => props.theme.colors.primary};
-        color: white;
-      `}
-      
-      ${props => props.activeStep === props.stepIndex && `
-        background-color: ${props => props.theme.colors.primary};
-        color: white;
-      `}
-      
-      ${props => props.activeStep < props.stepIndex && `
-        background-color: ${props => props.theme.colors.border.light};
-        color: ${props => props.theme.colors.text.tertiary};
-      `}
-    }
-    
-    .step-label {
-      margin-top: ${props => props.theme.spacing[2]};
-      font-size: ${props => props.theme.typography.fontSize.xs[0]};
-      color: ${props => props.theme.colors.text.tertiary};
-      text-align: center;
-      
-      ${props => props.activeStep >= props.stepIndex && `
-        color: ${props => props.theme.colors.text.primary};
-        font-weight: ${props => props.theme.typography.fontWeight.medium};
-      `}
-    }
-  }
-`;
-
-// Компонент ProgressSteps
-const ProgressSteps = ({
-  steps,
-  activeStep,
-  className = '',
-  ...props
-}) => {
   return (
-    <ProgressStepsContainer
-      activeStep={activeStep}
-      className={`${className} progress-steps`}
+    <div
+      className={className}
+      style={{
+        display: 'inline-block',
+        width: spinnerSize,
+        height: spinnerSize,
+        border: `${size === 'small' ? 2 : size === 'large' ? 4 : 3}px solid ${variant === 'primary' ? 'var(--primary-color)' : 
+          variant === 'success' ? 'var(--success-color)' : 
+          variant === 'warning' ? 'var(--warning-color)' : 
+          variant === 'error' ? 'var(--error-color)' : 
+          'var(--info-color)'}`,
+        borderTopColor: 'transparent',
+        borderRadius: '50%',
+        animation: 'spin 1s linear infinite',
+        ...style
+      }}
       {...props}
-    >
-      {steps.map((step, index) => (
-        <div
-          key={index}
-          className="step"
-          stepIndex={index}
-        >
-          <div className="step-circle">
-            {step.completed ? '✓' : index + 1}
-          </div>
-          <div className="step-label">{step.label}</div>
-        </div>
-      ))}
-    </ProgressStepsContainer>
+    />
   );
-};
+});
 
-// Пропс-types для ProgressSteps
-ProgressSteps.propTypes = {
-  steps: PropTypes.arrayOf(
-    PropTypes.shape({
-      label: PropTypes.string.isRequired,
-      completed: PropTypes.bool,
-    })
-  ).isRequired,
-  activeStep: PropTypes.number.isRequired,
+ProgressSpinner.propTypes = {
+  size: PropTypes.oneOf(['small', 'medium', 'large']),
+  variant: PropTypes.oneOf(['primary', 'success', 'warning', 'error', 'info']),
   className: PropTypes.string,
+  style: PropTypes.object,
 };
 
-// Экспорт компонентов
-export {
-  LinearProgress,
-  CircularProgress,
-  Progress,
-  ProgressSteps as ProgressStepsComponent,
-};
+export default ProgressBar;

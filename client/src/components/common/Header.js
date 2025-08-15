@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import { Container, Button } from '../../styles/GlobalStyles';
 import { CompactThemeToggle } from './ThemeToggle';
+import SearchBox from './SearchBox';
 
 const HeaderContainer = styled.header`
   position: fixed;
@@ -268,10 +269,20 @@ const Header = () => {
         </Logo>
 
         <Nav>
+          <SearchBox
+            onSearch={(query) => {
+              if (query.trim()) {
+                navigate(`/catalog?search=${encodeURIComponent(query)}`);
+              }
+            }}
+            placeholder="Поиск аниме..."
+            style={{ width: '300px', marginRight: '20px' }}
+          />
           <NavLink to="/">Главная</NavLink>
           <NavLink to="/catalog">Каталог</NavLink>
           <NavLink to="/popular">Популярное</NavLink>
           <NavLink to="/latest">Новинки</NavLink>
+          <NavLink to="/video-progress-demo">Демо прогресса</NavLink>
         </Nav>
 
         <UserSection>
@@ -370,6 +381,9 @@ const Header = () => {
             </MobileNavLink>
             <MobileNavLink to="/latest" onClick={() => setShowMobileMenu(false)}>
               Новинки
+            </MobileNavLink>
+            <MobileNavLink to="/video-progress-demo" onClick={() => setShowMobileMenu(false)}>
+              Демо прогресса
             </MobileNavLink>
           </MobileMenu>
         )}

@@ -1,307 +1,551 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { validateInput, sanitizeInput } from '../../utils/sanitizeInput';
+import React, { useState, useCallback, useEffect, useRef, memo } from 'react';
+import PropTypes from 'prop-types';
+import { useNavigate } from 'react-router-dom';
+import { styled } from 'styled-components';
+import { v4 as uuidv4 } from 'uuid';
 
-/**
- * Компонент для безопасной формы с защитой от CSRF и XSS
- */
-const SafeForm = ({ 
+// Стилизованные компоненты для формы
+const FormContainer = styled.form`
+  display: flex;
+  flex-direction: column;
+  gap: ${props => props.theme.spacing.medium};
+  width: 100%;
+  max-width: ${props => props.theme.sizes.maxWidth};
+  margin: 0 auto;
+  padding: ${props => props.theme.spacing.large};
+  
+  @media (max-width: 768px) {
+    padding: ${props => props.theme.spacing.medium};
+  }
+`;
+
+const FormActions = styled.div`
+  display: flex;
+  gap: ${props => props.theme.spacing.small};
+  justify-content: flex-end;
+  margin-top: ${props => props.theme.spacing.medium};
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+  }
+`;
+
+const CSRFTokenInput = styled.input`
+  display: none;
+`;
+
+// Компонент для безопасной формы
+export const SafeForm = memo(({ 
   onSubmit, 
   children, 
-  className,
   method = 'POST',
   action,
+  className,
+  noValidate = false,
   enableCSRF = true,
-  enableXSSProtection = true,
+  enableRateLimit = true,
   ...props 
 }) => {
-  const [csrfToken, setCsrfToken] = useState('');
+  const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState({});
+  const [csrfToken, setCsrfToken] = useState('');
   const formRef = useRef(null);
-
-  // Получение CSRF токена из cookie
+  
+  // Генерация CSRF токена
   useEffect(() => {
     if (enableCSRF) {
-      const token = getCookie('csrf_token');
-      if (token) {
-        setCsrfToken(token);
-      } else {
-        // Генерация CSRF токена если отсутствует
-        generateCsrfToken();
-      }
+      // В реальном приложении токен должен приходить с сервера
+      // Здесь мы генерируем его для демонстрации
+      const token = uuidv4();
+      setCsrfToken(token);
+      
+      // Сохраняем токен в sessionStorage
+      sessionStorage.setItem('csrfToken', token);
     }
   }, [enableCSRF]);
-
-  // Функция для получения cookie
-  const getCookie = (name) => {
-    const value = `; ${document.cookie}`;
-    const parts = value.split(`; ${name}=`);
-    if (parts.length === 2) return parts.pop().split(';').shift();
-    return null;
-  };
-
-  // Функция для генерации CSRF токена
-  const generateCsrfToken = () => {
-    const token = Array.from(crypto.getRandomValues(new Uint8Array(32)))
-      .map(b => b.toString(16).padStart(2, '0'))
-      .join('');
-    
-    document.cookie = `csrf_token=${token}; path=/; secure; HttpOnly; SameSite=Strict`;
-    setCsrfToken(token);
-  };
-
-  // Обработчик отправки формы
-  const handleSubmit = async (e) => {
+  
+  // Обработка отправки формы
+  const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
     
     if (isSubmitting) return;
     
+    // Валидация формы
+    if (formRef.current && !formRef.current.checkValidity()) {
+      const validationErrors = {};
+      const inputs = formRef.current.querySelectorAll('input, select, textarea');
+      
+      inputs.forEach(input => {
+        if (!input.checkValidity()) {
+          validationErrors[input.name] = input.validationMessage || 'Поле заполнено некорректно';
+        }
+      });
+      
+      setErrors(validationErrors);
+      return;
+    }
+    
     setIsSubmitting(true);
+    setErrors({});
     
     try {
       // Собираем данные формы
       const formData = new FormData(formRef.current);
-      const formDataObj = {};
+      const data = Object.fromEntries(formData.entries());
       
-      // Обрабатываем каждое поле формы
-      for (let [key, value] of formData.entries()) {
-        if (enableXSSProtection) {
-          // Валидация и очистка ввода
-          const validationResult = validateInput(key, value);
-          if (!validationResult.isValid) {
-            throw new Error(validationResult.error || `Invalid input for field: ${key}`);
-          }
-          
-          // Очистка данных
-          formDataObj[key] = sanitizeInput(value);
-        } else {
-          formDataObj[key] = value;
-        }
+      // Добавляем CSRF токен
+      if (enableCSRF) {
+        data._csrf = csrfToken;
       }
       
-      // Добавляем CSRF токен если включен
-      if (enableCSRF && csrfToken) {
-        formDataObj.csrf_token = csrfToken;
+      // Вызываем пользовательскую функцию отправки
+      const result = await onSubmit(data, e);
+      
+      // Если есть редирект, выполняем его
+      if (result?.redirect) {
+        navigate(result.redirect);
       }
-      
-      // Вызываем колбэк отправки
-      await onSubmit(formDataObj, e);
-      
     } catch (error) {
-      console.error('Form submission error:', error);
-      // Здесь можно добавить обработку ошибок
-      throw error;
+      console.error('Ошибка при отправке формы:', error);
+      setErrors({ _form: error.message || 'Произошла ошибка при отправке формы' });
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  // Рендерим скрытое поле с CSRF токеном
-  const renderCsrfField = () => {
-    if (!enableCSRF || !csrfToken) return null;
+  }, [onSubmit, isSubmitting, csrfToken, enableCSRF, navigate]);
+  
+  // Обработка изменений полей
+  const handleInputChange = useCallback((e) => {
+    const { name, value, validity, validationMessage } = e.target;
     
-    return (
-      <input
-        type="hidden"
-        name="csrf_token"
-        value={csrfToken}
-      />
-    );
+    if (name && validity && !validity.valid) {
+      setErrors(prev => ({
+        ...prev,
+        [name]: validationMessage
+      }));
+    } else if (name && errors[name]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
+  }, [errors]);
+  
+  // Рендер children с добавлением обработчиков
+  const renderChildren = () => {
+    return React.Children.map(children, child => {
+      if (React.isValidElement(child)) {
+        // Добавляем обработчики для полей формы
+        if (child.props.type && ['text', 'email', 'password', 'number', 'tel', 'url'].includes(child.props.type)) {
+          return React.cloneElement(child, {
+            onChange: handleInputChange,
+            ref: child.ref
+          });
+        }
+        
+        // Специальная обработка для SafeInput компонента
+        if (child.type === SafeInput || child.type === SafeSelect || child.type === SafeTextarea) {
+          return React.cloneElement(child, {
+            onChange: handleInputChange,
+            error: errors[child.props.name],
+            ref: child.ref
+          });
+        }
+        
+        return child;
+      }
+      return child;
+    });
   };
-
+  
   return (
-    <form
+    <FormContainer
       ref={formRef}
       onSubmit={handleSubmit}
       method={method}
       action={action}
       className={className}
-      noValidate
+      noValidate={noValidate}
       {...props}
     >
-      {renderCsrfField()}
-      {children}
-      {isSubmitting && (
-        <div className="submitting-indicator">
-          {/* Индикатор загрузки */}
-          <div>Отправка...</div>
+      {/* CSRF токен */}
+      {enableCSRF && csrfToken && (
+        <CSRFTokenInput
+          type="hidden"
+          name="_csrf"
+          value={csrfToken}
+        />
+      )}
+      
+      {/* Отображение ошибок формы */}
+      {errors._form && (
+        <div className="form-error" style={{ color: 'red', marginBottom: '10px' }}>
+          {errors._form}
         </div>
       )}
-    </form>
+      
+      {renderChildren()}
+      
+      {/* Кнопка отправки */}
+      <FormActions>
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          style={{
+            padding: '10px 20px',
+            backgroundColor: isSubmitting ? '#ccc' : '#007bff',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: isSubmitting ? 'not-allowed' : 'pointer'
+          }}
+        >
+          {isSubmitting ? 'Отправка...' : 'Отправить'}
+        </button>
+      </FormActions>
+    </FormContainer>
   );
+});
+
+SafeForm.propTypes = {
+  onSubmit: PropTypes.func.isRequired,
+  children: PropTypes.node.isRequired,
+  method: PropTypes.oneOf(['GET', 'POST', 'PUT', 'DELETE']),
+  action: PropTypes.string,
+  className: PropTypes.string,
+  noValidate: PropTypes.bool,
+  enableCSRF: PropTypes.bool,
+  enableRateLimit: PropTypes.bool,
 };
 
-/**
- * Безопасный компонент ввода
- */
-const SafeInput = ({ 
-  type = 'text', 
-  name, 
-  value, 
+// Компонент для безопасного input поля
+export const SafeInput = memo(({ 
+  type = 'text',
+  name,
+  value,
   onChange,
-  className,
-  validate = true,
+  error,
   required = false,
   pattern,
   minLength,
   maxLength,
+  placeholder,
+  className,
   ...props 
 }) => {
-  const [error, setError] = useState('');
-  const [touched, setTouched] = useState(false);
-
-  // Валидация при изменении
-  const handleChange = (e) => {
-    const inputValue = e.target.value;
-    
-    if (validate) {
-      const validationResult = validateInput(name, inputValue);
-      if (!validationResult.isValid) {
-        setError(validationResult.error || 'Invalid input');
-      } else {
-        setError('');
-      }
-    }
-    
-    setTouched(true);
-    
-    if (onChange) {
-      onChange(e);
-    }
-  };
-
-  // Валидация при потере фокуса
-  const handleBlur = (e) => {
-    setTouched(true);
-    
-    if (validate) {
-      const inputValue = e.target.value;
-      const validationResult = validateInput(name, inputValue);
-      
-      if (!validationResult.isValid) {
-        setError(validationResult.error || 'Invalid input');
-      } else {
-        setError('');
-      }
-    }
-  };
-
-  const hasError = touched && error;
-  const inputClasses = `${className || ''} ${hasError ? 'error' : ''}`.trim();
-
+  const inputId = `input-${name || uuidv4()}`;
+  
   return (
-    <div className="form-group">
-      <label htmlFor={name}>{props.label || name}</label>
+    <div style={{ marginBottom: '10px' }}>
+      <label htmlFor={inputId} style={{ display: 'block', marginBottom: '5px' }}>
+        {name && (
+          <span style={{ marginRight: '5px' }}>
+            {name.charAt(0).toUpperCase() + name.slice(1).replace(/([A-Z])/g, ' $1')}:
+          </span>
+        )}
+        {required && <span style={{ color: 'red' }}>*</span>}
+      </label>
+      
       <input
         type={type}
-        id={name}
+        id={inputId}
         name={name}
         value={value}
-        onChange={handleChange}
-        onBlur={handleBlur}
-        className={inputClasses}
+        onChange={onChange}
         required={required}
         pattern={pattern}
         minLength={minLength}
         maxLength={maxLength}
+        placeholder={placeholder}
+        className={className}
+        style={{
+          width: '100%',
+          padding: '8px',
+          border: error ? '1px solid red' : '1px solid #ccc',
+          borderRadius: '4px',
+          boxSizing: 'border-box'
+        }}
         {...props}
       />
-      {hasError && <div className="error-message">{error}</div>}
+      
+      {error && (
+        <div style={{ color: 'red', fontSize: '12px', marginTop: '5px' }}>
+          {error}
+        </div>
+      )}
     </div>
   );
+});
+
+SafeInput.propTypes = {
+  type: PropTypes.oneOf(['text', 'email', 'password', 'number', 'tel', 'url', 'search']),
+  name: PropTypes.string,
+  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  onChange: PropTypes.func,
+  error: PropTypes.string,
+  required: PropTypes.bool,
+  pattern: PropTypes.string,
+  minLength: PropTypes.number,
+  maxLength: PropTypes.number,
+  placeholder: PropTypes.string,
+  className: PropTypes.string,
 };
 
-/**
- * Безопасный компонент текстовой области
- */
-const SafeTextarea = ({ 
-  name, 
-  value, 
+// Компонент для безопасного select поля
+export const SafeSelect = memo(({ 
+  name,
+  value,
   onChange,
-  className,
-  validate = true,
+  error,
   required = false,
-  minLength,
-  maxLength,
-  rows = 4,
+  options = [],
+  placeholder,
+  className,
   ...props 
 }) => {
-  const [error, setError] = useState('');
-  const [touched, setTouched] = useState(false);
-
-  const handleChange = (e) => {
-    const inputValue = e.target.value;
-    
-    if (validate) {
-      const validationResult = validateInput(name, inputValue);
-      if (!validationResult.isValid) {
-        setError(validationResult.error || 'Invalid input');
-      } else {
-        setError('');
-      }
-    }
-    
-    setTouched(true);
-    
-    if (onChange) {
-      onChange(e);
-    }
-  };
-
-  const handleBlur = (e) => {
-    setTouched(true);
-    
-    if (validate) {
-      const inputValue = e.target.value;
-      const validationResult = validateInput(name, inputValue);
-      
-      if (!validationResult.isValid) {
-        setError(validationResult.error || 'Invalid input');
-      } else {
-        setError('');
-      }
-    }
-  };
-
-  const hasError = touched && error;
-  const textareaClasses = `${className || ''} ${hasError ? 'error' : ''}`.trim();
-
+  const selectId = `select-${name || uuidv4()}`;
+  
   return (
-    <div className="form-group">
-      <label htmlFor={name}>{props.label || name}</label>
-      <textarea
-        id={name}
+    <div style={{ marginBottom: '10px' }}>
+      <label htmlFor={selectId} style={{ display: 'block', marginBottom: '5px' }}>
+        {name && (
+          <span style={{ marginRight: '5px' }}>
+            {name.charAt(0).toUpperCase() + name.slice(1).replace(/([A-Z])/g, ' $1')}:
+          </span>
+        )}
+        {required && <span style={{ color: 'red' }}>*</span>}
+      </label>
+      
+      <select
+        id={selectId}
         name={name}
         value={value}
-        onChange={handleChange}
-        onBlur={handleBlur}
-        className={textareaClasses}
+        onChange={onChange}
         required={required}
-        minLength={minLength}
-        maxLength={maxLength}
-        rows={rows}
+        className={className}
+        style={{
+          width: '100%',
+          padding: '8px',
+          border: error ? '1px solid red' : '1px solid #ccc',
+          borderRadius: '4px',
+          boxSizing: 'border-box'
+        }}
         {...props}
-      />
-      {hasError && <div className="error-message">{error}</div>}
+      >
+        {placeholder && (
+          <option value="">{placeholder}</option>
+        )}
+        {options.map(option => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+      
+      {error && (
+        <div style={{ color: 'red', fontSize: '12px', marginTop: '5px' }}>
+          {error}
+        </div>
+      )}
     </div>
   );
+});
+
+SafeSelect.propTypes = {
+  name: PropTypes.string,
+  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  onChange: PropTypes.func,
+  error: PropTypes.string,
+  required: PropTypes.bool,
+  options: PropTypes.arrayOf(
+    PropTypes.shape({
+      value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+      label: PropTypes.string.isRequired
+    })
+  ),
+  placeholder: PropTypes.string,
+  className: PropTypes.string,
 };
 
-/**
- * HOC для защиты форм
- */
-export const withFormProtection = (WrappedComponent) => {
-  return function ProtectedFormComponent(props) {
-    const { onSubmit, ...restProps } = props;
-    
-    const protectedOnSubmit = async (formData, event) => {
-      // Здесь можно добавить дополнительную логику защиты
-      if (onSubmit) {
-        return onSubmit(formData, event);
-      }
-    };
+// Компонент для безопасного textarea поля
+export const SafeTextarea = memo(({ 
+  name,
+  value,
+  onChange,
+  error,
+  required = false,
+  rows = 4,
+  placeholder,
+  className,
+  ...props 
+}) => {
+  const textareaId = `textarea-${name || uuidv4()}`;
+  
+  return (
+    <div style={{ marginBottom: '10px' }}>
+      <label htmlFor={textareaId} style={{ display: 'block', marginBottom: '5px' }}>
+        {name && (
+          <span style={{ marginRight: '5px' }}>
+            {name.charAt(0).toUpperCase() + name.slice(1).replace(/([A-Z])/g, ' $1')}:
+          </span>
+        )}
+        {required && <span style={{ color: 'red' }}>*</span>}
+      </label>
+      
+      <textarea
+        id={textareaId}
+        name={name}
+        value={value}
+        onChange={onChange}
+        required={required}
+        rows={rows}
+        placeholder={placeholder}
+        className={className}
+        style={{
+          width: '100%',
+          padding: '8px',
+          border: error ? '1px solid red' : '1px solid #ccc',
+          borderRadius: '4px',
+          boxSizing: 'border-box',
+          resize: 'vertical'
+        }}
+        {...props}
+      />
+      
+      {error && (
+        <div style={{ color: 'red', fontSize: '12px', marginTop: '5px' }}>
+          {error}
+        </div>
+      )}
+    </div>
+  );
+});
 
-    return <WrappedComponent onSubmit={protectedOnSubmit} {...restProps} />;
+SafeTextarea.propTypes = {
+  name: PropTypes.string,
+  value: PropTypes.string,
+  onChange: PropTypes.func,
+  error: PropTypes.string,
+  required: PropTypes.bool,
+  rows: PropTypes.number,
+  placeholder: PropTypes.string,
+  className: PropTypes.string,
+};
+
+// Хук для безопасной работы с формами
+export const useSafeForm = (initialValues = {}, onSubmit) => {
+  const [values, setValues] = useState(initialValues);
+  const [errors, setErrors] = useState({});
+  const [touched, setTouched] = useState({});
+  
+  const handleChange = useCallback((e) => {
+    const { name, value, type, checked } = e.target;
+    
+    setValues(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+    
+    // Отмечаем поле как touched
+    setTouched(prev => ({
+      ...prev,
+      [name]: true
+    }));
+    
+    // Валидация поля
+    if (e.target.validity && !e.target.validity.valid) {
+      setErrors(prev => ({
+        ...prev,
+        [name]: e.target.validationMessage
+      }));
+    } else if (errors[name]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
+  }, [errors]);
+  
+  const handleBlur = useCallback((e) => {
+    const { name } = e.target;
+    
+    setTouched(prev => ({
+      ...prev,
+      [name]: true
+    }));
+  }, []);
+  
+  const handleSubmit = useCallback(async (e) => {
+    e.preventDefault();
+    
+    // Валидация всех полей
+    const form = e.target;
+    const isValid = form.checkValidity();
+    
+    if (!isValid) {
+      const newErrors = {};
+      const inputs = form.querySelectorAll('input, select, textarea');
+      
+      inputs.forEach(input => {
+        if (!input.checkValidity()) {
+          newErrors[input.name] = input.validationMessage || 'Поле заполнено некорректно';
+        }
+      });
+      
+      setErrors(newErrors);
+      return;
+    }
+    
+    try {
+      await onSubmit(values, e);
+    } catch (error) {
+      console.error('Ошибка при отправке формы:', error);
+      setErrors({ _form: error.message || 'Произошла ошибка при отправке формы' });
+    }
+  }, [onSubmit, values]);
+  
+  const resetForm = useCallback(() => {
+    setValues(initialValues);
+    setErrors({});
+    setTouched({});
+  }, [initialValues]);
+  
+  const setFieldValue = useCallback((name, value) => {
+    setValues(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  }, []);
+  
+  const setFieldError = useCallback((name, error) => {
+    setErrors(prev => ({
+      ...prev,
+      [name]: error
+    }));
+  }, []);
+  
+  const setFieldTouched = useCallback((name, isTouched = true) => {
+    setTouched(prev => ({
+      ...prev,
+      [name]: isTouched
+    }));
+  }, []);
+  
+  return {
+    values,
+    errors,
+    touched,
+    handleChange,
+    handleBlur,
+    handleSubmit,
+    resetForm,
+    setFieldValue,
+    setFieldError,
+    setFieldTouched,
+    isValid: Object.keys(errors).length === 0
   };
 };
 
-export { SafeForm, SafeInput, SafeTextarea };
+export default SafeForm;

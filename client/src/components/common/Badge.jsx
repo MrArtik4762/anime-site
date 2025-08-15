@@ -1,179 +1,6 @@
 import React from 'react';
-import styled from 'styled-components';
 import PropTypes from 'prop-types';
-
-// Контейнер бейджа
-const BadgeContainer = styled.span`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: ${props => props.padding || `${props.theme.spacing[1]} ${props.theme.spacing[2]}`};
-  border-radius: ${props => props.shape === 'pill' ? props.theme.borderRadius.full : props.theme.borderRadius.md};
-  font-size: ${props => props.theme.typography.fontSize.xs[0]};
-  font-weight: ${props => props.theme.typography.fontWeight.medium};
-  line-height: 1;
-  white-space: nowrap;
-  text-transform: ${props => props.uppercase ? 'uppercase' : 'none'};
-  letter-spacing: ${props => props.uppercase ? '0.5px' : 'normal'};
-  
-  // Цвета
-  ${props => {
-    if (props.color) {
-      return `
-        background-color: ${props.theme.colors[props.color]};
-        color: white;
-      `;
-    }
-    
-    switch (props.variant) {
-      case 'primary':
-        return `
-          background-color: ${props.theme.colors.primary};
-          color: white;
-        `;
-      case 'secondary':
-        return `
-          background-color: ${props.theme.colors.border.medium};
-          color: ${props.theme.colors.text.primary};
-        `;
-      case 'success':
-        return `
-          background-color: ${props.theme.colors.success};
-          color: white;
-        `;
-      case 'danger':
-        return `
-          background-color: ${props.theme.colors.danger};
-          color: white;
-        `;
-      case 'warning':
-        return `
-          background-color: ${props.theme.colors.warning};
-          color: ${props.theme.colors.text.primary};
-        `;
-      case 'info':
-        return `
-          background-color: ${props.theme.colors.info};
-          color: white;
-        `;
-      default:
-        return `
-          background-color: ${props.theme.colors.border.medium};
-          color: ${props.theme.colors.text.primary};
-        `;
-    }
-  }}
-  
-  // Размеры
-  ${props => {
-    switch (props.size) {
-      case 'small':
-        return `
-          padding: ${props.theme.spacing[0.5]} ${props.theme.spacing[1.5]};
-          font-size: ${props.theme.typography.fontSize.xxs[0]};
-        `;
-      case 'large':
-        return `
-          padding: ${props.theme.spacing[1.5]} ${props.theme.spacing[3]};
-          font-size: ${props.theme.typography.fontSize.sm[0]};
-        `;
-      default:
-        return '';
-    }
-  }}
-  
-  // Состояния
-  ${props => {
-    if (props.disabled) {
-      return `
-        opacity: ${props.theme.opacity[50]};
-        cursor: not-allowed;
-      `;
-    }
-    
-    if (props.clickable) {
-      return `
-        cursor: pointer;
-        transition: ${props.theme.transitions.normal};
-        
-        &:hover {
-          opacity: ${props.theme.opacity[80]};
-        }
-        
-        &:active {
-          transform: scale(0.98);
-        }
-      `;
-    }
-    
-    return '';
-  }}
-  
-  // Границы
-  ${props => {
-    if (props.outlined) {
-      return `
-        border: 1px solid ${props => {
-          if (props.color) {
-            return props.theme.colors[props.color];
-          }
-          
-          switch (props.variant) {
-            case 'primary':
-              return props.theme.colors.primary;
-            case 'secondary':
-              return props.theme.colors.border.medium;
-            case 'success':
-              return props.theme.colors.success;
-            case 'danger':
-              return props.theme.colors.danger;
-            case 'warning':
-              return props.theme.colors.warning;
-            case 'info':
-              return props.theme.colors.info;
-            default:
-              return props.theme.colors.border.medium;
-          }
-        }};
-        background-color: transparent;
-        color: ${props => {
-          if (props.color) {
-            return props.theme.colors[props.color];
-          }
-          
-          switch (props.variant) {
-            case 'primary':
-              return props.theme.colors.primary;
-            case 'secondary':
-              return props.theme.colors.text.primary;
-            case 'success':
-              return props.theme.colors.success;
-            case 'danger':
-              return props.theme.colors.danger;
-            case 'warning':
-              return props.theme.colors.warning;
-            case 'info':
-              return props.theme.colors.info;
-            default:
-              return props.theme.colors.text.primary;
-          }
-        }};
-      `;
-    }
-    
-    return '';
-  }}
-`;
-
-// Иконка в бейдже
-const BadgeIcon = styled.span`
-  margin-right: ${props => props.theme.spacing[1]};
-  
-  ${props => props.iconPosition === 'right' && `
-    margin-right: 0;
-    margin-left: ${props => props.theme.spacing[1]};
-  `}
-`;
+import { cn } from '../../styles/tailwindUtils';
 
 // Компонент Badge
 const Badge = ({
@@ -191,33 +18,131 @@ const Badge = ({
   className = '',
   ...props
 }) => {
+  // Определяем классы для разных вариантов
+  const getVariantClasses = () => {
+    if (outlined) {
+      switch (variant) {
+        case 'primary':
+          return 'border-blue-500 text-blue-500 bg-transparent';
+        case 'success':
+          return 'border-green-500 text-green-500 bg-transparent';
+        case 'danger':
+          return 'border-red-500 text-red-500 bg-transparent';
+        case 'warning':
+          return 'border-yellow-500 text-yellow-500 bg-transparent';
+        case 'info':
+          return 'border-blue-500 text-blue-500 bg-transparent';
+        default:
+          return 'border-slate-300 text-slate-700 bg-transparent';
+      }
+    }
+    
+    if (color) {
+      const colorMap = {
+        blue: 'bg-gradient-to-r from-blue-500 to-blue-600 text-white',
+        purple: 'bg-gradient-to-r from-purple-500 to-purple-600 text-white',
+        green: 'bg-gradient-to-r from-green-500 to-green-600 text-white',
+        red: 'bg-gradient-to-r from-red-500 to-red-600 text-white',
+        yellow: 'bg-gradient-to-r from-yellow-500 to-yellow-600 text-white',
+        indigo: 'bg-gradient-to-r from-indigo-500 to-indigo-600 text-white',
+        pink: 'bg-gradient-to-r from-pink-500 to-pink-600 text-white',
+        teal: 'bg-gradient-to-r from-teal-500 to-teal-600 text-white',
+      };
+      
+      return colorMap[color] || 'bg-gradient-to-r from-slate-500 to-slate-600 text-white';
+    }
+    
+    switch (variant) {
+      case 'primary':
+        return 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-[0_2px_4px_rgba(59,130,246,0.2)]';
+      case 'secondary':
+        return 'bg-gradient-to-r from-slate-100 to-slate-200 text-slate-800 shadow-[0_1px_2px_rgba(0,0,0,0.05)]';
+      case 'success':
+        return 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-[0_2px_4px_rgba(34,197,94,0.2)]';
+      case 'danger':
+        return 'bg-gradient-to-r from-red-500 to-red-600 text-white shadow-[0_2px_4px_rgba(239,68,68,0.2)]';
+      case 'warning':
+        return 'bg-gradient-to-r from-yellow-500 to-yellow-600 text-white shadow-[0_2px_4px_rgba(245,158,11,0.2)]';
+      case 'info':
+        return 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-[0_2px_4px_rgba(59,130,246,0.2)]';
+      default:
+        return 'bg-gradient-to-r from-slate-100 to-slate-200 text-slate-800 shadow-[0_1px_2px_rgba(0,0,0,0.05)]';
+    }
+  };
+
+  // Определяем классы для размеров
+  const getSizeClasses = () => {
+    switch (size) {
+      case 'small':
+        return 'px-2 py-1 text-xs';
+      case 'large':
+        return 'px-3 py-1.5 text-sm';
+      default:
+        return 'px-2.5 py-1.5 text-xs';
+    }
+  };
+
+  // Определяем классы для формы
+  const getShapeClasses = () => {
+    switch (shape) {
+      case 'pill':
+        return 'rounded-full';
+      default:
+        return 'rounded-lg';
+    }
+  };
+
+  // Определяем классы для состояний
+  const getStateClasses = () => {
+    if (disabled) {
+      return 'opacity-50 cursor-not-allowed';
+    }
+    
+    if (clickable) {
+      return 'cursor-pointer transition-all duration-200 ease-out hover:scale-105 hover:shadow-[0_4px_6px_rgba(0,0,0,0.1)] active:scale-95';
+    }
+    
+    return '';
+  };
+
+  // Определяем классы для текста
+  const getTextClasses = () => {
+    let classes = 'font-medium leading-none whitespace-nowrap';
+    
+    if (uppercase) {
+      classes += ' uppercase tracking-wider';
+    }
+    
+    return classes;
+  };
+
+  // Собираем все классы
+  const badgeClasses = cn(
+    'inline-flex items-center justify-center',
+    getVariantClasses(),
+    getSizeClasses(),
+    getShapeClasses(),
+    getStateClasses(),
+    getTextClasses(),
+    className
+  );
+
   return (
-    <BadgeContainer
-      variant={variant}
-      color={color}
-      size={size}
-      shape={shape}
-      outlined={outlined}
-      uppercase={uppercase}
-      disabled={disabled}
-      clickable={clickable}
-      className={`${className} badge ${variant}${color ? ` ${color}` : ''}${size ? ` ${size}` : ''}${shape ? ` ${shape}` : ''}${outlined ? ' outlined' : ''}${uppercase ? ' uppercase' : ''}${disabled ? ' disabled' : ''}${clickable ? ' clickable' : ''}`}
-      {...props}
-    >
+    <span className={badgeClasses} {...props}>
       {icon && iconPosition === 'left' && (
-        <BadgeIcon iconPosition={iconPosition}>
+        <span className="mr-1.5 transition-transform duration-200 hover:scale-110">
           {icon}
-        </BadgeIcon>
+        </span>
       )}
       
       {children}
       
       {icon && iconPosition === 'right' && (
-        <BadgeIcon iconPosition={iconPosition}>
+        <span className="ml-1.5 transition-transform duration-200 hover:scale-110">
           {icon}
-        </BadgeIcon>
+        </span>
       )}
-    </BadgeContainer>
+    </span>
   );
 };
 
@@ -225,7 +150,7 @@ const Badge = ({
 Badge.propTypes = {
   children: PropTypes.node.isRequired,
   variant: PropTypes.oneOf(['primary', 'secondary', 'success', 'danger', 'warning', 'info']),
-  color: PropTypes.string,
+  color: PropTypes.oneOf(['blue', 'purple', 'green', 'red', 'yellow', 'indigo', 'pink', 'teal']),
   size: PropTypes.oneOf(['small', 'medium', 'large']),
   shape: PropTypes.oneOf(['default', 'pill']),
   outlined: PropTypes.bool,
@@ -238,41 +163,6 @@ Badge.propTypes = {
 };
 
 // Компонент BadgeDot для точечных бейджей
-const BadgeDotContainer = styled.span`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  
-  .dot {
-    width: ${props => props.size === 'small' ? '6px' : props.size === 'medium' ? '8px' : '10px'};
-    height: ${props => props.size === 'small' ? '6px' : props.size === 'medium' ? '8px' : '10px'};
-    border-radius: 50%;
-    margin-right: ${props => props.theme.spacing[1]};
-    
-    ${props => {
-      if (props.color) {
-        return `
-          background-color: ${props.theme.colors[props.color]};
-        `;
-      }
-      
-      switch (props.variant) {
-        case 'primary':
-          return `background-color: ${props.theme.colors.primary};`;
-        case 'success':
-          return `background-color: ${props.theme.colors.success};`;
-        case 'danger':
-          return `background-color: ${props.theme.colors.danger};`;
-        case 'warning':
-          return `background-color: ${props.theme.colors.warning};`;
-        default:
-          return `background-color: ${props.theme.colors.danger};`;
-      }
-    }}
-  }
-`;
-
-// Компонент BadgeDot
 const BadgeDot = ({
   children,
   variant = 'danger',
@@ -281,17 +171,61 @@ const BadgeDot = ({
   className = '',
   ...props
 }) => {
+  // Определяем классы для цвета точки
+  const getDotColorClasses = () => {
+    if (color) {
+      const colorMap = {
+        blue: 'bg-blue-500',
+        purple: 'bg-purple-500',
+        green: 'bg-green-500',
+        red: 'bg-red-500',
+        yellow: 'bg-yellow-500',
+        indigo: 'bg-indigo-500',
+        pink: 'bg-pink-500',
+        teal: 'bg-teal-500',
+      };
+      
+      return colorMap[color] || 'bg-slate-500';
+    }
+    
+    switch (variant) {
+      case 'primary':
+        return 'bg-blue-500';
+      case 'success':
+        return 'bg-green-500';
+      case 'danger':
+        return 'bg-red-500';
+      case 'warning':
+        return 'bg-yellow-500';
+      default:
+        return 'bg-slate-500';
+    }
+  };
+
+  // Определяем классы для размера точки
+  const getDotSizeClasses = () => {
+    switch (size) {
+      case 'small':
+        return 'w-1.5 h-1.5';
+      case 'large':
+        return 'w-2.5 h-2.5';
+      default:
+        return 'w-2 h-2';
+    }
+  };
+
+  const dotClasses = cn(
+    'rounded-full mr-2',
+    getDotColorClasses(),
+    getDotSizeClasses(),
+    className
+  );
+
   return (
-    <BadgeDotContainer
-      variant={variant}
-      color={color}
-      size={size}
-      className={`${className} badge-dot ${variant}${color ? ` ${color}` : ''}${size ? ` ${size}` : ''}`}
-      {...props}
-    >
-      <span className="dot"></span>
+    <span className="inline-flex items-center" {...props}>
+      <span className={dotClasses}></span>
       {children}
-    </BadgeDotContainer>
+    </span>
   );
 };
 
@@ -299,76 +233,43 @@ const BadgeDot = ({
 BadgeDot.propTypes = {
   children: PropTypes.node,
   variant: PropTypes.oneOf(['primary', 'success', 'danger', 'warning']),
-  color: PropTypes.string,
+  color: PropTypes.oneOf(['blue', 'purple', 'green', 'red', 'yellow', 'indigo', 'pink', 'teal']),
   size: PropTypes.oneOf(['small', 'medium', 'large']),
   className: PropTypes.string,
 };
 
 // Компонент BadgeGroup для группы бейджей
-const BadgeGroup = styled.div`
-  display: inline-flex;
-  flex-wrap: wrap;
-  gap: ${props => props.gap || props.theme.spacing[2]};
-  
-  .badge {
-    margin: 0;
-  }
-`;
-
-// Компонент BadgeGroup
-const BadgeGroupComponent = ({
+const BadgeGroup = ({
   children,
-  gap,
+  gap = 2,
   className = '',
   ...props
 }) => {
+  const groupClasses = cn(
+    'inline-flex flex-wrap',
+    {
+      'gap-2': gap === 2,
+      'gap-3': gap === 3,
+      'gap-4': gap === 4,
+    },
+    className
+  );
+
   return (
-    <BadgeGroup
-      gap={gap}
-      className={`${className} badge-group`}
-      {...props}
-    >
+    <div className={groupClasses} {...props}>
       {children}
-    </BadgeGroup>
+    </div>
   );
 };
 
 // Пропс-types для BadgeGroup
-BadgeGroupComponent.propTypes = {
+BadgeGroup.propTypes = {
   children: PropTypes.node.isRequired,
-  gap: PropTypes.string,
+  gap: PropTypes.oneOf([2, 3, 4]),
   className: PropTypes.string,
 };
 
 // Компонент BadgeStatus для статусных бейджей
-const BadgeStatusContainer = styled.span`
-  display: inline-flex;
-  align-items: center;
-  
-  .status-dot {
-    width: ${props => props.size === 'small' ? '6px' : props.size === 'medium' ? '8px' : '10px'};
-    height: ${props => props.size === 'small' ? '6px' : props.size === 'medium' ? '8px' : '10px'};
-    border-radius: 50%;
-    margin-right: ${props => props.theme.spacing[1]};
-    
-    ${props => {
-      switch (props.status) {
-        case 'online':
-          return `background-color: ${props.theme.colors.success};`;
-        case 'offline':
-          return `background-color: ${props.theme.colors.text.disabled};`;
-        case 'away':
-          return `background-color: ${props.theme.colors.warning};`;
-        case 'busy':
-          return `background-color: ${props.theme.colors.danger};`;
-        default:
-          return `background-color: ${props.theme.colors.text.disabled};`;
-      }
-    }}
-  }
-`;
-
-// Компонент BadgeStatus
 const BadgeStatus = ({
   status,
   size = 'medium',
@@ -376,16 +277,46 @@ const BadgeStatus = ({
   className = '',
   ...props
 }) => {
+  // Определяем классы для статуса
+  const getStatusClasses = () => {
+    switch (status) {
+      case 'online':
+        return 'bg-green-500';
+      case 'offline':
+        return 'bg-slate-400';
+      case 'away':
+        return 'bg-yellow-500';
+      case 'busy':
+        return 'bg-red-500';
+      default:
+        return 'bg-slate-400';
+    }
+  };
+
+  // Определяем классы для размера точки
+  const getDotSizeClasses = () => {
+    switch (size) {
+      case 'small':
+        return 'w-1.5 h-1.5';
+      case 'large':
+        return 'w-2.5 h-2.5';
+      default:
+        return 'w-2 h-2';
+    }
+  };
+
+  const dotClasses = cn(
+    'rounded-full mr-2',
+    getStatusClasses(),
+    getDotSizeClasses(),
+    className
+  );
+
   return (
-    <BadgeStatusContainer
-      status={status}
-      size={size}
-      className={`${className} badge-status ${status}`}
-      {...props}
-    >
-      <span className="status-dot"></span>
+    <span className="inline-flex items-center" {...props}>
+      <span className={dotClasses}></span>
       {children}
-    </BadgeStatusContainer>
+    </span>
   );
 };
 
@@ -398,4 +329,4 @@ BadgeStatus.propTypes = {
 };
 
 // Экспорт компонентов
-export { Badge, BadgeDot as BadgeDotComponent, BadgeGroup as BadgeGroupComponent, BadgeStatus };
+export { Badge, BadgeDot, BadgeGroup, BadgeStatus };

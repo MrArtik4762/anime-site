@@ -1,101 +1,7 @@
 import React from 'react';
-import styled from 'styled-components';
 import PropTypes from 'prop-types';
-
-// Основной контейнер карточки
-const CardContainer = styled.div`
-  background-color: ${props => props.theme.colors.surface.primary};
-  border-radius: ${props => props.theme.borderRadius.lg};
-  box-shadow: ${props => props.theme.shadow.sm};
-  overflow: hidden;
-  transition: ${props => props.theme.transitions.normal};
-  display: flex;
-  flex-direction: column;
-  height: ${props => props.fullHeight ? '100%' : 'auto'};
-  width: 100%;
-  
-  &:hover {
-    box-shadow: ${props => props.theme.shadow.md};
-    transform: translateY(-2px);
-  }
-  
-  ${props => props.clickable && `
-    cursor: pointer;
-  `}
-`;
-
-// Заголовок карточки
-const CardHeader = styled.div`
-  padding: ${props => props.theme.spacing[4]};
-  border-bottom: 1px solid ${props => props.theme.colors.border.medium};
-  background-color: ${props => props.variant === 'elevated' ? 'rgba(0, 0, 0, 0.02)' : 'transparent'};
-  
-  ${props => props.variant === 'outlined' && `
-    border-bottom: 1px solid ${props.theme.colors.border.medium};
-  `}
-`;
-
-// Заголовок карточки
-const CardTitle = styled.h3`
-  font-size: ${props => props.theme.typography.fontSize.lg[0]};
-  font-weight: ${props => props.theme.typography.fontWeight.semibold};
-  color: ${props => props.theme.colors.text.primary};
-  margin: 0;
-  line-height: ${props => props.theme.typography.lineHeight.tight};
-`;
-
-// Описание карточки
-const CardDescription = styled.p`
-  font-size: ${props => props.theme.typography.fontSize.sm[0]};
-  color: ${props => props.theme.colors.text.tertiary};
-  margin-top: ${props => props.theme.spacing[1]};
-  line-height: ${props => props.theme.typography.lineHeight.normal};
-`;
-
-// Содержимое карточки
-const CardBody = styled.div`
-  padding: ${props => props.theme.spacing[4]};
-  flex-grow: 1;
-`;
-
-// Нижняя часть карточки
-const CardFooter = styled.div`
-  padding: ${props => props.theme.spacing[4]};
-  border-top: 1px solid ${props => props.theme.colors.border.medium};
-  background-color: ${props => props.variant === 'elevated' ? 'rgba(0, 0, 0, 0.02)' : 'transparent'};
-  display: flex;
-  justify-content: ${props => props.align || 'flex-start'};
-  gap: ${props => props.theme.spacing[2]};
-`;
-
-// Изображение в карточке
-const CardImage = styled.img`
-  width: 100%;
-  height: ${props => props.height || '200px'};
-  object-fit: cover;
-  border-radius: ${props => props.theme.borderRadius.md};
-  margin-bottom: ${props => props.theme.spacing[4]};
-`;
-
-// Бейдж в карточке
-const CardBadge = styled.span`
-  position: absolute;
-  top: ${props => props.theme.spacing[3]};
-  right: ${props => props.theme.spacing[3]};
-  background-color: ${props => props.color ? props.theme.colors[props.color] : props.theme.colors.danger};
-  color: white;
-  font-size: ${props => props.theme.typography.fontSize.xs[0]};
-  font-weight: ${props => props.theme.typography.fontWeight.medium};
-  padding: ${props => props.theme.spacing[1]} ${props => props.theme.spacing[2]};
-  border-radius: ${props => props.theme.borderRadius.full};
-  box-shadow: ${props => props.theme.shadow.sm};
-`;
-
-// Обертка для изображения с бейджом
-const CardImageWrapper = styled.div`
-  position: relative;
-  margin-bottom: ${props => props.theme.spacing[4]};
-`;
+import { colors, spacing, borderRadius } from '../../styles/designTokens';
+import { cn } from '../../styles/tailwindUtils';
 
 // Компонент Card
 const Card = ({
@@ -114,45 +20,116 @@ const Card = ({
   onClick,
   ...props
 }) => {
+  const cardClasses = cn(
+    'relative flex flex-col w-full rounded-lg border transition-all duration-200 ease-out overflow-hidden',
+    {
+      'bg-gradient-to-br from-slate-50 to-white border-slate-200 shadow-sm': variant === 'default' && !clickable,
+      'hover:shadow-lg hover:border-blue-500 hover:-translate-y-1': clickable && variant === 'default',
+      'cursor-pointer': clickable,
+      'bg-transparent border-2 border-slate-300': variant === 'outlined',
+      'shadow-xl': variant === 'elevated',
+      'h-full': fullHeight,
+    },
+    className
+  );
+
+  const headerClasses = cn(
+    'p-6 border-b border-slate-200 bg-gradient-to-br from-slate-50 to-white',
+    {
+      'border-slate-300': variant === 'outlined',
+    }
+  );
+
+  const titleClasses = cn(
+    'text-lg font-semibold text-slate-900 m-0 leading-tight',
+    {
+      'text-slate-800': variant === 'outlined',
+    }
+  );
+
+  const descriptionClasses = cn(
+    'text-sm text-slate-600 mt-2 leading-normal',
+    {
+      'text-slate-500': variant === 'outlined',
+    }
+  );
+
+  const bodyClasses = cn(
+    'p-6 flex-grow bg-gradient-to-br from-slate-25 to-slate-50',
+    {
+      'bg-transparent': variant === 'outlined',
+    }
+  );
+
+  const footerClasses = cn(
+    'p-6 border-t border-slate-200 bg-gradient-to-br from-slate-50 to-white',
+    {
+      'border-slate-300': variant === 'outlined',
+    }
+  );
+
+  const imageClasses = cn(
+    'w-full rounded-md mb-6 transition-transform duration-200 ease-out',
+    {
+      'hover:scale-102 hover:rounded-lg': clickable,
+    }
+  );
+
+  const imageWrapperClasses = cn(
+    'relative mb-6 overflow-hidden rounded-md',
+    {
+      'hover:rounded-lg': clickable,
+    }
+  );
+
+  const badgeClasses = cn(
+    'absolute top-4 right-4 px-3 py-1 text-xs font-medium rounded-full shadow-md backdrop-blur-sm',
+    {
+      'bg-gradient-to-r from-red-500 to-purple-600 text-white': badgeColor === 'default',
+      'bg-gradient-to-r from-blue-500 to-blue-600 text-white': badgeColor === 'blue',
+      'bg-gradient-to-r from-green-500 to-green-600 text-white': badgeColor === 'green',
+      'bg-gradient-to-r from-yellow-500 to-yellow-600 text-white': badgeColor === 'yellow',
+      'bg-gradient-to-r from-purple-500 to-purple-600 text-white': badgeColor === 'purple',
+    }
+  );
+
   return (
-    <CardContainer
-      className={`${className} card ${variant}`}
-      variant={variant}
-      clickable={clickable}
-      fullHeight={fullHeight}
-      onClick={clickable ? onClick : undefined}
-      {...props}
-    >
+    <div className={cardClasses} onClick={clickable ? onClick : undefined} {...props}>
       {image && (
-        <CardImageWrapper>
-          <CardImage src={image} alt={title} height={imageHeight} />
+        <div className={imageWrapperClasses}>
+          <img
+            src={image}
+            alt={title}
+            height={imageHeight}
+            className={imageClasses}
+          />
           {badge && (
-            <CardBadge color={badgeColor}>
+            <span className={badgeClasses}>
               {badge}
-            </CardBadge>
+            </span>
           )}
-        </CardImageWrapper>
+        </div>
       )}
       
       {(title || description) && (
-        <CardHeader variant={variant}>
-          {title && <CardTitle>{title}</CardTitle>}
-          {description && <CardDescription>{description}</CardDescription>}
-        </CardHeader>
+        <div className={headerClasses}>
+          {title && <h3 className={titleClasses}>{title}</h3>}
+          {description && <p className={descriptionClasses}>{description}</p>}
+        </div>
       )}
       
       {children && (
-        <CardBody>
+        <div className={bodyClasses}>
           {children}
-        </CardBody>
+        </div>
       )}
       
       {footer && (
-        <CardFooter align={footer.props?.align}>
+        <div className={footerClasses}>
           {footer}
-        </CardFooter>
+        </div>
       )}
-    </CardContainer>
+    </div>
   );
 };
 
@@ -165,7 +142,7 @@ Card.propTypes = {
   image: PropTypes.string,
   imageHeight: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   badge: PropTypes.node,
-  badgeColor: PropTypes.string,
+  badgeColor: PropTypes.oneOf(['default', 'blue', 'green', 'yellow', 'purple']),
   className: PropTypes.string,
   variant: PropTypes.oneOf(['default', 'outlined', 'elevated']),
   clickable: PropTypes.bool,
@@ -174,28 +151,7 @@ Card.propTypes = {
 };
 
 // Компонент CardGroup для группы карточек
-const CardGroup = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(${props => props.minWidth || '300px'}, 1fr));
-  gap: ${props => props.theme.spacing[4]};
-  
-  ${props => props.gap && `
-    gap: ${props.gap};
-  `}
-  
-  ${props => props.responsive && `
-    @media (max-width: ${props => props.theme.breakpoints.md}) {
-      grid-template-columns: repeat(auto-fill, minmax(${props => props.responsive.md || '250px'}, 1fr));
-    }
-    
-    @media (max-width: ${props => props.theme.breakpoints.sm}) {
-      grid-template-columns: 1fr;
-    }
-  `}
-`;
-
-// Компонент CardGroup
-const CardGroupComponent = ({
+const CardGroup = ({
   children,
   className = '',
   gap,
@@ -203,80 +159,72 @@ const CardGroupComponent = ({
   minWidth,
   ...props
 }) => {
+  const groupClasses = cn(
+    'grid grid-cols-1',
+    {
+      'gap-6': !gap,
+      [`gap-${gap}`]: gap,
+      'md:grid-cols-2 lg:grid-cols-3': responsive?.md === 2 && responsive?.sm === 1,
+      'md:grid-cols-3 lg:grid-cols-4': responsive?.md === 3 && responsive?.sm === 1,
+      'min-w-[300px]': minWidth,
+    },
+    className
+  );
+
   return (
-    <CardGroup
-      className={`${className} card-group`}
-      gap={gap}
-      responsive={responsive}
-      minWidth={minWidth}
-      {...props}
-    >
+    <div className={groupClasses} {...props}>
       {children}
-    </CardGroup>
+    </div>
   );
 };
 
 // Пропс-types для CardGroup
-CardGroupComponent.propTypes = {
+CardGroup.propTypes = {
   children: PropTypes.node.isRequired,
   className: PropTypes.string,
-  gap: PropTypes.string,
+  gap: PropTypes.oneOf(['1', '2', '3', '4', '5', '6']),
   responsive: PropTypes.shape({
-    md: PropTypes.string,
-    sm: PropTypes.string,
+    md: PropTypes.number,
+    sm: PropTypes.number,
   }),
   minWidth: PropTypes.string,
 };
 
-// Компонент Card для сетки
-const CardGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(${props => props.columns || 3}, 1fr);
-  gap: ${props => props.theme.spacing[4]};
-  
-  ${props => props.gap && `
-    gap: ${props.gap};
-  `}
-  
-  ${props => props.responsive && `
-    @media (max-width: ${props => props.theme.breakpoints.md}) {
-      grid-template-columns: repeat(${props => props.responsive.md || 2}, 1fr);
-    }
-    
-    @media (max-width: ${props => props.theme.breakpoints.sm}) {
-      grid-template-columns: 1fr;
-    }
-  `}
-`;
-
-// Компонент CardGrid
-const CardGridComponent = ({
+// Компонент CardGrid для сетки карточек
+const CardGrid = ({
   children,
   className = '',
-  columns,
+  columns = 3,
   gap,
   responsive,
   ...props
 }) => {
+  const gridClasses = cn(
+    'grid grid-cols-1',
+    {
+      'gap-6': !gap,
+      [`gap-${gap}`]: gap,
+      [`grid-cols-${columns}`]: columns,
+      'md:grid-cols-2': responsive?.md === 2,
+      'md:grid-cols-3': responsive?.md === 3,
+      'sm:grid-cols-1': responsive?.sm === 1,
+    },
+    className
+  );
+
   return (
-    <CardGrid
-      className={`${className} card-grid`}
-      columns={columns}
-      gap={gap}
-      responsive={responsive}
-      {...props}
-    >
+    <div className={gridClasses} {...props}>
       {children}
-    </CardGrid>
+    </div>
   );
 };
 
 // Пропс-types для CardGrid
-CardGridComponent.propTypes = {
+CardGrid.propTypes = {
   children: PropTypes.node.isRequired,
   className: PropTypes.string,
   columns: PropTypes.number,
-  gap: PropTypes.string,
+  gap: PropTypes.oneOf(['1', '2', '3', '4', '5', '6']),
   responsive: PropTypes.shape({
     md: PropTypes.number,
     sm: PropTypes.number,
@@ -284,40 +232,34 @@ CardGridComponent.propTypes = {
 };
 
 // Компонент CardList для списка карточек
-const CardList = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${props => props.theme.spacing[4]};
-  
-  ${props => props.gap && `
-    gap: ${props.gap};
-  `}
-`;
-
-// Компонент CardList
-const CardListComponent = ({
+const CardList = ({
   children,
   className = '',
   gap,
   ...props
 }) => {
+  const listClasses = cn(
+    'flex flex-col',
+    {
+      'gap-6': !gap,
+      [`gap-${gap}`]: gap,
+    },
+    className
+  );
+
   return (
-    <CardList
-      className={`${className} card-list`}
-      gap={gap}
-      {...props}
-    >
+    <div className={listClasses} {...props}>
       {children}
-    </CardList>
+    </div>
   );
 };
 
 // Пропс-types для CardList
-CardListComponent.propTypes = {
+CardList.propTypes = {
   children: PropTypes.node.isRequired,
   className: PropTypes.string,
-  gap: PropTypes.string,
+  gap: PropTypes.oneOf(['1', '2', '3', '4', '5', '6']),
 };
 
 // Экспорт компонентов
-export { Card, CardGroup as CardGroupComponent, CardGrid as CardGridComponent, CardList as CardListComponent };
+export { Card, CardGroup, CardGrid, CardList };

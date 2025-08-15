@@ -249,6 +249,7 @@ const PlyrPlayer = ({
     'airplay',
     'fullscreen',
   ],
+  setVideoElementRef,
 }) => {
   const videoRef = useRef(null);
   const playerRef = useRef(null);

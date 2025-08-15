@@ -13,7 +13,7 @@ export { default as QualityController } from './QualityController';
 export { default as HTML5Player } from './HTML5Player';
 export { default as VideoJSPlayer } from './VideoJSPlayer';
 export { default as PlyrPlayer } from './PlyrPlayer';
-export { default as HLSPlayer } from './HLSPlayer';
+export { default as HlsPlayer } from './HlsPlayer';
 export { default as DashPlayer } from './DashPlayer';
 
 // Старый плеер эпизодов (для обратной совместимости)

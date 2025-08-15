@@ -197,6 +197,7 @@ const VideoJSPlayer = ({
   playbackRates = [0.5, 0.75, 1, 1.25, 1.5, 2],
   fluid = true,
   responsive = true,
+  setVideoElementRef,
 }) => {
   const videoRef = useRef(null);
   const playerRef = useRef(null);

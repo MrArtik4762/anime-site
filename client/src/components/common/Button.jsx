@@ -1,191 +1,121 @@
 import React from 'react';
-import styled from 'styled-components';
 import PropTypes from 'prop-types';
+import { colors, spacing, borderRadius } from '../../styles/designTokens';
+import { cn } from '../../styles/tailwindUtils';
 
-// Основная стилизованная кнопка
-const BaseButton = styled.button`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: ${props => props.theme.spacing[2]};
-  padding: ${props => props.theme.spacing[3]} ${props => props.theme.spacing[5]};
-  font-size: ${props => props.theme.typography.fontSize.base[0]};
-  font-weight: ${props => props.theme.typography.fontWeight.medium};
-  line-height: ${props => props.theme.typography.lineHeight.tight};
-  border-radius: ${props => props.theme.borderRadius.lg};
-  border: ${props => props.theme.form.input.border};
-  cursor: ${props => props.disabled ? 'not-allowed' : 'pointer'};
-  transition: ${props => props.theme.transitions.normal};
-  min-height: ${props => props.theme.form.button.height};
-  position: relative;
-  overflow: hidden;
-  
-  &:focus {
-    outline: none;
-    box-shadow: 0 0 0 3px ${props => props.theme.colors.primary}20;
-  }
-  
-  &:disabled {
-    opacity: ${props => props.theme.opacity[50]};
-    cursor: not-allowed;
-  }
-  
-  /* Иконки */
-  svg {
-    width: ${props => props.theme.spacing[4]};
-    height: ${props => props.theme.spacing[4]};
-    flex-shrink: 0;
-  }
-  
-  /* Загрузка состояния */
-  .loading-spinner {
-    width: ${props => props.theme.spacing[3]};
-    height: ${props => props.theme.spacing[3]};
-    border: 2px solid ${props => props.theme.colors.border};
-    border-top: 2px solid ${props => props.theme.colors.primary};
-    border-radius: 50%;
-    animation: ${props => props.theme.animation.keyframes.spin} 1s linear infinite;
+// CSS анимация для спиннера загрузки
+const spinnerStyle = `
+  @keyframes spin {
+    to { transform: rotate(360deg); }
   }
 `;
 
-// Кнопки с разными вариантами
-const PrimaryButton = styled(BaseButton)`
-  background: ${props => props.theme.colors.primary};
-  color: ${props => props.theme.colors.text.inverse};
+// Классы для разных вариантов кнопок
+const getVariantClasses = (variant, darkMode = false) => {
+  const baseClasses = 'inline-flex items-center justify-center gap-2 px-4 py-2 font-medium rounded-lg border transition-all duration-200 ease-out min-h-[40px] relative overflow-hidden bg-gradient-to-br backdrop-blur-sm';
   
-  &:hover:not(:disabled) {
-    background: ${props => props.theme.colors.primaryDark};
-    transform: translateY(-1px);
-    box-shadow: ${props => props.theme.elevation[2]};
+  switch (variant) {
+    case 'primary':
+      return cn(
+        baseClasses,
+        'bg-gradient-to-br from-blue-500 to-purple-600 text-white shadow-[0_4px_6px_rgba(59,130,246,0.2)]',
+        'hover:shadow-[0_10px_15px_-3px_rgba(59,130,246,0.3),_0_4px_6px_-2px_rgba(59,130,246,0.1)]',
+        'hover:from-blue-600 hover:to-purple-700',
+        'active:shadow-[0_4px_6px_rgba(59,130,246,0.2)]',
+        'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2',
+        'disabled:opacity-50 disabled:cursor-not-allowed'
+      );
+    
+    case 'secondary':
+      return cn(
+        baseClasses,
+        darkMode 
+          ? 'bg-gradient-to-br from-slate-700 to-slate-600 text-slate-100 border-slate-600 shadow-[0_1px_3px_rgba(0,0,0,0.1)]'
+          : 'bg-gradient-to-br from-slate-100 to-slate-200 text-slate-800 border-slate-300 shadow-[0_1px_3px_rgba(0,0,0,0.1)]',
+        'hover:border-blue-500 hover:shadow-[0_4px_6px_rgba(0,0,0,0.1)]',
+        darkMode 
+          ? 'hover:from-slate-600 hover:to-slate-500'
+          : 'hover:from-slate-200 hover:to-slate-300',
+        'active:shadow-[0_1px_3px_rgba(0,0,0,0.1)]',
+        'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2',
+        'disabled:opacity-60 disabled:cursor-not-allowed'
+      );
+    
+    case 'outline':
+      return cn(
+        baseClasses,
+        'bg-transparent text-blue-500 border-blue-500 shadow-none',
+        'hover:bg-blue-50 hover:border-blue-600 hover:shadow-[0_4px_6px_rgba(59,130,246,0.1)]',
+        'active:shadow-none',
+        'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2',
+        'disabled:opacity-50 disabled:cursor-not-allowed'
+      );
+    
+    case 'ghost':
+      return cn(
+        baseClasses,
+        'bg-transparent text-slate-800 border-transparent shadow-none',
+        darkMode && 'text-slate-100',
+        'hover:bg-gradient-to-br hover:from-slate-100 hover:to-slate-200 hover:border-slate-300',
+        darkMode && 'hover:from-slate-700 hover:to-slate-600 hover:border-slate-600',
+        'active:shadow-none',
+        'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2',
+        'disabled:opacity-50 disabled:cursor-not-allowed'
+      );
+    
+    case 'danger':
+      return cn(
+        baseClasses,
+        'bg-gradient-to-br from-red-500 to-red-600 text-white shadow-[0_4px_6px_rgba(239,68,68,0.2)]',
+        'hover:shadow-[0_10px_15px_-3px_rgba(239,68,68,0.3),_0_4px_6px_-2px_rgba(239,68,68,0.1)]',
+        'hover:from-red-600 hover:to-red-700',
+        'active:shadow-[0_4px_6px_rgba(239,68,68,0.2)]',
+        'focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2',
+        'disabled:opacity-50 disabled:cursor-not-allowed'
+      );
+    
+    case 'success':
+      return cn(
+        baseClasses,
+        'bg-gradient-to-br from-green-500 to-green-600 text-white shadow-[0_4px_6px_rgba(34,197,94,0.2)]',
+        'hover:shadow-[0_10px_15px_-3px_rgba(34,197,94,0.3),_0_4px_6px_-2px_rgba(34,197,94,0.1)]',
+        'hover:from-green-600 hover:to-green-700',
+        'active:shadow-[0_4px_6px_rgba(34,197,94,0.2)]',
+        'focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2',
+        'disabled:opacity-50 disabled:cursor-not-allowed'
+      );
+    
+    default:
+      return getVariantClasses('primary');
   }
-  
-  &:active:not(:disabled) {
-    transform: translateY(0);
-  }
-`;
+};
 
-const SecondaryButton = styled(BaseButton)`
-  background: ${props => props.theme.colors.surface.secondary};
-  color: ${props => props.theme.colors.text.primary};
-  border-color: ${props => props.theme.colors.border.medium};
-  
-  &:hover:not(:disabled) {
-    background: ${props => props.theme.colors.surface.tertiary};
-    border-color: ${props => props.theme.colors.border.dark};
-    transform: translateY(-1px);
-    box-shadow: ${props => props.theme.elevation[2]};
+// Классы для разных размеров кнопок
+const getSizeClasses = (size) => {
+  switch (size) {
+    case 'small':
+      return 'px-3 py-1.5 text-sm min-h-[32px] gap-1';
+    case 'large':
+      return 'px-6 py-3 text-lg min-h-[48px] gap-2';
+    default:
+      return 'px-4 py-2 text-base min-h-[40px] gap-2';
   }
-  
-  &:active:not(:disabled) {
-    transform: translateY(0);
-  }
-`;
+};
 
-const OutlineButton = styled(BaseButton)`
-  background: transparent;
-  color: ${props => props.theme.colors.primary};
-  border-color: ${props => props.theme.colors.primary};
+// Классы для специальных кнопок
+const getSpecialClasses = (circle, fullWidth) => {
+  const classes = [];
   
-  &:hover:not(:disabled) {
-    background: ${props => props.theme.colors.primary}10;
-    border-color: ${props => props.theme.colors.primaryDark};
-    transform: translateY(-1px);
-    box-shadow: ${props => props.theme.elevation[2]};
+  if (circle) {
+    classes.push('rounded-full w-10 h-10 p-0 gap-0');
   }
   
-  &:active:not(:disabled) {
-    transform: translateY(0);
-  }
-`;
-
-const GhostButton = styled(BaseButton)`
-  background: transparent;
-  color: ${props => props.theme.colors.text.primary};
-  border: none;
-  
-  &:hover:not(:disabled) {
-    background: ${props => props.theme.colors.surface.secondary};
-    transform: translateY(-1px);
+  if (fullWidth) {
+    classes.push('w-full');
   }
   
-  &:active:not(:disabled) {
-    transform: translateY(0);
-  }
-`;
-
-const DangerButton = styled(BaseButton)`
-  background: ${props => props.theme.colors.error};
-  color: ${props => props.theme.colors.text.inverse};
-  
-  &:hover:not(:disabled) {
-    background: ${props => props.theme.colors.error}Dark;
-    transform: translateY(-1px);
-    box-shadow: ${props => props.theme.elevation[2]};
-  }
-  
-  &:active:not(:disabled) {
-    transform: translateY(0);
-  }
-`;
-
-const SuccessButton = styled(BaseButton)`
-  background: ${props => props.theme.colors.success};
-  color: ${props => props.theme.colors.text.inverse};
-  
-  &:hover:not(:disabled) {
-    background: ${props => props.theme.colors.success}Dark;
-    transform: translateY(-1px);
-    box-shadow: ${props => props.theme.elevation[2]};
-  }
-  
-  &:active:not(:disabled) {
-    transform: translateY(0);
-  }
-`;
-
-// Размеры кнопок
-const SmallButton = styled(BaseButton)`
-  padding: ${props => props.theme.spacing[2]} ${props => props.theme.spacing[4]};
-  font-size: ${props => props.theme.typography.fontSize.sm[0]};
-  min-height: ${props => props.theme.spacing[9]};
-  
-  svg {
-    width: ${props => props.theme.spacing[3]};
-    height: ${props => props.theme.spacing[3]};
-  }
-`;
-
-const LargeButton = styled(BaseButton)`
-  padding: ${props => props.theme.spacing[4]} ${props => props.theme.spacing[6]};
-  font-size: ${props => props.theme.typography.fontSize.lg[0]};
-  min-height: ${props => props.theme.spacing[12]};
-  
-  svg {
-    width: ${props => props.theme.spacing[5]};
-    height: ${props => props.theme.spacing[5]};
-  }
-`;
-
-// Полная ширина
-const FullWidthButton = styled(BaseButton)`
-  width: 100%;
-`;
-
-// Круглая кнопка
-const CircleButton = styled(BaseButton)`
-  border-radius: ${props => props.theme.borderRadius.full};
-  width: ${props => props.theme.spacing[10]};
-  height: ${props => props.theme.spacing[10]};
-  padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  
-  svg {
-    width: ${props => props.theme.spacing[5]};
-    height: ${props => props.theme.spacing[5]};
-  }
-`;
+  return classes.join(' ');
+};
 
 // Компонент кнопки
 const Button = ({
@@ -198,70 +128,47 @@ const Button = ({
   children,
   leftIcon,
   rightIcon,
+  className,
+  darkMode = false,
   ...props
 }) => {
-  // Определяем стили в зависимости от пропсов
-  const getButtonStyle = () => {
-    if (circle) return CircleButton;
-    if (fullWidth) return FullWidthButton;
-    
-    switch (size) {
-      case 'small':
-        return SmallButton;
-      case 'large':
-        return LargeButton;
-      default:
-        return BaseButton;
-    }
-  };
+  const variantClasses = getVariantClasses(variant, darkMode);
+  const sizeClasses = getSizeClasses(size);
+  const specialClasses = getSpecialClasses(circle, fullWidth);
   
-  // Определяем вариант стиля
-  const getVariantStyle = () => {
-    switch (variant) {
-      case 'secondary':
-        return SecondaryButton;
-      case 'outline':
-        return OutlineButton;
-      case 'ghost':
-        return GhostButton;
-      case 'danger':
-        return DangerButton;
-      case 'success':
-        return SuccessButton;
-      default:
-        return PrimaryButton;
-    }
-  };
-  
-  const ButtonStyle = getButtonStyle();
-  const VariantStyle = getVariantStyle();
-  const CombinedButton = VariantStyle.withComponent(ButtonStyle);
+  const buttonClasses = cn(variantClasses, sizeClasses, specialClasses, className);
   
   return (
-    <CombinedButton
-      disabled={disabled || loading}
-      {...props}
-    >
-      {loading && (
-        <span className="loading-spinner" />
-      )}
-      
-      {!loading && leftIcon && (
-        <span className="left-icon">
-          {leftIcon}
+    <>
+      <style>{spinnerStyle}</style>
+      <button
+        className={buttonClasses}
+        disabled={disabled || loading}
+        {...props}
+      >
+        {loading && (
+          <span 
+            className="loading-spinner w-4 h-4 border-2 border-slate-300 border-t-blue-500 rounded-full animate-spin"
+          />
+        )}
+        
+        {!loading && leftIcon && (
+          <span className="left-icon flex items-center justify-center">
+            {leftIcon}
+          </span>
+        )}
+        
+        <span className="button-content flex items-center justify-center">
+          {children}
         </span>
-      )}
-      
-      <span className="button-content">
-        {children}
-      </span>
-      
-      {!loading && rightIcon && (
-        <span className="right-icon">
-          {rightIcon}
-        </span>
-      )}
-    </CombinedButton>
+        
+        {!loading && rightIcon && (
+          <span className="right-icon flex items-center justify-center">
+            {rightIcon}
+          </span>
+        )}
+      </button>
+    </>
   );
 };
 
@@ -276,28 +183,52 @@ Button.propTypes = {
   children: PropTypes.node.isRequired,
   leftIcon: PropTypes.node,
   rightIcon: PropTypes.node,
+  className: PropTypes.string,
+  darkMode: PropTypes.bool,
 };
 
-// Экспорт всех вариантов кнопок
-export const ButtonVariants = {
-  Primary: PrimaryButton,
-  Secondary: SecondaryButton,
-  Outline: OutlineButton,
-  Ghost: GhostButton,
-  Danger: DangerButton,
-  Success: SuccessButton,
-};
+// Экспорт всех вариантов кнопок как компонентов
+export const PrimaryButton = ({ className, ...props }) => (
+  <Button variant="primary" className={cn(getVariantClasses('primary'), className)} {...props} />
+);
 
-// Экспорт размеров кнопок
-export const ButtonSizes = {
-  Small: SmallButton,
-  Medium: BaseButton,
-  Large: LargeButton,
-};
+export const SecondaryButton = ({ className, darkMode = false, ...props }) => (
+  <Button variant="secondary" className={cn(getVariantClasses('secondary', darkMode), className)} {...props} />
+);
 
-// Экспорт специальных кнопок
-export const FullWidthButtonComponent = FullWidthButton;
-export const CircleButtonComponent = CircleButton;
+export const OutlineButton = ({ className, ...props }) => (
+  <Button variant="outline" className={cn(getVariantClasses('outline'), className)} {...props} />
+);
+
+export const GhostButton = ({ className, darkMode = false, ...props }) => (
+  <Button variant="ghost" className={cn(getVariantClasses('ghost', darkMode), className)} {...props} />
+);
+
+export const DangerButton = ({ className, ...props }) => (
+  <Button variant="danger" className={cn(getVariantClasses('danger'), className)} {...props} />
+);
+
+export const SuccessButton = ({ className, ...props }) => (
+  <Button variant="success" className={cn(getVariantClasses('success'), className)} {...props} />
+);
+
+// Экспорт размеров кнопок как компонентов
+export const SmallButton = ({ className, ...props }) => (
+  <Button size="small" className={cn(getSizeClasses('small'), className)} {...props} />
+);
+
+export const LargeButton = ({ className, ...props }) => (
+  <Button size="large" className={cn(getSizeClasses('large'), className)} {...props} />
+);
+
+// Экспорт специальных кнопок как компонентов
+export const FullWidthButton = ({ className, ...props }) => (
+  <Button fullWidth className={cn(getSpecialClasses(false, true), className)} {...props} />
+);
+
+export const CircleButton = ({ className, ...props }) => (
+  <Button circle className={cn(getSpecialClasses(true, false), className)} {...props} />
+);
 
 // Экспорт основного компонента
 export default Button;

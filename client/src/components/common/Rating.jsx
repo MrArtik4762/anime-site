@@ -1,408 +1,537 @@
-import React, { useState } from 'react';
-import styled from 'styled-components';
+import React, { useState, memo } from 'react';
 import PropTypes from 'prop-types';
+import { styled } from 'styled-components';
 
-// Контейнер для рейтинга
+// Стилизованный контейнер для рейтинга
 const RatingContainer = styled.div`
   display: inline-flex;
   align-items: center;
-  gap: ${props => props.gap || props.theme.spacing[1]};
+  gap: ${props => props.theme.spacing.xsmall};
   
-  .star {
-    cursor: ${props => props.disabled ? 'default' : 'pointer'};
-    transition: ${props => props.theme.transitions.normal};
-    
-    &:hover {
-      transform: ${props => props.disabled ? 'none' : 'scale(1.1)'};
-    }
-    
-    ${props => props.size === 'small' && `
-      width: 16px;
-      height: 16px;
-    `}
-    
-    ${props => props.size === 'medium' && `
-      width: 20px;
-      height: 20px;
-    `}
-    
-    ${props => props.size === 'large' && `
-      width: 24px;
-      height: 24px;
-    `}
-    
-    ${props => props.readonly && `
-      cursor: default;
-    `}
-  }
+  ${props => props.size === 'small' && `
+    gap: ${props.theme.spacing.xxsmall};
+  `}
+  
+  ${props => props.size === 'large' && `
+    gap: ${props.theme.spacing.small};
+  `}
+  
+  ${props => props.vertical && `
+    flex-direction: column;
+    align-items: flex-start;
+  `}
+  
+  ${props => props.disabled && `
+    opacity: 0.6;
+    cursor: not-allowed;
+  `}
+  
+  ${props => props.readonly && `
+    cursor: default;
+  `}
 `;
 
-// Заполненная звезда
-const StarFilled = styled.svg`
-  fill: ${props => props.theme.colors.warning};
-  stroke: ${props => props.theme.colors.warning};
-  stroke-width: 1;
-`;
-
-// Пустая звезда
-const StarEmpty = styled.svg`
-  fill: ${props => props.theme.colors.border.light};
-  stroke: ${props => props.theme.colors.border.light};
-  stroke-width: 1;
-`;
-
-// Полузаполненная звезда
-const StarHalf = styled.svg`
-  fill: ${props => props.theme.colors.warning};
-  stroke: ${props => props.theme.colors.warning};
-  stroke-width: 1;
+// Стилизованная звезда рейтинга
+const Star = styled.button`
+  background: none;
+  border: none;
+  cursor: ${props => props.disabled || props.readonly ? 'default' : 'pointer'};
+  padding: 0;
+  margin: 0;
+  font-size: ${props => {
+    if (props.size === 'small') return props.theme.iconSizes.sm;
+    if (props.size === 'large') return props.theme.iconSizes.lg;
+    return props.theme.iconSizes.md;
+  }};
+  color: ${props => {
+    if (props.filled) return props.theme.colors.warning;
+    if (props.hovered) return props.theme.colors.warning;
+    return props.theme.colors.border;
+  }};
+  transition: all ${props => props.theme.transitions.fast} ease;
   
-  .half {
-    fill: ${props => props.theme.colors.border.light};
-  }
-`;
-
-// Компонент Star
-const Star = ({
-  filled,
-  half,
-  size,
-  disabled,
-  readonly,
-  onClick,
-  onMouseEnter,
-  onMouseLeave,
-  className = '',
-  ...props
-}) => {
-  if (half) {
-    return (
-      <StarHalf
-        size={size}
-        disabled={disabled}
-        readonly={readonly}
-        className={`star half ${className}`}
-        viewBox="0 0 24 24"
-        {...props}
-      >
-        <defs>
-          <linearGradient id="half-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="50%" stopColor={props.theme.colors.warning} />
-            <stop offset="50%" stopColor={props.theme.colors.border.light} />
-          </linearGradient>
-        </defs>
-        <path
-          className="half"
-          d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
-        />
-      </StarHalf>
-    );
+  &:hover {
+    transform: scale(1.1);
   }
   
-  if (filled) {
-    return (
-      <StarFilled
-        size={size}
-        disabled={disabled}
-        readonly={readonly}
-        className={`star ${className}`}
-        viewBox="0 0 24 24"
-        {...props}
-      >
-        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-      </StarFilled>
-    );
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px ${props => props.theme.colors.primary};
   }
   
-  return (
-    <StarEmpty
-      size={size}
-      disabled={disabled}
-      readonly={readonly}
-      className={`star ${className}`}
-      viewBox="0 0 24 24"
-      {...props}
-    >
-      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-    </StarEmpty>
-  );
-};
+  ${props => props.size === 'small' && `
+    font-size: ${props.theme.iconSizes.sm};
+  `}
+  
+  ${props => props.size === 'large' && `
+    font-size: ${props.theme.iconSizes.lg};
+  `}
+`;
 
-// Компонент Rating
-const Rating = ({
+// Стилизованный текст рейтинга
+const RatingText = styled.span`
+  font-size: ${props => {
+    if (props.size === 'small') return props.theme.fontSizes.sm;
+    if (props.size === 'large') return props.theme.fontSizes.lg;
+    return props.theme.fontSizes.base;
+  }};
+  color: ${props => props.theme.colors.textSecondary};
+  margin-left: ${props => props.theme.spacing.xsmall};
+  
+  ${props => props.size === 'small' && `
+    font-size: ${props.theme.fontSizes.xs};
+    margin-left: ${props.theme.spacing.xxsmall};
+  `}
+  
+  ${props => props.size === 'large' && `
+    font-size: ${props.theme.fontSizes.md};
+    margin-left: ${props.theme.spacing.small};
+  `}
+  
+  ${props => props.bold && `
+    font-weight: ${props.theme.fontWeights.semibold};
+    color: ${props.theme.colors.text};
+  `}
+  
+  ${props => props.showCount && `
+    font-weight: ${props.theme.fontWeights.semibold};
+    color: ${props.theme.colors.text};
+  `}
+`;
+
+// Стилизованный контейнер для прогресса рейтинга
+const RatingProgress = styled.div`
+  width: 100%;
+  height: ${props => {
+    if (props.size === 'small') return props.theme.sizes.progressHeightSmall;
+    if (props.size === 'large') return props.theme.sizes.progressHeightLarge;
+    return props.theme.sizes.progressHeight;
+  }};
+  background-color: ${props => props.theme.colors.border};
+  border-radius: ${props => props.theme.border.radius.sm};
+  overflow: hidden;
+  margin-top: ${props => props.theme.spacing.small};
+  
+  ${props => props.size === 'small' && `
+    height: ${props.theme.sizes.progressHeightSmall};
+    margin-top: ${props.theme.spacing.xsmall};
+  `}
+  
+  ${props => props.size === 'large' && `
+    height: ${props.theme.sizes.progressHeightLarge};
+    margin-top: ${props.theme.spacing.medium};
+  `}
+`;
+
+// Стилизованный заполнитель прогресса рейтинга
+const RatingProgressFill = styled.div`
+  height: 100%;
+  background-color: ${props => props.theme.colors.warning};
+  border-radius: ${props => props.theme.border.radius.sm};
+  transition: width ${props => props.theme.transitions.medium} ease;
+  
+  ${props => props.size === 'small' && `
+    height: ${props.theme.sizes.progressHeightSmall};
+  `}
+  
+  ${props => props.size === 'large' && `
+    height: ${props.theme.sizes.progressHeightLarge};
+  `}
+`;
+
+// Основной компонент Rating
+export const Rating = memo(({
   value = 0,
   max = 5,
   size = 'medium',
-  disabled = false,
   readonly = false,
-  showValue = false,
-  precision = 1,
+  disabled = false,
+  showText = false,
+  showProgress = false,
+  precision = 0,
   onChange,
-  className = '',
+  className,
+  style,
   ...props
 }) => {
-  const [hoverValue, setHoverValue] = useState(0);
+  const [hoveredValue, setHoveredValue] = useState(0);
+  const displayValue = precision > 0 ? Math.round(value / precision) * precision : Math.round(value);
   
-  const handleClick = (rating) => {
-    if (disabled || readonly || !onChange) return;
-    onChange(rating);
-  };
-  
-  const handleMouseEnter = (rating) => {
+  const handleStarClick = (newValue) => {
     if (disabled || readonly) return;
-    setHoverValue(rating);
+    if (onChange) {
+      onChange(newValue);
+    }
   };
   
-  const handleMouseLeave = () => {
+  const handleStarMouseEnter = (newValue) => {
     if (disabled || readonly) return;
-    setHoverValue(0);
+    setHoveredValue(newValue);
   };
   
-  const displayValue = hoverValue || value;
-  const stars = [];
+  const handleStarMouseLeave = () => {
+    if (disabled || readonly) return;
+    setHoveredValue(0);
+  };
   
-  for (let i = 1; i <= max; i++) {
-    let filled = false;
-    let half = false;
+  const renderStars = () => {
+    const stars = [];
+    const displayHoverValue = hoveredValue || displayValue;
     
-    if (displayValue >= i) {
-      filled = true;
-    } else if (displayValue > i - 1 && displayValue < i) {
-      half = true;
+    for (let i = 1; i <= max; i++) {
+      const filled = i <= displayHoverValue;
+      const halfFilled = precision > 0 && i === Math.ceil(displayValue) && displayValue % 1 !== 0;
+      
+      stars.push(
+        <Star
+          key={i}
+          size={size}
+          filled={filled}
+          hovered={hoveredValue >= i}
+          disabled={disabled}
+          readonly={readonly}
+          onClick={() => handleStarClick(i)}
+          onMouseEnter={() => handleStarMouseEnter(i)}
+          onMouseLeave={handleStarMouseLeave}
+          aria-label={`Оценка ${i} из ${max}`}
+          aria-selected={i === displayValue}
+          tabIndex={disabled || readonly ? -1 : 0}
+        >
+          {filled ? '★' : halfFilled ? '☆' : '☆'}
+        </Star>
+      );
     }
     
-    stars.push(
-      <Star
-        key={i}
-        filled={filled}
-        half={half}
-        size={size}
-        disabled={disabled}
-        readonly={readonly}
-        onClick={() => handleClick(i)}
-        onMouseEnter={() => handleMouseEnter(i)}
-        onMouseLeave={handleMouseLeave}
-      />
-    );
-  }
+    return stars;
+  };
+  
+  const getRatingText = () => {
+    if (value === 0) return 'Нет оценок';
+    if (value < 2) return 'Плохо';
+    if (value < 3) return 'Удовлетворительно';
+    if (value < 4) return 'Хорошо';
+    return 'Отлично';
+  };
   
   return (
     <RatingContainer
       size={size}
       disabled={disabled}
       readonly={readonly}
-      className={`${className} rating ${size}${disabled ? ' disabled' : ''}${readonly ? ' readonly' : ''}`}
+      vertical={props.vertical}
+      className={className}
+      style={style}
       {...props}
     >
-      {stars}
-      {showValue && (
-        <span className="rating-value">
-          {value.toFixed(precision)}
-        </span>
+      {renderStars()}
+      {showText && (
+        <RatingText size={size} bold>
+          {value.toFixed(precision > 0 ? 1 : 0)} / {max}
+        </RatingText>
+      )}
+      {showProgress && (
+        <>
+          <RatingProgress size={size}>
+            <RatingProgressFill
+              width={`${(value / max) * 100}%`}
+              size={size}
+            />
+          </RatingProgress>
+          <RatingText size={size} showCount>
+            {value.toFixed(precision > 0 ? 1 : 0)} из {max} ({Math.round((value / max) * 100)}%)
+          </RatingText>
+        </>
       )}
     </RatingContainer>
   );
-};
+});
 
-// Пропс-types для TypeScript
 Rating.propTypes = {
   value: PropTypes.number,
   max: PropTypes.number,
   size: PropTypes.oneOf(['small', 'medium', 'large']),
-  disabled: PropTypes.bool,
   readonly: PropTypes.bool,
-  showValue: PropTypes.bool,
+  disabled: PropTypes.bool,
+  showText: PropTypes.bool,
+  showProgress: PropTypes.bool,
   precision: PropTypes.number,
   onChange: PropTypes.func,
   className: PropTypes.string,
+  style: PropTypes.object,
 };
 
-// Компонент RatingWithLabel для рейтинга с меткой
-const RatingWithLabelContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${props => props.theme.spacing[2]};
-  
-  .label {
-    font-size: ${props => props.theme.typography.fontSize.sm[0]};
-    color: ${props => props.theme.colors.text.tertiary};
-  }
-  
-  .rating-container {
-    display: flex;
-    align-items: center;
-    gap: ${props => props.theme.spacing[2]};
-  }
-  
-  .rating-value {
-    font-size: ${props => props.theme.typography.fontSize.lg[0]};
-    font-weight: ${props => props.theme.typography.fontWeight.semibold};
-    color: ${props => props.theme.colors.text.primary};
-    min-width: ${props => props.showValue ? '40px' : 'auto'};
-    text-align: ${props => props.showValue ? 'right' : 'left'};
-  }
-`;
-
-// Компонент RatingWithLabel
-const RatingWithLabel = ({
+// Компонент для рейтинга с полукруглыми звездами
+export const HalfRating = memo(({
   value = 0,
   max = 5,
   size = 'medium',
-  disabled = false,
   readonly = false,
-  showValue = true,
-  precision = 1,
-  onChange,
-  label,
-  className = '',
-  ...props
-}) => {
-  return (
-    <RatingWithLabelContainer
-      showValue={showValue}
-      className={`${className} rating-with-label`}
-      {...props}
-    >
-      {label && <div className="label">{label}</div>}
-      <div className="rating-container">
-        <Rating
-          value={value}
-          max={max}
-          size={size}
-          disabled={disabled}
-          readonly={readonly}
-          showValue={showValue}
-          precision={precision}
-          onChange={onChange}
-        />
-        {showValue && (
-          <div className="rating-value">
-            {value.toFixed(precision)}
-          </div>
-        )}
-      </div>
-    </RatingWithLabelContainer>
-  );
-};
-
-// Пропп-types для RatingWithLabel
-RatingWithLabel.propTypes = {
-  value: PropTypes.number,
-  max: PropTypes.number,
-  size: PropTypes.oneOf(['small', 'medium', 'large']),
-  disabled: PropTypes.bool,
-  readonly: PropTypes.bool,
-  showValue: PropTypes.bool,
-  precision: PropTypes.number,
-  onChange: PropTypes.func,
-  label: PropTypes.string,
-  className: PropTypes.string,
-};
-
-// Компонент RatingGroup для группы рейтингов
-const RatingGroupContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${props => props.theme.spacing[3]};
-  
-  .rating-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: ${props => props.theme.spacing[2]} 0;
-    border-bottom: 1px solid ${props => props.theme.colors.border.light};
-    
-    &:last-child {
-      border-bottom: none;
-    }
-    
-    .rating-label {
-      font-size: ${props => props.theme.typography.fontSize.base[0]};
-      color: ${props => props.theme.colors.text.primary};
-      flex: 1;
-    }
-    
-    .rating-value {
-      font-size: ${props => props.theme.typography.fontSize.sm[0]};
-      color: ${props => props.theme.colors.text.tertiary};
-      margin-right: ${props => props.theme.spacing[3]};
-    }
-  }
-`;
-
-// Компонент RatingGroup
-const RatingGroup = ({
-  ratings,
-  size = 'medium',
   disabled = false,
-  readonly = true,
-  showValue = true,
-  precision = 1,
-  className = '',
+  showText = false,
+  onChange,
+  className,
+  style,
   ...props
 }) => {
-  return (
-    <RatingGroupContainer className={`${className} rating-group`} {...props}>
-      {ratings.map((rating, index) => (
-        <div key={index} className="rating-item">
-          <div className="rating-label">{rating.label}</div>
-          <div className="rating-value">
-            {rating.value.toFixed(precision)}
-          </div>
-          <Rating
-            value={rating.value}
-            max={rating.max || 5}
+  const [hoveredValue, setHoveredValue] = useState(0);
+  const displayValue = value;
+  
+  const handleStarClick = (newValue) => {
+    if (disabled || readonly) return;
+    if (onChange) {
+      onChange(newValue);
+    }
+  };
+  
+  const handleStarMouseEnter = (newValue) => {
+    if (disabled || readonly) return;
+    setHoveredValue(newValue);
+  };
+  
+  const handleStarMouseLeave = () => {
+    if (disabled || readonly) return;
+    setHoveredValue(0);
+  };
+  
+  const renderStars = () => {
+    const stars = [];
+    const displayHoverValue = hoveredValue || displayValue;
+    
+    for (let i = 1; i <= max; i++) {
+      const fullStar = i <= Math.floor(displayHoverValue);
+      const halfStar = i === Math.ceil(displayHoverValue) && displayHoverValue % 1 !== 0;
+      const emptyStar = i > Math.ceil(displayHoverValue);
+      
+      if (fullStar) {
+        stars.push(
+          <Star
+            key={i}
             size={size}
+            filled={true}
             disabled={disabled}
             readonly={readonly}
-            showValue={false}
-            precision={precision}
-          />
-        </div>
-      ))}
-    </RatingGroupContainer>
+            onClick={() => handleStarClick(i)}
+            onMouseEnter={() => handleStarMouseEnter(i)}
+            onMouseLeave={handleStarMouseLeave}
+            aria-label={`Полная оценка ${i} из ${max}`}
+            aria-selected={i === Math.floor(displayValue)}
+            tabIndex={disabled || readonly ? -1 : 0}
+          >
+            ★
+          </Star>
+        );
+      } else if (halfStar) {
+        stars.push(
+          <Star
+            key={i}
+            size={size}
+            filled={true}
+            disabled={disabled}
+            readonly={readonly}
+            onClick={() => handleStarClick(i)}
+            onMouseEnter={() => handleStarMouseEnter(i)}
+            onMouseLeave={handleStarMouseLeave}
+            aria-label={`Половина оценки ${i} из ${max}`}
+            aria-selected={i === Math.ceil(displayValue)}
+            tabIndex={disabled || readonly ? -1 : 0}
+          >
+            {hoveredValue > 0 ? '★' : '☆'}
+          </Star>
+        );
+      } else {
+        stars.push(
+          <Star
+            key={i}
+            size={size}
+            filled={false}
+            disabled={disabled}
+            readonly={readonly}
+            onClick={() => handleStarClick(i)}
+            onMouseEnter={() => handleStarMouseEnter(i)}
+            onMouseLeave={handleStarMouseLeave}
+            aria-label={`Пустая оценка ${i} из ${max}`}
+            aria-selected={false}
+            tabIndex={disabled || readonly ? -1 : 0}
+          >
+            ☆
+          </Star>
+        );
+      }
+    }
+    
+    return stars;
+  };
+  
+  return (
+    <RatingContainer
+      size={size}
+      disabled={disabled}
+      readonly={readonly}
+      className={className}
+      style={style}
+      {...props}
+    >
+      {renderStars()}
+      {showText && (
+        <RatingText size={size} bold>
+          {value.toFixed(1)} / {max}
+        </RatingText>
+      )}
+    </RatingContainer>
   );
-};
+});
 
-// Пропп-types для RatingGroup
-RatingGroup.propTypes = {
-  ratings: PropTypes.arrayOf(
-    PropTypes.shape({
-      label: PropTypes.string.isRequired,
-      value: PropTypes.number.isRequired,
-      max: PropTypes.number,
-    })
-  ).isRequired,
-  size: PropTypes.oneOf(['small', 'medium', 'large']),
-  disabled: PropTypes.bool,
-  readonly: PropTypes.bool,
-  showValue: PropTypes.bool,
-  precision: PropTypes.number,
-  className: PropTypes.string,
-};
-
-// Компонент StarRating для обратной совместимости
-const StarRating = (props) => {
-  return <Rating {...props} />;
-};
-
-// Пропп-types для StarRating
-StarRating.propTypes = {
+HalfRating.propTypes = {
   value: PropTypes.number,
   max: PropTypes.number,
   size: PropTypes.oneOf(['small', 'medium', 'large']),
-  disabled: PropTypes.bool,
   readonly: PropTypes.bool,
-  showValue: PropTypes.bool,
-  precision: PropTypes.number,
+  disabled: PropTypes.bool,
+  showText: PropTypes.bool,
   onChange: PropTypes.func,
   className: PropTypes.string,
+  style: PropTypes.object,
 };
 
-// Экспорт компонентов
-export {
-  Rating,
-  RatingWithLabel as RatingWithLabelComponent,
-  RatingGroup as RatingGroupComponent,
-  StarRating,
+// Компонент для рейтинга с иконками вместо звезд
+export const IconRating = memo(({
+  value = 0,
+  max = 5,
+  size = 'medium',
+  readonly = false,
+  disabled = false,
+  showText = false,
+  icon = '❤️',
+  emptyIcon = '🤍',
+  onChange,
+  className,
+  style,
+  ...props
+}) => {
+  const [hoveredValue, setHoveredValue] = useState(0);
+  const displayValue = Math.round(value);
+  
+  const handleIconClick = (newValue) => {
+    if (disabled || readonly) return;
+    if (onChange) {
+      onChange(newValue);
+    }
+  };
+  
+  const handleIconMouseEnter = (newValue) => {
+    if (disabled || readonly) return;
+    setHoveredValue(newValue);
+  };
+  
+  const handleIconMouseLeave = () => {
+    if (disabled || readonly) return;
+    setHoveredValue(0);
+  };
+  
+  const renderIcons = () => {
+    const icons = [];
+    const displayHoverValue = hoveredValue || displayValue;
+    
+    for (let i = 1; i <= max; i++) {
+      const filled = i <= displayHoverValue;
+      
+      icons.push(
+        <Star
+          key={i}
+          size={size}
+          filled={filled}
+          disabled={disabled}
+          readonly={readonly}
+          onClick={() => handleIconClick(i)}
+          onMouseEnter={() => handleIconMouseEnter(i)}
+          onMouseLeave={handleIconMouseLeave}
+          aria-label={`Оценка ${i} из ${max}`}
+          aria-selected={i === displayValue}
+          tabIndex={disabled || readonly ? -1 : 0}
+        >
+          {filled ? icon : emptyIcon}
+        </Star>
+      );
+    }
+    
+    return icons;
+  };
+  
+  return (
+    <RatingContainer
+      size={size}
+      disabled={disabled}
+      readonly={readonly}
+      className={className}
+      style={style}
+      {...props}
+    >
+      {renderIcons()}
+      {showText && (
+        <RatingText size={size} bold>
+          {value} / {max}
+        </RatingText>
+      )}
+    </RatingContainer>
+  );
+});
+
+IconRating.propTypes = {
+  value: PropTypes.number,
+  max: PropTypes.number,
+  size: PropTypes.oneOf(['small', 'medium', 'large']),
+  readonly: PropTypes.bool,
+  disabled: PropTypes.bool,
+  showText: PropTypes.bool,
+  icon: PropTypes.string,
+  emptyIcon: PropTypes.string,
+  onChange: PropTypes.func,
+  className: PropTypes.string,
+  style: PropTypes.object,
 };
+
+// Компонент для рейтинга с процентами
+export const PercentRating = memo(({
+  value = 0,
+  max = 100,
+  size = 'medium',
+  readonly = false,
+  showText = true,
+  showProgress = true,
+  onChange,
+  className,
+  style,
+  ...props
+}) => {
+  return (
+    <div className={className} style={style} {...props}>
+      {showProgress && (
+        <RatingProgress size={size}>
+          <RatingProgressFill
+            width={`${value}%`}
+            size={size}
+          />
+        </RatingProgress>
+      )}
+      {showText && (
+        <RatingText size={size} bold showCount>
+          {value}% ({value} из {max})
+        </RatingText>
+      )}
+    </div>
+  );
+});
+
+PercentRating.propTypes = {
+  value: PropTypes.number,
+  max: PropTypes.number,
+  size: PropTypes.oneOf(['small', 'medium', 'large']),
+  readonly: PropTypes.bool,
+  showText: PropTypes.bool,
+  showProgress: PropTypes.bool,
+  onChange: PropTypes.func,
+  className: PropTypes.string,
+  style: PropTypes.object,
+};
+
+export default Rating;

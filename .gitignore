@@ -8,12 +8,19 @@ yarn-error.log*
 /client/build
 /server/dist
 
-# Environment variables
+# Environment variables - exclude all .env files
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*
+!.env.example
+**/.env
+**/.env.*
+server/.env
+client/.env
+client/.env.development
+client/.env.local
+client/.env.development.local
+client/.env.test.local
+client/.env.production.local
 
 # Logs
 logs
@@ -50,8 +57,7 @@ jspm_packages/
 # Yarn Integrity file
 .yarn-integrity
 
-# dotenv environment variables file
-.env
+# dotenv environment variables file (covered above)
 
 # parcel-bundler cache (https://parceljs.org/)
 .cache
@@ -106,9 +112,7 @@ dump.rdb
 # Dependency directories
 node_modules/
 
-# Environment variables
-.env
-.env.local
+# Environment variables (covered above)
 
 # Build directories
 dist/

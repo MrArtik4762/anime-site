@@ -1,285 +1,441 @@
-import React from 'react';
-import styled from 'styled-components';
+import React, { useState, useEffect, useRef, forwardRef, memo } from 'react';
 import PropTypes from 'prop-types';
+import { styled } from 'styled-components';
+import { useResponsive } from './Responsive';
 
-// Основной textarea
-const BaseTextarea = styled.textarea`
+// Стилизованный компонент для textarea
+const StyledTextarea = styled.textarea`
   width: 100%;
-  padding: ${props => props.theme.spacing[3]} ${props => props.theme.spacing[4]};
-  font-size: ${props => props.theme.typography.fontSize.base[0]};
-  font-weight: ${props => props.theme.typography.fontWeight.normal};
-  line-height: ${props => props.theme.typography.lineHeight.relaxed};
-  color: ${props => props.theme.colors.text.primary};
-  background: ${props => props.theme.colors.surface.primary};
-  border: ${props => props.theme.form.input.border} solid ${props => props.theme.colors.border.medium};
-  border-radius: ${props => props.theme.borderRadius.lg};
-  transition: ${props => props.theme.transitions.normal};
-  outline: none;
-  resize: ${props => props.resize || 'vertical'};
-  min-height: ${props => props.minHeight || '120px'};
+  min-height: ${props => props.theme.sizes.minTextareaHeight};
+  padding: ${props => props.theme.spacing.small} ${props => props.theme.spacing.medium};
+  font-size: ${props => props.theme.fontSizes.md};
+  font-family: ${props => props.theme.fonts.body};
+  border: ${props => props.theme.border.width.sm} solid ${props => {
+    if (props.error) return props.theme.colors.error;
+    if (props.focused) return props.theme.colors.primary;
+    return props.theme.colors.border;
+  }};
+  border-radius: ${props => props.theme.borderRadius.md};
+  background-color: ${props => props.theme.colors.background};
+  color: ${props => props.theme.colors.text};
+  transition: all ${props => props.theme.transitions.fast};
+  resize: ${props => props.resizable ? 'vertical' : 'none'};
   
   &:focus {
+    outline: none;
     border-color: ${props => props.theme.colors.primary};
     box-shadow: 0 0 0 3px ${props => props.theme.colors.primary}20;
   }
   
-  &:disabled {
-    opacity: ${props => props.theme.opacity[50]};
-    cursor: not-allowed;
+  &:hover {
+    border-color: ${props => props.theme.colors.primary};
   }
   
-  &:read-only {
-    background: ${props => props.theme.colors.surface.tertiary};
-    cursor: default;
-  }
-  
-  /* Placeholder */
   &::placeholder {
-    color: ${props => props.theme.colors.text.tertiary};
+    color: ${props => props.theme.colors.textSecondary};
   }
   
-  /* Для мобильных устройств */
-  ${props => props.theme.media.coarse} {
-    font-size: ${props => props.theme.typography.fontSize.lg[0]};
-    padding: ${props => props.theme.spacing[4]} ${props => props.theme.spacing[5]};
-  }
-`;
-
-// Textarea с иконкой слева
-const TextareaWithLeftIcon = styled(BaseTextarea)`
-  padding-left: ${props => props.theme.spacing[8]};
-  
-  & + .textarea-icon-left {
-    position: absolute;
-    left: ${props => props.theme.spacing[4]};
-    top: ${props => props.theme.spacing[4]};
-    color: ${props => props.theme.colors.text.tertiary};
-    pointer-events: none;
-    z-index: 1;
-  }
-`;
-
-// Textarea с иконкой справа
-const TextareaWithRightIcon = styled(BaseTextarea)`
-  padding-right: ${props => props.theme.spacing[8]};
-  
-  & + .textarea-icon-right {
-    position: absolute;
-    right: ${props => props.theme.spacing[4]};
-    top: ${props => props.theme.spacing[4]};
-    color: ${props => props.theme.colors.text.tertiary};
-    cursor: pointer;
-    z-index: 1;
+  /* Состояния */
+  ${props => props.error && `
+    border-color: ${props.theme.colors.error};
     
-    &:hover {
-      color: ${props => props.theme.colors.text.primary};
+    &:focus {
+      box-shadow: 0 0 0 3px ${props.theme.colors.error}20;
     }
+  `}
+  
+  ${props => props.disabled && `
+    background-color: ${props.theme.colors.backgroundSecondary};
+    color: ${props.theme.colors.textSecondary};
+    cursor: not-allowed;
+    opacity: 0.7;
+  `}
+  
+  /* Адаптивность */
+  @media (max-width: 768px) {
+    padding: ${props => props.theme.spacing.xsmall} ${props => props.theme.spacing.medium};
+    font-size: ${props => props.theme.fontSizes.sm};
+    min-height: ${props => props.theme.sizes.minTextareaHeightMobile};
   }
+  
+  /* Размеры */
+  ${props => props.size === 'small' && `
+    padding: ${props => props.theme.spacing.xsmall} ${props.theme.spacing.small};
+    font-size: ${props.theme.fontSizes.sm};
+    min-height: ${props => props.theme.sizes.minTextareaHeightSmall};
+  `}
+  
+  ${props => props.size === 'large' && `
+    padding: ${props.theme.spacing.medium} ${props.theme.spacing.large};
+    font-size: ${props.theme.fontSizes.lg};
+    min-height: ${props => props.theme.sizes.minTextareaHeightLarge};
+  `}
+  
+  /* Автоматическая высота */
+  ${props => props.autoResize && `
+    overflow-y: hidden;
+    min-height: auto;
+  `}
 `;
 
-// Textarea с обеими иконками
-const TextareaWithIcons = styled(BaseTextarea)`
-  padding-left: ${props => props.theme.spacing[8]};
-  padding-right: ${props => props.theme.spacing[8]};
-  
-  & + .textarea-icon-left {
-    position: absolute;
-    left: ${props => props.theme.spacing[4]};
-    top: ${props => props.theme.spacing[4]};
-    color: ${props => props.theme.colors.text.tertiary};
-    pointer-events: none;
-    z-index: 1;
-  }
-  
-  & + .textarea-icon-right {
-    position: absolute;
-    right: ${props => props.theme.spacing[4]};
-    top: ${props => props.theme.spacing[4]};
-    color: ${props => props.theme.colors.text.tertiary};
-    cursor: pointer;
-    z-index: 1;
-    
-    &:hover {
-      color: ${props => props.theme.colors.text.primary};
-    }
-  }
-`;
-
-// Контейнер для textarea с иконками
-const TextareaContainer = styled.div`
+// Компонент для обертки textarea с меткой и ошибками
+const TextareaWrapper = styled.div`
   position: relative;
-  display: inline-block;
-  width: 100%;
-`;
-
-// Состояния textarea
-const ValidTextarea = styled(BaseTextarea)`
-  &:focus {
-    border-color: ${props => props.theme.colors.success};
-    box-shadow: 0 0 0 3px ${props => props.theme.colors.success}20;
-  }
-`;
-
-const InvalidTextarea = styled(BaseTextarea)`
-  &:focus {
-    border-color: ${props => props.theme.colors.error};
-    box-shadow: 0 0 0 3px ${props => props.theme.colors.error}20;
-  }
-`;
-
-// Поле textarea с меткой
-const LabeledTextarea = styled.div`
-  margin-bottom: ${props => props.theme.spacing[4]};
+  margin-bottom: ${props => props.theme.spacing.medium};
   
-  label {
+  .textarea-label {
     display: block;
-    font-size: ${props => props.theme.typography.fontSize.sm[0]};
-    font-weight: ${props => props.theme.typography.fontWeight.medium};
-    color: ${props => props.theme.colors.text.primary};
-    margin-bottom: ${props => props.theme.spacing[2]};
+    margin-bottom: ${props => props.theme.spacing.xsmall};
+    font-weight: ${props => props.theme.fontWeights.medium};
+    color: ${props => props.theme.colors.text};
+    font-size: ${props => props.theme.fontSizes.sm};
     
-    .required {
-      color: ${props => props.theme.colors.error};
+    @media (max-width: 768px) {
+      font-size: ${props => props.theme.fontSizes.xs};
     }
   }
   
   .textarea-description {
-    font-size: ${props => props.theme.typography.fontSize.xs[0]};
-    color: ${props => props.theme.colors.text.tertiary};
-    margin-top: ${props => props.theme.spacing[1]};
+    display: block;
+    margin-bottom: ${props => props.theme.spacing.xsmall};
+    font-size: ${props => props.theme.fontSizes.sm};
+    color: ${props => props.theme.colors.textSecondary};
+    
+    @media (max-width: 768px) {
+      font-size: ${props => props.theme.fontSizes.xs};
+    }
   }
   
   .textarea-error {
-    font-size: ${props => props.theme.typography.fontSize.xs[0]};
+    display: block;
+    margin-top: ${props => props.theme.spacing.xsmall};
+    font-size: ${props => props.theme.fontSizes.xs};
     color: ${props => props.theme.colors.error};
-    margin-top: ${props => props.theme.spacing[1]};
+    
+    @media (max-width: 768px) {
+      font-size: ${props => props.theme.fontSizes.xs};
+    }
   }
   
-  .char-counter {
-    font-size: ${props => props.theme.typography.fontSize.xs[0]};
-    color: ${props => props.theme.colors.text.tertiary};
-    text-align: right;
-    margin-top: ${props => props.theme.spacing[1]};
+  .textarea-counter {
+    position: absolute;
+    bottom: ${props => props.theme.spacing.xsmall};
+    right: ${props => props.theme.spacing.medium};
+    font-size: ${props => props.theme.fontSizes.xs};
+    color: ${props => props.theme.colors.textSecondary};
+    
+    @media (max-width: 768px) {
+      right: ${props => props.theme.spacing.small};
+      font-size: ${props => props.theme.fontSizes.xxs};
+    }
+    
+    ${props => props.error && `
+      color: ${props.theme.colors.error};
+    `}
+  }
+  
+  .textarea-character-limit {
+    position: absolute;
+    bottom: ${props => props.theme.spacing.xsmall};
+    right: ${props => props.theme.spacing.medium};
+    font-size: ${props => props.theme.fontSizes.xs};
+    color: ${props => {
+      if (props.error) return props.theme.colors.error;
+      if (props.warning) return props.theme.colors.warning;
+      return props.theme.colors.textSecondary;
+    }};
+    
+    @media (max-width: 768px) {
+      right: ${props => props.theme.spacing.small};
+      font-size: ${props => props.theme.fontSizes.xxs};
+    }
   }
 `;
 
-// Компонент Textarea
-const Textarea = ({
+// Компонент для группы textarea
+const TextareaGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${props => props.theme.spacing.small};
+  
+  .textarea-group-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: ${props => props.theme.spacing.small} ${props => props.theme.spacing.medium};
+    background-color: ${props => props.theme.colors.backgroundSecondary};
+    border: ${props => props.theme.border.width.sm} solid ${props => props.theme.colors.border};
+    border-radius: ${props => props.theme.borderRadius.md} ${props => props.theme.borderRadius.md} 0 0;
+    font-size: ${props => props.theme.fontSizes.sm};
+    color: ${props => props.theme.colors.text};
+    
+    @media (max-width: 768px) {
+      padding: ${props => props.theme.spacing.xsmall} ${props => props.theme.spacing.small};
+      font-size: ${props => props.theme.fontSizes.xs};
+    }
+  }
+  
+  .textarea-group-body {
+    border: ${props => props.theme.border.width.sm} solid ${props => props.theme.colors.border};
+    border-radius: 0 0 ${props => props.theme.borderRadius.md} ${props => props.theme.borderRadius.md};
+    overflow: hidden;
+  }
+`;
+
+// Основной компонент Textarea
+export const Textarea = memo(forwardRef(({
   label,
-  required = false,
-  error,
   description,
-  leftIcon,
-  rightIcon,
-  valid = false,
-  invalid = false,
+  error,
+  value,
+  onChange,
+  onBlur,
+  onFocus,
+  placeholder,
+  disabled = false,
+  required = false,
+  readOnly = false,
+  autoFocus = false,
   maxLength,
-  showCharCounter = false,
-  className = '',
+  minLength,
+  rows = 4,
+  cols,
+  resize = true,
+  autoResize = false,
+  size = 'medium',
+  showCounter = false,
+  showCharacterLimit = false,
+  className,
+  style,
   ...props
-}) => {
-  // Определяем стили в зависимости от пропсов
-  const getTextareaStyle = () => {
-    if (valid) return ValidTextarea;
-    if (invalid) return InvalidTextarea;
-    return BaseTextarea;
+}, ref) => {
+  const { isMobile } = useResponsive();
+  const [focused, setFocused] = useState(false);
+  const [internalValue, setInternalValue] = useState(value || '');
+  const textareaRef = useRef(ref);
+  
+  // Синхронизация внутреннего значения с внешним
+  useEffect(() => {
+    setInternalValue(value);
+  }, [value]);
+  
+  // Обработка изменений
+  const handleChange = (e) => {
+    const newValue = e.target.value;
+    setInternalValue(newValue);
+    
+    if (onChange) {
+      onChange(e);
+    }
   };
   
-  // Определяем стили в зависимости от иконок
-  const getIconStyle = () => {
-    if (leftIcon && rightIcon) return TextareaWithIcons;
-    if (leftIcon) return TextareaWithLeftIcon;
-    if (rightIcon) return TextareaWithRightIcon;
-    return BaseTextarea;
+  // Обработка потери фокуса
+  const handleBlur = (e) => {
+    setFocused(false);
+    if (onBlur) {
+      onBlur(e);
+    }
   };
   
-  const TextareaStyle = getTextareaStyle();
-  const IconStyle = getIconStyle();
-  const CombinedTextarea = IconStyle.withComponent(TextareaStyle);
+  // Обработка получения фокуса
+  const handleFocus = (e) => {
+    setFocused(true);
+    if (onFocus) {
+      onFocus(e);
+    }
+  };
   
-  // Подсчет символов
-  const charCount = props.value ? props.value.length : 0;
-  const isNearLimit = maxLength && charCount > maxLength * 0.8;
+  // Автоматическая регулировка высоты
+  useEffect(() => {
+    if (autoResize && textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+    }
+  }, [internalValue, autoResize]);
+  
+  // Генерация уникального ID
+  const textareaId = props.id || `textarea-${props.name || Math.random().toString(36).substr(2, 9)}`;
+  
+  // Расчет состояния счетчика символов
+  const characterCount = internalValue.length;
+  const characterLimit = maxLength;
+  const characterPercentage = characterLimit ? (characterCount / characterLimit) * 100 : 0;
+  const isCharacterLimitWarning = characterLimit && characterPercentage >= 80 && characterPercentage < 100;
+  const isCharacterLimitError = characterLimit && characterPercentage >= 100;
   
   return (
-    <LabeledTextarea className={className}>
+    <TextareaWrapper className={className} style={style} error={!!error} warning={isCharacterLimitWarning}>
       {label && (
-        <label htmlFor={props.id}>
+        <label 
+          htmlFor={textareaId} 
+          className="textarea-label"
+        >
           {label}
-          {required && <span className="required"> *</span>}
+          {required && <span style={{ color: 'red' }}>*</span>}
         </label>
       )}
       
-      <TextareaContainer>
-        <CombinedTextarea
-          id={props.id}
-          {...props}
-        />
-        
-        {leftIcon && (
-          <span className="textarea-icon-left">
-            {leftIcon}
-          </span>
-        )}
-        
-        {rightIcon && (
-          <span className="textarea-icon-right">
-            {rightIcon}
-          </span>
-        )}
-      </TextareaContainer>
+      {description && (
+        <span className="textarea-description">{description}</span>
+      )}
       
-      {description && !error && (
-        <div className="textarea-description">
-          {description}
+      <StyledTextarea
+        id={textareaId}
+        value={internalValue}
+        onChange={handleChange}
+        onBlur={handleBlur}
+        onFocus={handleFocus}
+        placeholder={placeholder}
+        disabled={disabled}
+        readOnly={readOnly}
+        autoFocus={autoFocus}
+        maxLength={maxLength}
+        minLength={minLength}
+        rows={rows}
+        cols={cols}
+        resize={resize}
+        autoResize={autoResize}
+        size={size}
+        error={!!error}
+        focused={focused}
+        ref={textareaRef}
+        {...props}
+      />
+      
+      {showCounter && (
+        <div className="textarea-counter">
+          {characterCount} {characterCount === 1 ? 'символ' : characterCount < 5 ? 'символа' : 'символов'}
         </div>
       )}
       
-      {error && (
-        <div className="textarea-error">
-          {error}
+      {showCharacterLimit && characterLimit && (
+        <div className="textarea-character-limit" error={isCharacterLimitError} warning={isCharacterLimitWarning}>
+          {characterCount} / {characterLimit}
         </div>
       )}
       
-      {maxLength && showCharCounter && (
-        <div className={`char-counter ${isNearLimit ? 'warning' : ''}`}>
-          {charCount} / {maxLength} символов
-        </div>
-      )}
-    </LabeledTextarea>
+      {error && <span className="textarea-error">{error}</span>}
+    </TextareaWrapper>
   );
-};
+}));
 
-// Пропс-types для TypeScript
 Textarea.propTypes = {
-  id: PropTypes.string,
   label: PropTypes.string,
-  required: PropTypes.bool,
-  error: PropTypes.string,
   description: PropTypes.string,
-  leftIcon: PropTypes.node,
-  rightIcon: PropTypes.node,
-  valid: PropTypes.bool,
-  invalid: PropTypes.bool,
+  error: PropTypes.string,
+  value: PropTypes.string,
+  onChange: PropTypes.func,
+  onBlur: PropTypes.func,
+  onFocus: PropTypes.func,
+  placeholder: PropTypes.string,
+  disabled: PropTypes.bool,
+  required: PropTypes.bool,
+  readOnly: PropTypes.bool,
+  autoFocus: PropTypes.bool,
   maxLength: PropTypes.number,
-  showCharCounter: PropTypes.bool,
+  minLength: PropTypes.number,
+  rows: PropTypes.number,
+  cols: PropTypes.number,
+  resize: PropTypes.bool,
+  autoResize: PropTypes.bool,
+  size: PropTypes.oneOf(['small', 'medium', 'large']),
+  showCounter: PropTypes.bool,
+  showCharacterLimit: PropTypes.bool,
   className: PropTypes.string,
-  resize: PropTypes.oneOf(['none', 'both', 'horizontal', 'vertical']),
-  minHeight: PropTypes.string,
+  style: PropTypes.object,
 };
 
-// Экспорт всех типов textarea
-export const TextareaVariants = {
-  Base: BaseTextarea,
-  WithLeftIcon: TextareaWithLeftIcon,
-  WithRightIcon: TextareaWithRightIcon,
-  WithIcons: TextareaWithIcons,
-  Valid: ValidTextarea,
-  Invalid: InvalidTextarea,
+// Компонент для группы Textarea
+export const TextareaGroupComponent = memo(({ children, className, style }) => {
+  return (
+    <TextareaGroup className={className} style={style}>
+      {children}
+    </TextareaGroup>
+  );
+});
+
+TextareaGroupComponent.propTypes = {
+  children: PropTypes.node.isRequired,
+  className: PropTypes.string,
+  style: PropTypes.object,
 };
 
-// Экспорт контейнера
-export const TextareaContainerComponent = TextareaContainer;
+// Компонент для форматированного текста с подсветкой синтаксиса
+export const CodeTextarea = memo(forwardRef(({
+  language = 'javascript',
+  ...props
+}, ref) => {
+  return (
+    <Textarea
+      ref={ref}
+      {...props}
+      style={{
+        fontFamily: 'monospace',
+        fontSize: '0.9em',
+        lineHeight: '1.5',
+        tabSize: 2
+      }}
+    />
+  );
+}));
 
-// Экспорт основного компонента
+CodeTextarea.propTypes = {
+  language: PropTypes.string,
+  ...Textarea.propTypes
+};
+
+// Хук для управления состоянием textarea
+export const useTextarea = (initialValue = '', options = {}) => {
+  const [value, setValue] = useState(initialValue);
+  const [error, setError] = useState('');
+  const [touched, setTouched] = useState(false);
+  
+  const handleChange = (e) => {
+    setValue(e.target.value);
+    
+    // Валидация при изменении
+    if (options.validate) {
+      const validationError = options.validate(e.target.value);
+      setError(validationError);
+    }
+  };
+  
+  const handleBlur = () => {
+    setTouched(true);
+    
+    // Валидация при потере фокуса
+    if (options.validate) {
+      const validationError = options.validate(value);
+      setError(validationError);
+    }
+  };
+  
+  const reset = () => {
+    setValue(initialValue);
+    setError('');
+    setTouched(false);
+  };
+  
+  const isValid = !error && (options.required ? value !== '' : true);
+  
+  return {
+    value,
+    setValue,
+    error,
+    setError,
+    touched,
+    setTouched,
+    handleChange,
+    handleBlur,
+    reset,
+    isValid,
+    textareaProps: {
+      value,
+      onChange: handleChange,
+      onBlur: handleBlur,
+      error: touched ? error : undefined
+    }
+  };
+};
+
 export default Textarea;

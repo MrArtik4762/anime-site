@@ -1,581 +1,420 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React from 'react';
 import PropTypes from 'prop-types';
-import { useTheme } from './ThemeProvider';
-import Button from './Button';
+import styled from 'styled-components';
+import { breakpoints, spacing } from '../../styles/designTokens';
 
-// Хук для получения текущего размера экрана
-const useBreakpoint = () => {
-  const [breakpoint, setBreakpoint] = useState({
-    isXs: false,
-    isSm: false,
-    isMd: false,
-    isLg: false,
-    isXl: false,
-    is2xl: false,
-    width: 0,
-    height: 0,
-  });
-  
-  useEffect(() => {
-    const handleResize = () => {
-      const width = window.innerWidth;
-      const height = window.innerHeight;
-      
-      setBreakpoint({
-        isXs: width < 640,
-        isSm: width >= 640 && width < 768,
-        isMd: width >= 768 && width < 1024,
-        isLg: width >= 1024 && width < 1280,
-        isXl: width >= 1280 && width < 1536,
-        is2xl: width >= 1536,
-        width,
-        height,
-      });
-    };
-    
-    // Инициализация при монтировании
-    handleResize();
-    
-    // Добавление обработчика события
-    window.addEventListener('resize', handleResize);
-    
-    // Очистка при размонтировании
-    return () => {
-      window.removeEventListener('resize', handleResize);
-    };
-  }, []);
-  
-  return breakpoint;
+// Создаем медиа-запросы как CSS переменные
+export const media = {
+  xs: `(max-width: ${breakpoints.maxSm})`,
+  sm: `(min-width: ${breakpoints.sm}) and (max-width: ${breakpoints.maxMd})`,
+  md: `(min-width: ${breakpoints.md}) and (max-width: ${breakpoints.maxLg})`,
+  lg: `(min-width: ${breakpoints.lg}) and (max-width: ${breakpoints.maxXl})`,
+  xl: `(min-width: ${breakpoints.xl}) and (max-width: ${breakpoints.max2xl})`,
+  '2xl': `(min-width: ${breakpoints['2xl']})`,
 };
 
-// Компонент для адаптивного контейнера
-const ResponsiveContainer = ({ 
-  children, 
-  className = '',
-  xs,
-  sm,
-  md,
-  lg,
-  xl,
-  xxl,
-  ...props 
-}) => {
-  const breakpoint = useBreakpoint();
-  const containerRef = useRef(null);
+// Компонент для скрытия контента на определенных размерах
+export const Hide = styled.div`
+  display: block;
   
-  // Определение текущего размера контейнера
-  const getCurrentSize = useCallback(() => {
-    if (breakpoint.isXs && xs) return xs;
-    if (breakpoint.isSm && sm) return sm;
-    if (breakpoint.isMd && md) return md;
-    if (breakpoint.isLg && lg) return lg;
-    if (breakpoint.isXl && xl) return xl;
-    if (breakpoint.is2xl && xxl) return xxl;
-    return 'full'; // Размер по умолчанию
-  }, [breakpoint, xs, sm, md, lg, xl, xxl]);
+  @media ${media.xs} {
+    display: ${props => props.xs ? 'none' : 'block'};
+  }
   
-  const currentSize = getCurrentSize();
+  @media ${media.sm} {
+    display: ${props => props.sm ? 'none' : 'block'};
+  }
   
-  // Определение классов для текущего размера
-  const getSizeClasses = useCallback((size) => {
-    switch (size) {
-      case 'xs':
-        return 'max-w-xs mx-auto';
-      case 'sm':
-        return 'max-w-sm mx-auto';
-      case 'md':
-        return 'max-w-md mx-auto';
-      case 'lg':
-        return 'max-w-lg mx-auto';
-      case 'xl':
-        return 'max-w-xl mx-auto';
-      case '2xl':
-        return 'max-w-2xl mx-auto';
-      case '3xl':
-        return 'max-w-3xl mx-auto';
-      case '4xl':
-        return 'max-w-4xl mx-auto';
-      case '5xl':
-        return 'max-w-5xl mx-auto';
-      case '6xl':
-        return 'max-w-6xl mx-auto';
-      case '7xl':
-        return 'max-w-7xl mx-auto';
-      case 'full':
-        return 'w-full';
+  @media ${media.md} {
+    display: ${props => props.md ? 'none' : 'block'};
+  }
+  
+  @media ${media.lg} {
+    display: ${props => props.lg ? 'none' : 'block'};
+  }
+  
+  @media ${media.xl} {
+    display: ${props => props.xl ? 'none' : 'block'};
+  }
+  
+  @media ${media['2xl']} {
+    display: ${props => props.x2xl ? 'none' : 'block'};
+  }
+`;
+
+Hide.propTypes = {
+  xs: PropTypes.bool,
+  sm: PropTypes.bool,
+  md: PropTypes.bool,
+  lg: PropTypes.bool,
+  xl: PropTypes.bool,
+  x2xl: PropTypes.bool,
+};
+
+// Компонент для показа контента только на определенных размерах
+export const Show = styled.div`
+  display: none;
+  
+  @media ${media.xs} {
+    display: ${props => props.xs ? 'block' : 'none'};
+  }
+  
+  @media ${media.sm} {
+    display: ${props => props.sm ? 'block' : 'none'};
+  }
+  
+  @media ${media.md} {
+    display: ${props => props.md ? 'block' : 'none'};
+  }
+  
+  @media ${media.lg} {
+    display: ${props => props.lg ? 'block' : 'none'};
+  }
+  
+  @media ${media.xl} {
+    display: ${props => props.xl ? 'block' : 'none'};
+  }
+  
+  @media ${media['2xl']} {
+    display: ${props => props.x2xl ? 'block' : 'none'};
+  }
+`;
+
+Show.propTypes = {
+  xs: PropTypes.bool,
+  sm: PropTypes.bool,
+  md: PropTypes.bool,
+  lg: PropTypes.bool,
+  xl: PropTypes.bool,
+  x2xl: PropTypes.bool,
+};
+
+// Адаптивный контейнер
+export const Container = styled.div`
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: ${spacing.md};
+  padding-right: ${spacing.md};
+  
+  @media ${media.sm} {
+    max-width: 640px;
+    padding-left: ${spacing.lg};
+    padding-right: ${spacing.lg};
+  }
+  
+  @media ${media.md} {
+    max-width: 768px;
+    padding-left: ${spacing.xl};
+    padding-right: ${spacing.xl};
+  }
+  
+  @media ${media.lg} {
+    max-width: 1024px;
+    padding-left: ${spacing.xxl};
+    padding-right: ${spacing.xxl};
+  }
+  
+  @media ${media.xl} {
+    max-width: 1280px;
+    padding-left: ${spacing.xxxl};
+    padding-right: ${spacing.xxxl};
+  }
+  
+  @media ${media['2xl']} {
+    max-width: 1536px;
+    padding-left: ${spacing.xxxxl || spacing.xxxl};
+    padding-right: ${spacing.xxxxl || spacing.xxxl};
+  }
+`;
+
+// Адаптивная сетка
+export const Grid = styled.div`
+  display: grid;
+  gap: ${spacing.lg};
+  
+  ${props => {
+    switch (props.columns) {
+      case 1:
+        return 'grid-template-columns: 1fr;';
+      case 2:
+        return `
+          grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+          
+          @media ${media.sm} {
+            grid-template-columns: repeat(2, 1fr);
+          }
+        `;
+      case 3:
+        return `
+          grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+          
+          @media ${media.sm} {
+            grid-template-columns: repeat(2, 1fr);
+          }
+          
+          @media ${media.md} {
+            grid-template-columns: repeat(3, 1fr);
+          }
+        `;
+      case 4:
+        return `
+          grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+          
+          @media ${media.sm} {
+            grid-template-columns: repeat(2, 1fr);
+          }
+          
+          @media ${media.md} {
+            grid-template-columns: repeat(3, 1fr);
+          }
+          
+          @media ${media.lg} {
+            grid-template-columns: repeat(4, 1fr);
+          }
+        `;
+      case 5:
+        return `
+          grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+          
+          @media ${media.sm} {
+            grid-template-columns: repeat(2, 1fr);
+          }
+          
+          @media ${media.md} {
+            grid-template-columns: repeat(3, 1fr);
+          }
+          
+          @media ${media.lg} {
+            grid-template-columns: repeat(4, 1fr);
+          }
+          
+          @media ${media.xl} {
+            grid-template-columns: repeat(5, 1fr);
+          }
+        `;
+      case 6:
+        return `
+          grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+          
+          @media ${media.sm} {
+            grid-template-columns: repeat(2, 1fr);
+          }
+          
+          @media ${media.md} {
+            grid-template-columns: repeat(3, 1fr);
+          }
+          
+          @media ${media.lg} {
+            grid-template-columns: repeat(4, 1fr);
+          }
+          
+          @media ${media.xl} {
+            grid-template-columns: repeat(5, 1fr);
+          }
+          
+          @media ${media['2xl']} {
+            grid-template-columns: repeat(6, 1fr);
+          }
+        `;
       default:
-        return 'w-full';
+        return 'grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));';
     }
-  }, []);
+  }}
   
-  return (
-    <div 
-      ref={containerRef}
-      className={`${getSizeClasses(currentSize)} ${className}`}
-      {...props}
-    >
-      {children}
-    </div>
-  );
+  ${props => props.gap && `
+    gap: ${props.gap};
+  `}
+`;
+
+Grid.propTypes = {
+  columns: PropTypes.oneOf([1, 2, 3, 4, 5, 6]),
+  gap: PropTypes.string,
 };
 
-ResponsiveContainer.propTypes = {
-  children: PropTypes.node.isRequired,
-  className: PropTypes.string,
-  xs: PropTypes.oneOf(['xs', 'sm', 'md', 'lg', 'xl', '2xl', '3xl', '4xl', '5xl', '6xl', '7xl', 'full']),
-  sm: PropTypes.oneOf(['xs', 'sm', 'md', 'lg', 'xl', '2xl', '3xl', '4xl', '5xl', '6xl', '7xl', 'full']),
-  md: PropTypes.oneOf(['xs', 'sm', 'md', 'lg', 'xl', '2xl', '3xl', '4xl', '5xl', '6xl', '7xl', 'full']),
-  lg: PropTypes.oneOf(['xs', 'sm', 'md', 'lg', 'xl', '2xl', '3xl', '4xl', '5xl', '6xl', '7xl', 'full']),
-  xl: PropTypes.oneOf(['xs', 'sm', 'md', 'lg', 'xl', '2xl', '3xl', '4xl', '5xl', '6xl', '7xl', 'full']),
-  xxl: PropTypes.oneOf(['xs', 'sm', 'md', 'lg', 'xl', '2xl', '3xl', '4xl', '5xl', '6xl', '7xl', 'full']),
-};
-
-// Компонент для адаптивной сетки
-const ResponsiveGrid = ({ 
-  children, 
-  className = '',
-  cols = { xs: 1, sm: 2, md: 3, lg: 4, xl: 5, xxl: 6 },
-  gap = { xs: 4, sm: 6, md: 8 },
-  ...props 
-}) => {
-  const breakpoint = useBreakpoint();
+// Адаптивное отступление
+export const Spacer = styled.div`
+  height: ${props => props.height || spacing.lg};
+  width: ${props => props.width || '100%'};
   
-  // Определение количества колонок для текущего размера
-  const getCurrentCols = useCallback(() => {
-    if (breakpoint.isXs) return cols.xs || 1;
-    if (breakpoint.isSm) return cols.sm || 2;
-    if (breakpoint.isMd) return cols.md || 3;
-    if (breakpoint.isLg) return cols.lg || 4;
-    if (breakpoint.isXl) return cols.xl || 5;
-    if (breakpoint.is2xl) return cols.xxl || 6;
-    return 1; // Значение по умолчанию
-  }, [breakpoint, cols]);
-  
-  // Определение промежутков для текущего размера
-  const getCurrentGap = useCallback(() => {
-    if (breakpoint.isXs) return gap.xs || 4;
-    if (breakpoint.isSm) return gap.sm || 6;
-    if (breakpoint.isMd) return gap.md || 8;
-    if (breakpoint.isLg) return gap.lg || 8;
-    if (breakpoint.isXl) return gap.xl || 8;
-    if (breakpoint.is2xl) return gap.xxl || 8;
-    return 4; // Значение по умолчанию
-  }, [breakpoint, gap]);
-  
-  const currentCols = getCurrentCols();
-  const currentGap = getCurrentGap();
-  
-  return (
-    <div 
-      className={`grid ${className}`}
-      style={{
-        gridTemplateColumns: `repeat(${currentCols}, minmax(0, 1fr))`,
-        gap: `${currentGap}px`,
-      }}
-      {...props}
-    >
-      {children}
-    </div>
-  );
-};
-
-ResponsiveGrid.propTypes = {
-  children: PropTypes.node.isRequired,
-  className: PropTypes.string,
-  cols: PropTypes.shape({
-    xs: PropTypes.number,
-    sm: PropTypes.number,
-    md: PropTypes.number,
-    lg: PropTypes.number,
-    xl: PropTypes.number,
-    xxl: PropTypes.number,
-  }),
-  gap: PropTypes.shape({
-    xs: PropTypes.number,
-    sm: PropTypes.number,
-    md: PropTypes.number,
-    lg: PropTypes.number,
-    xl: PropTypes.number,
-    xxl: PropTypes.number,
-  }),
-};
-
-// Компонент для адаптивного отступа
-const ResponsiveSpacing = ({ 
-  children, 
-  className = '',
-  top,
-  right,
-  bottom,
-  left,
-  all,
-  ...props 
-}) => {
-  const breakpoint = useBreakpoint();
-  
-  // Определение отступов для текущего размера
-  const getSpacing = useCallback((size) => {
-    if (all) return all[size] || all;
-    if (top) return top[size] || top;
-    if (right) return right[size] || right;
-    if (bottom) return bottom[size] || bottom;
-    if (left) return left[size] || left;
-    return 0; // Значение по умолчанию
-  }, [all, top, right, bottom, left]);
-  
-  const spacing = {
-    top: getSpacing('xs'),
-    right: getSpacing('xs'),
-    bottom: getSpacing('xs'),
-    left: getSpacing('xs'),
-  };
-  
-  if (breakpoint.isSm) {
-    spacing.top = getSpacing('sm');
-    spacing.right = getSpacing('sm');
-    spacing.bottom = getSpacing('sm');
-    spacing.left = getSpacing('sm');
+  @media ${media.sm} {
+    height: ${props => props.sm || props.height || spacing.lg};
   }
   
-  if (breakpoint.isMd) {
-    spacing.top = getSpacing('md');
-    spacing.right = getSpacing('md');
-    spacing.bottom = getSpacing('md');
-    spacing.left = getSpacing('md');
+  @media ${media.md} {
+    height: ${props => props.md || props.height || spacing.xl};
   }
   
-  if (breakpoint.isLg) {
-    spacing.top = getSpacing('lg');
-    spacing.right = getSpacing('lg');
-    spacing.bottom = getSpacing('lg');
-    spacing.left = getSpacing('lg');
+  @media ${media.lg} {
+    height: ${props => props.lg || props.height || spacing.xxl};
   }
-  
-  if (breakpoint.isXl) {
-    spacing.top = getSpacing('xl');
-    spacing.right = getSpacing('xl');
-    spacing.bottom = getSpacing('xl');
-    spacing.left = getSpacing('xl');
-  }
-  
-  if (breakpoint.is2xl) {
-    spacing.top = getSpacing('xxl');
-    spacing.right = getSpacing('xxl');
-    spacing.bottom = getSpacing('xxl');
-    spacing.left = getSpacing('xxl');
-  }
-  
-  const spacingStyle = {
-    paddingTop: `${spacing.top}px`,
-    paddingRight: `${spacing.right}px`,
-    paddingBottom: `${spacing.bottom}px`,
-    paddingLeft: `${spacing.left}px`,
-  };
-  
-  return (
-    <div 
-      className={className}
-      style={spacingStyle}
-      {...props}
-    >
-      {children}
-    </div>
-  );
+`;
+
+Spacer.propTypes = {
+  height: PropTypes.string,
+  width: PropTypes.string,
+  sm: PropTypes.string,
+  md: PropTypes.string,
+  lg: PropTypes.string,
 };
 
-ResponsiveSpacing.propTypes = {
-  children: PropTypes.node,
-  className: PropTypes.string,
-  top: PropTypes.oneOfType([
-    PropTypes.number,
-    PropTypes.shape({
-      xs: PropTypes.number,
-      sm: PropTypes.number,
-      md: PropTypes.number,
-      lg: PropTypes.number,
-      xl: PropTypes.number,
-      xxl: PropTypes.number,
-    }),
-  ]),
-  right: PropTypes.oneOfType([
-    PropTypes.number,
-    PropTypes.shape({
-      xs: PropTypes.number,
-      sm: PropTypes.number,
-      md: PropTypes.number,
-      lg: PropTypes.number,
-      xl: PropTypes.number,
-      xxl: PropTypes.number,
-    }),
-  ]),
-  bottom: PropTypes.oneOfType([
-    PropTypes.number,
-    PropTypes.shape({
-      xs: PropTypes.number,
-      sm: PropTypes.number,
-      md: PropTypes.number,
-      lg: PropTypes.number,
-      xl: PropTypes.number,
-      xxl: PropTypes.number,
-    }),
-  ]),
-  left: PropTypes.oneOfType([
-    PropTypes.number,
-    PropTypes.shape({
-      xs: PropTypes.number,
-      sm: PropTypes.number,
-      md: PropTypes.number,
-      lg: PropTypes.number,
-      xl: PropTypes.number,
-      xxl: PropTypes.number,
-    }),
-  ]),
-  all: PropTypes.oneOfType([
-    PropTypes.number,
-    PropTypes.shape({
-      xs: PropTypes.number,
-      sm: PropTypes.number,
-      md: PropTypes.number,
-      lg: PropTypes.number,
-      xl: PropTypes.number,
-      xxl: PropTypes.number,
-    }),
-  ]),
-};
-
-// Компонент для адаптивного текста
-const ResponsiveText = ({ 
-  children, 
-  className = '',
-  size = { xs: 'text-sm', sm: 'text-base', md: 'text-lg', lg: 'text-xl', xl: 'text-2xl', xxl: 'text-3xl' },
-  weight = { xs: 'font-normal', sm: 'font-medium', md: 'font-semibold', lg: 'font-bold' },
-  ...props 
-}) => {
-  const breakpoint = useBreakpoint();
+// Адаптивный текст
+export const ResponsiveText = styled.p`
+  font-size: ${props => props.size === 'xs' ? '12px' : 
+              props.size === 'sm' ? '14px' : 
+              props.size === 'base' ? '16px' : 
+              props.size === 'lg' ? '18px' : 
+              props.size === 'xl' ? '20px' : '16px'};
+  line-height: ${props => props.size === 'xs' ? '1.5' : 
+                 props.size === 'sm' ? '1.6' : 
+                 props.size === 'base' ? '1.6' : 
+                 props.size === 'lg' ? '1.7' : 
+                 props.size === 'xl' ? '1.8' : '1.6'};
   
-  // Определение размера текста для текущего размера
-  const getCurrentSize = useCallback(() => {
-    if (breakpoint.isXs) return size.xs || 'text-sm';
-    if (breakpoint.isSm) return size.sm || 'text-base';
-    if (breakpoint.isMd) return size.md || 'text-lg';
-    if (breakpoint.isLg) return size.lg || 'text-xl';
-    if (breakpoint.isXl) return size.xl || 'text-2xl';
-    if (breakpoint.is2xl) return size.xxl || 'text-3xl';
-    return 'text-base'; // Значение по умолчанию
-  }, [breakpoint, size]);
+  @media ${media.sm} {
+    font-size: ${props => props.sm || props.size};
+  }
   
-  // Определение веса текста для текущего размера
-  const getCurrentWeight = useCallback(() => {
-    if (breakpoint.isXs) return weight.xs || 'font-normal';
-    if (breakpoint.isSm) return weight.sm || 'font-medium';
-    if (breakpoint.isMd) return weight.md || 'font-semibold';
-    if (breakpoint.isLg) return weight.lg || 'font-bold';
-    if (breakpoint.isXl) return weight.xl || 'font-bold';
-    if (breakpoint.is2xl) return weight.xxl || 'font-bold';
-    return 'font-normal'; // Значение по умолчанию
-  }, [breakpoint, weight]);
+  @media ${media.md} {
+    font-size: ${props => props.md || props.sm || props.size};
+  }
   
-  const currentSize = getCurrentSize();
-  const currentWeight = getCurrentWeight();
-  
-  return (
-    <div 
-      className={`${currentSize} ${currentWeight} ${className}`}
-      {...props}
-    >
-      {children}
-    </div>
-  );
-};
+  @media ${media.lg} {
+    font-size: ${props => props.lg || props.md || props.sm || props.size};
+  }
+`;
 
 ResponsiveText.propTypes = {
-  children: PropTypes.node.isRequired,
-  className: PropTypes.string,
-  size: PropTypes.shape({
-    xs: PropTypes.string,
-    sm: PropTypes.string,
-    md: PropTypes.string,
-    lg: PropTypes.string,
-    xl: PropTypes.string,
-    xxl: PropTypes.string,
-  }),
-  weight: PropTypes.shape({
-    xs: PropTypes.string,
-    sm: PropTypes.string,
-    md: PropTypes.string,
-    lg: PropTypes.string,
-    xl: PropTypes.string,
-    xxl: PropTypes.string,
-  }),
+  size: PropTypes.oneOf(['xs', 'sm', 'base', 'lg', 'xl']),
+  sm: PropTypes.string,
+  md: PropTypes.string,
+  lg: PropTypes.string,
 };
 
-// Компонент для адаптивной кнопки
-const ResponsiveButton = ({ 
-  children, 
-  className = '',
-  size = { xs: 'sm', sm: 'sm', md: 'md', lg: 'md', xl: 'lg', xxl: 'lg' },
-  ...props 
-}) => {
-  const breakpoint = useBreakpoint();
-  
-  // Определение размера кнопки для текущего размера
-  const getCurrentSize = useCallback(() => {
-    if (breakpoint.isXs) return size.xs || 'sm';
-    if (breakpoint.isSm) return size.sm || 'sm';
-    if (breakpoint.isMd) return size.md || 'md';
-    if (breakpoint.isLg) return size.lg || 'md';
-    if (breakpoint.isXl) return size.xl || 'lg';
-    if (breakpoint.is2xl) return size.xxl || 'lg';
-    return 'md'; // Значение по умолчанию
-  }, [breakpoint, size]);
-  
-  const currentSize = getCurrentSize();
-  
-  return (
-    <Button 
-      size={currentSize}
-      className={className}
-      {...props}
-    >
-      {children}
-    </Button>
-  );
+// Хук для получения информации о размере экрана
+export const useResponsive = () => {
+  const [windowSize, setWindowSize] = React.useState({
+    width: typeof window !== 'undefined' ? window.innerWidth : 0,
+    height: typeof window !== 'undefined' ? window.innerHeight : 0,
+  });
+
+  React.useEffect(() => {
+    // Обработка SSR
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const handleResize = () => {
+      setWindowSize({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
+    };
+
+    window.addEventListener('resize', handleResize);
+    handleResize(); // Инициализация при монтировании
+
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Определяем текущий размер экрана
+  const isMobile = windowSize.width < parseInt(breakpoints.sm);
+  const isTablet = windowSize.width >= parseInt(breakpoints.sm) && windowSize.width < parseInt(breakpoints.lg);
+  const isDesktop = windowSize.width >= parseInt(breakpoints.lg);
+
+  // Получаем текущую точку останова
+  const getBreakpoint = () => {
+    if (windowSize.width < parseInt(breakpoints.sm)) return 'xs';
+    if (windowSize.width < parseInt(breakpoints.md)) return 'sm';
+    if (windowSize.width < parseInt(breakpoints.lg)) return 'md';
+    if (windowSize.width < parseInt(breakpoints.xl)) return 'lg';
+    if (windowSize.width < parseInt(breakpoints['2xl'])) return 'xl';
+    return '2xl';
+  };
+
+  return {
+    windowSize,
+    isMobile,
+    isTablet,
+    isDesktop,
+    breakpoint: getBreakpoint(),
+  };
 };
 
-ResponsiveButton.propTypes = {
-  children: PropTypes.node.isRequired,
-  className: PropTypes.string,
-  size: PropTypes.shape({
-    xs: PropTypes.oneOf(['xs', 'sm', 'md', 'lg']),
-    sm: PropTypes.oneOf(['xs', 'sm', 'md', 'lg']),
-    md: PropTypes.oneOf(['xs', 'sm', 'md', 'lg']),
-    lg: PropTypes.oneOf(['xs', 'sm', 'md', 'lg']),
-    xl: PropTypes.oneOf(['xs', 'sm', 'md', 'lg']),
-    xxl: PropTypes.oneOf(['xs', 'sm', 'md', 'lg']),
-  }),
+// Компонент для рендеринга разных контентов на разных размерах
+export const Responsive = ({ children, mobile, tablet, desktop }) => {
+  const { isMobile, isTablet, isDesktop } = useResponsive();
+
+  if (isMobile && mobile) return mobile;
+  if (isTablet && tablet) return tablet;
+  if (isDesktop && desktop) return desktop;
+  return children;
+};
+
+Responsive.propTypes = {
+  children: PropTypes.node,
+  mobile: PropTypes.node,
+  tablet: PropTypes.node,
+  desktop: PropTypes.node,
 };
 
 // Компонент для адаптивного изображения
-const ResponsiveImage = ({ 
-  src, 
-  alt = '', 
-  className = '',
-  sizes = { xs: '100vw', sm: '50vw', md: '33vw', lg: '25vw', xl: '20vw', xxl: '16vw' },
-  ...props 
-}) => {
-  const breakpoint = useBreakpoint();
+export const ResponsiveImage = styled.img`
+  width: 100%;
+  height: auto;
   
-  // Определение размеров изображения для текущего размера
-  const getCurrentSize = useCallback(() => {
-    if (breakpoint.isXs) return sizes.xs || '100vw';
-    if (breakpoint.isSm) return sizes.sm || '50vw';
-    if (breakpoint.isMd) return sizes.md || '33vw';
-    if (breakpoint.isLg) return sizes.lg || '25vw';
-    if (breakpoint.isXl) return sizes.xl || '20vw';
-    if (breakpoint.is2xl) return sizes.xxl || '16vw';
-    return '100vw'; // Значение по умолчанию
-  }, [breakpoint, sizes]);
+  @media ${media.sm} {
+    max-width: ${props => props.smMaxWidth || '100%'};
+  }
   
-  const currentSize = getCurrentSize();
+  @media ${media.md} {
+    max-width: ${props => props.mdMaxWidth || '100%'};
+  }
   
-  return (
-    <img 
-      src={src}
-      alt={alt}
-      className={`w-full h-auto object-cover ${className}`}
-      sizes={currentSize}
-      {...props}
-    />
-  );
-};
+  @media ${media.lg} {
+    max-width: ${props => props.lgMaxWidth || '100%'};
+  }
+`;
 
 ResponsiveImage.propTypes = {
-  src: PropTypes.string.isRequired,
-  alt: PropTypes.string,
-  className: PropTypes.string,
-  sizes: PropTypes.shape({
-    xs: PropTypes.string,
-    sm: PropTypes.string,
-    md: PropTypes.string,
-    lg: PropTypes.string,
-    xl: PropTypes.string,
-    xxl: PropTypes.string,
-  }),
+  smMaxWidth: PropTypes.string,
+  mdMaxWidth: PropTypes.string,
+  lgMaxWidth: PropTypes.string,
 };
 
 // Компонент для адаптивного видео
-const ResponsiveVideo = ({ 
-  src, 
-  controls = true,
-  autoplay = false,
-  muted = true,
-  loop = false,
-  className = '',
-  ...props 
-}) => {
-  const breakpoint = useBreakpoint();
+export const ResponsiveVideo = styled.video`
+  width: 100%;
+  height: auto;
   
-  return (
-    <video 
-      className={`w-full h-auto object-cover ${className}`}
-      controls={controls}
-      autoplay={autoplay}
-      muted={muted}
-      loop={loop}
-      {...props}
-    >
-      <source src={src} type="video/mp4" />
-      Ваш браузер не поддерживает видео.
-    </video>
-  );
-};
+  @media ${media.sm} {
+    max-width: ${props => props.smMaxWidth || '100%'};
+  }
+  
+  @media ${media.md} {
+    max-width: ${props => props.mdMaxWidth || '100%'};
+  }
+  
+  @media ${media.lg} {
+    max-width: ${props => props.lgMaxWidth || '100%'};
+  }
+`;
 
 ResponsiveVideo.propTypes = {
-  src: PropTypes.string.isRequired,
-  controls: PropTypes.bool,
-  autoplay: PropTypes.bool,
-  muted: PropTypes.bool,
-  loop: PropTypes.bool,
-  className: PropTypes.string,
+  smMaxWidth: PropTypes.string,
+  mdMaxWidth: PropTypes.string,
+  lgMaxWidth: PropTypes.string,
 };
 
-// Компонент для отображения текущего размера экрана (для отладки)
-const BreakpointIndicator = ({ className = '', ...props }) => {
-  const breakpoint = useBreakpoint();
-  
-  const getBreakpointName = () => {
-    if (breakpoint.isXs) return 'XS (<640px)';
-    if (breakpoint.isSm) return 'SM (640-768px)';
-    if (breakpoint.isMd) return 'MD (768-1024px)';
-    if (breakpoint.isLg) return 'LG (1024-1280px)';
-    if (breakpoint.isXl) return 'XL (1280-1536px)';
-    if (breakpoint.is2xl) return '2XL (≥1536px)';
-    return 'Unknown';
-  };
-  
-  return (
-    <div 
-      className={`fixed bottom-4 left-4 bg-black bg-opacity-75 text-white text-xs px-3 py-2 rounded-lg z-50 ${className}`}
-      {...props}
-    >
-      <div>{getBreakpointName()}</div>
-      <div>{breakpoint.width} × {breakpoint.height}</div>
-    </div>
-  );
-};
-
-BreakpointIndicator.propTypes = {
-  className: PropTypes.string,
-};
-
-export default ResponsiveContainer;
-export { 
-  useBreakpoint, 
-  ResponsiveGrid, 
-  ResponsiveSpacing, 
-  ResponsiveText, 
-  ResponsiveButton, 
-  ResponsiveImage, 
+export default {
+  Hide,
+  Show,
+  Container,
+  Grid,
+  Spacer,
+  ResponsiveText,
+  useResponsive,
+  Responsive,
+  ResponsiveImage,
   ResponsiveVideo,
-  BreakpointIndicator 
 };

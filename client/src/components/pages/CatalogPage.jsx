@@ -5,11 +5,14 @@ import { useTheme } from '../common/ThemeProvider';
 import { useFontSize } from '../common/FontSizeController';
 import { useBreakpoint } from '../common/Responsive';
 import { useMobilePerformance } from '../common/MobilePerformance';
+import { useInfiniteAnimeList } from '../../query/hooks/useAnime';
+import { useQueryClient } from '@tanstack/react-query';
 import AnimeCard from '../common/AnimeCard';
 import AnimeFilter from '../common/AnimeFilter';
 import ScrollPagination from '../common/ScrollPagination';
 import Skeleton from '../common/Skeleton';
 import TextContrastChecker from '../common/TextContrastChecker';
+import { Alert } from '../common/Alert';
 import { colors, spacing, breakpoints } from '../../styles/designTokens';
 
 const CatalogPageContainer = styled.div`
@@ -176,167 +179,9 @@ const EmptyStateMessage = styled.p`
   line-height: 1.6;
 `;
 
-const ErrorState = styled.div`
-  text-align: center;
-  padding: ${spacing.xxl} ${spacing.lg};
-  color: ${colors.error};
+const ErrorBanner = styled(Alert)`
+  margin-bottom: ${spacing.xl};
 `;
-
-const ErrorStateIcon = styled.div`
-  font-size: 4rem;
-  margin-bottom: ${spacing.lg};
-`;
-
-const ErrorStateTitle = styled.h2`
-  font-size: ${props => props.fontSize * 1.8}px;
-  margin-bottom: ${spacing.md};
-`;
-
-const ErrorStateMessage = styled.p`
-  font-size: ${props => props.fontSize * 1.1}px;
-  max-width: 600px;
-  margin: 0 auto ${spacing.lg};
-  line-height: 1.6;
-`;
-
-const RetryButton = styled.button`
-  margin-top: ${spacing.lg};
-  padding: ${spacing.sm} ${spacing.md};
-  background-color: ${colors.primary};
-  color: white;
-  border: none;
-  border-radius: ${spacing.sm};
-  font-size: ${props => props.fontSize}px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  
-  &:hover {
-    background-color: ${colors.primaryHover};
-  }
-  
-  &:focus {
-    outline: none;
-    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
-  }
-`;
-
-// Mock data - replace with actual API calls
-const mockAnimeData = [
-  {
-    id: 1,
-    title: 'Атака Титанов',
-    titleEn: 'Attack on Titan',
-    titleJp: '進撃の巨人',
-    description: 'В мире, где человечество на грани уничтожения из-за гигантских существ...',
-    image: '/images/anime/attack-on-titan.jpg',
-    rating: 8.9,
-    episodes: 75,
-    status: 'Завершено',
-    genres: ['Экшн', 'Драма', 'Фэнтези', 'Триллер'],
-    studios: ['Wit Studio', 'MAPPA'],
-    year: 2013,
-    season: 'Весна',
-    duration: '24 мин',
-    score: 9.0,
-    popularity: 95,
-    isFavorite: false,
-  },
-  {
-    id: 2,
-    title: 'Ванпанчмен',
-    titleEn: 'One-Punch Man',
-    titleJp: 'ワンパンマン',
-    description: 'История о Сайтаме, который может побеждить любого противника одним ударом...',
-    image: '/images/anime/one-punch-man.jpg',
-    rating: 8.7,
-    episodes: 24,
-    status: 'Завершено',
-    genres: ['Экшн', 'Комедия', 'Супергероика', 'Сэйнэн'],
-    studios: ['Madhouse', 'J.C.Staff'],
-    year: 2015,
-    season: 'Осень',
-    duration: '24 мин',
-    score: 8.7,
-    popularity: 92,
-    isFavorite: true,
-  },
-  {
-    id: 3,
-    title: 'Твое имя',
-    titleEn: 'Your Name',
-    titleJp: '君の名は。',
-    description: 'История о двух подростках, которые обмениваются телами...',
-    image: '/images/anime/your-name.jpg',
-    rating: 8.4,
-    episodes: 1,
-    status: 'Фильм',
-    genres: ['Романтика', 'Драма', 'Фэнтези', 'Супернатуральное'],
-    studios: ['CoMix Wave Films'],
-    year: 2016,
-    season: 'Лето',
-    duration: '106 мин',
-    score: 8.4,
-    popularity: 88,
-    isFavorite: false,
-  },
-  {
-    id: 4,
-    title: 'Магический индекс',
-    titleEn: 'A Certain Magical Index',
-    titleJp: 'とある魔術の禁書目録',
-    description: 'В мире, где существуют как магия, так и наука...',
-    image: '/images/anime/a-certain-magical-index.jpg',
-    rating: 7.9,
-    episodes: 24,
-    status: 'Завершено',
-    genres: ['Экшн', 'Сэйнэн', 'Супернатуральное', 'Научная фантастика'],
-    studios: ['J.C.Staff'],
-    year: 2008,
-    season: 'Зима',
-    duration: '24 мин',
-    score: 7.9,
-    popularity: 85,
-    isFavorite: false,
-  },
-  {
-    id: 5,
-    title: 'Наруто',
-    titleEn: 'Naruto',
-    titleJp: 'NARUTO－ナルト－',
-    description: 'История о мальчике-сироте, который мечтает стать Хокаге...',
-    image: '/images/anime/naruto.jpg',
-    rating: 8.2,
-    episodes: 220,
-    status: 'Завершено',
-    genres: ['Сэйнэн', 'Экшн', 'Приключения', 'Меха'],
-    studios: ['Pierrot'],
-    year: 2002,
-    season: 'Осень',
-    duration: '24 мин',
-    score: 8.2,
-    popularity: 90,
-    isFavorite: true,
-  },
-  {
-    id: 6,
-    title: 'Токийский гуль',
-    titleEn: 'Tokyo Ghoul',
-    titleJp: '東京喰種トーキョーグール',
-    description: 'Канeki Кен превращается в гуля после операции по пересадке органов...',
-    image: '/images/anime/tokyo-ghoul.jpg',
-    rating: 8.0,
-    episodes: 24,
-    status: 'Завершено',
-    genres: ['Экшн', 'Драма', 'Ужасы', 'Триллер'],
-    studios: ['Pierrot'],
-    year: 2014,
-    season: 'Лето',
-    duration: '24 мин',
-    score: 8.0,
-    popularity: 87,
-    isFavorite: false,
-  },
-];
 
 const CatalogPage = ({ 
   initialFilters = {}, 
@@ -351,148 +196,78 @@ const CatalogPage = ({
   const { fontSize } = useFontSize();
   const { isMobile, isTablet } = useBreakpoint();
   const { optimizeForMobile } = useMobilePerformance();
+  const queryClient = useQueryClient();
   
-  const [animeList, setAnimeList] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [hasMore, setHasMore] = useState(true);
-  const [page, setPage] = useState(1);
   const [filters, setFilters] = useState(initialFilters);
   const [sort, setSort] = useState(initialSort);
   const [searchQuery, setSearchQuery] = useState('');
   
-  // Simulate API call with mock data
-  const fetchAnime = useCallback(async (pageNum, currentFilters, currentSort) => {
-    setLoading(true);
-    setError(null);
-    
-    try {
-      // Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
-      // Filter and sort mock data
-      let filteredData = [...mockAnimeData];
-      
-      // Apply search filter
-      if (searchQuery) {
-        filteredData = filteredData.filter(anime => 
-          anime.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          anime.titleEn.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          anime.titleJp.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          anime.description.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-      }
-      
-      // Apply other filters
-      if (currentFilters.genres && currentFilters.genres.length > 0) {
-        filteredData = filteredData.filter(anime =>
-          anime.genres.some(genre => currentFilters.genres.includes(genre))
-        );
-      }
-      
-      if (currentFilters.status && currentFilters.status.length > 0) {
-        filteredData = filteredData.filter(anime =>
-          currentFilters.status.includes(anime.status)
-        );
-      }
-      
-      if (currentFilters.year) {
-        filteredData = filteredData.filter(anime =>
-          anime.year === currentFilters.year
-        );
-      }
-      
-      if (currentFilters.season) {
-        filteredData = filteredData.filter(anime =>
-          anime.season === currentFilters.season
-        );
-      }
-      
-      // Sort data
-      filteredData.sort((a, b) => {
-        switch (currentSort) {
-          case 'rating':
-            return b.rating - a.rating;
-          case 'popularity':
-            return b.popularity - a.popularity;
-          case 'year':
-            return b.year - a.year;
-          case 'score':
-            return b.score - a.score;
-          case 'episodes':
-            return b.episodes - a.episodes;
-          case 'title':
-            return a.title.localeCompare(b.title);
-          default:
-            return 0;
-        }
-      });
-      
-      // Simulate pagination
-      const startIndex = (pageNum - 1) * pageSize;
-      const endIndex = startIndex + pageSize;
-      const paginatedData = filteredData.slice(startIndex, endIndex);
-      
-      setAnimeList(prev => pageNum === 1 ? paginatedData : [...prev, ...paginatedData]);
-      setHasMore(endIndex < filteredData.length);
-      setPage(pageNum);
-      
-    } catch (err) {
-      setError('Не удалось загрузить аниме. Пожалуйста, попробуйте еще раз.');
-      console.error('Error fetching anime:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [searchQuery, pageSize]);
+  // Подготовка параметров для API вызова
+  const apiFilters = {
+    ...filters,
+    search: searchQuery,
+    sort,
+    order: sort === 'title' ? 'asc' : 'desc'
+  };
   
-  // Initial load
-  useEffect(() => {
-    fetchAnime(1, filters, sort);
-  }, [filters, sort, fetchAnime]);
+  // Используем useInfiniteAnimeList для получения данных с бесконечной прокруткой
+  const {
+    data,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetching,
+    isFetchingNextPage,
+    status
+  } = useInfiniteAnimeList(apiFilters, {
+    staleTime: 60 * 1000, // 60 секунд
+    cacheTime: 5 * 60 * 1000, // 5 минут
+    keepPreviousData: true,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false
+  });
   
-  // Handle filter changes
+  // Объединяем все страницы в один массив
+  const animeList = data?.pages?.flat() || [];
+  
+  // Общее количество аниме
+  const totalItems = data?.pages[0]?.pagination?.totalItems || 0;
+  
+  // Обработчик изменения фильтров
   const handleFilterChange = (newFilters) => {
     setFilters(newFilters);
-    setPage(1);
-    setAnimeList([]);
-    fetchAnime(1, newFilters, sort);
+    // Сбрасываем пагинацию при изменении фильтров
+    queryClient.removeQueries({ queryKey: ['anime', 'list', { ...newFilters, sort, search: searchQuery }] });
   };
   
-  // Handle search
+  // Обработчик поиска
   const handleSearch = (query) => {
     setSearchQuery(query);
-    setPage(1);
-    setAnimeList([]);
-    fetchAnime(1, filters, sort, query);
+    // Сбрасываем пагинацию при изменении поиска
+    queryClient.removeQueries({ queryKey: ['anime', 'list', { ...filters, sort, search: query }] });
   };
   
-  // Handle sort change
+  // Обработчик изменения сортировки
   const handleSortChange = (newSort) => {
     setSort(newSort);
-    setPage(1);
-    setAnimeList([]);
-    fetchAnime(1, filters, newSort);
+    // Сбрасываем пагинацию при изменении сортировки
+    queryClient.removeQueries({ queryKey: ['anime', 'list', { ...filters, sort: newSort, search: searchQuery }] });
   };
   
-  // Load more
+  // Обработчик переключения избранного
+  const handleToggleFavorite = (animeId) => {
+    // В реальном приложении здесь будет вызов API для обновления избранного
+    console.log('Toggle favorite for anime:', animeId);
+  };
+  
+  // Загрузить больше
   const loadMore = () => {
-    if (!loading && hasMore) {
-      fetchAnime(page + 1, filters, sort);
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
     }
   };
   
-  // Handle favorite toggle
-  const handleToggleFavorite = (animeId) => {
-    setAnimeList(prevList =>
-      prevList.map(anime =>
-        anime.id === animeId
-          ? { ...anime, isFavorite: !anime.isFavorite }
-          : anime
-      )
-    );
-  };
-  
-  // Optimize for mobile
+  // Оптимизация для мобильных устройств
   const optimizedGrid = optimizeForMobile
     ? { gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))' }
     : {};
@@ -526,7 +301,7 @@ const CatalogPage = ({
         <ResultsSection>
           <ResultsHeader>
             <ResultsCount fontSize={fontSize}>
-              Найдено: {animeList.length} аниме
+              Найдено: {totalItems} аниме
             </ResultsCount>
             
             {showSorting && (
@@ -549,19 +324,40 @@ const CatalogPage = ({
             )}
           </ResultsHeader>
           
-          {error ? (
-            <ErrorState>
-              <ErrorStateIcon>⚠️</ErrorStateIcon>
-              <ErrorStateTitle fontSize={fontSize}>Ошибка загрузки</ErrorStateTitle>
-              <ErrorStateMessage fontSize={fontSize}>{error}</ErrorStateMessage>
-              <RetryButton
-                onClick={() => fetchAnime(1, filters, sort)}
-                fontSize={fontSize}
-              >
-                Попробовать снова
-              </RetryButton>
-            </ErrorState>
-          ) : animeList.length === 0 && !loading ? (
+          {/* Обработка ошибок с использованием Alert компонента */}
+          {error && (
+            <ErrorBanner 
+              variant="error" 
+              title="Ошибка загрузки"
+              description="Не удалось загрузить аниме. Пожалуйста, попробуйте еще раз."
+              actions={
+                <button 
+                  onClick={() => queryClient.resetQueries({ queryKey: ['anime', 'list', apiFilters] })}
+                  style={{
+                    padding: '8px 16px',
+                    backgroundColor: colors.primary,
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '14px'
+                  }}
+                >
+                  Попробовать снова
+                </button>
+              }
+            />
+          )}
+          
+          {status === 'loading' && !animeList.length ? (
+            <EmptyState>
+              <EmptyStateIcon>⏳</EmptyStateIcon>
+              <EmptyStateTitle fontSize={fontSize}>Загрузка...</EmptyStateTitle>
+              <EmptyStateMessage fontSize={fontSize}>
+                Пожалуйста, подождите, пока мы загружаем аниме для вас
+              </EmptyStateMessage>
+            </EmptyState>
+          ) : status === 'success' && animeList.length === 0 ? (
             <EmptyState>
               <EmptyStateIcon>🔍</EmptyStateIcon>
               <EmptyStateTitle fontSize={fontSize}>Ничего не найдено</EmptyStateTitle>
@@ -581,7 +377,8 @@ const CatalogPage = ({
                   />
                 ))}
                 
-                {loading && (
+                {/* Skeleton loaders для загрузки дополнительных страниц */}
+                {isFetchingNextPage && (
                   <>
                     {[...Array(pageSize)].map((_, index) => (
                       <div key={`skeleton-${index}`}>
@@ -594,13 +391,14 @@ const CatalogPage = ({
                 )}
               </AnimeGrid>
               
-              {showPagination && hasMore && (
+              {/* Кнопка загрузки больше для мобильных устройств */}
+              {showPagination && hasNextPage && (
                 <LoadMoreButton
                   onClick={loadMore}
-                  disabled={loading}
+                  disabled={isFetchingNextPage}
                   fontSize={fontSize}
                 >
-                  {loading ? 'Загрузка...' : 'Загрузить еще'}
+                  {isFetchingNextPage ? 'Загрузка...' : 'Загрузить еще'}
                 </LoadMoreButton>
               )}
             </>

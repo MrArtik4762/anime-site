@@ -304,7 +304,7 @@ export const validateSchedule = (schedule) => {
   };
 };
 
-export default {
+const autoThemeSwitchUtils = {
   getThemeForTime,
   getAutoThemeSettings,
   saveAutoThemeSettings,
@@ -315,3 +315,5 @@ export default {
   isValidTime,
   validateSchedule
 };
+
+export default autoThemeSwitchUtils;

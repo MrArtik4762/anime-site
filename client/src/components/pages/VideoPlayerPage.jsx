@@ -13,21 +13,28 @@ import Rating from '../common/Rating';
 import Breadcrumb from '../common/Breadcrumb';
 import Skeleton from '../common/Skeleton';
 import Alert from '../common/Alert';
-import { colors, spacing, breakpoints } from '../../styles/designTokens';
+import { colors, spacing, breakpoints, borderRadius, shadow, animations } from '../../styles/designTokens';
 
 const VideoPlayerContainer = styled.div`
   min-height: 100vh;
-  background-color: ${props => props.theme === 'dark' ? colors.background : colors.background};
-  color: ${props => props.theme === 'dark' ? colors.text : colors.text};
+  background: ${props => props.theme === 'dark' ?
+    'linear-gradient(135deg, #0F172A 0%, #1E293B 100%)' :
+    'linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%)'};
+  color: ${props => props.theme === 'dark' ? colors.text.primary : colors.text.primary};
+  transition: all ${animations.durations.normal} ease;
 `;
 
 const VideoPlayerHeader = styled.header`
   position: sticky;
   top: 0;
   z-index: 100;
-  background-color: ${props => props.theme === 'dark' ? colors.background : colors.background};
-  border-bottom: 1px solid ${props => props.theme === 'dark' ? colors.border : colors.border};
+  background: ${props => props.theme === 'dark' ?
+    'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%)' :
+    'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%)'};
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid ${props => props.theme === 'dark' ? colors.border.lightDark : colors.border.light};
   padding: ${spacing.md} 0;
+  animation: ${animations.keyframes.slideFadeIn} 0.5s ease-out;
 `;
 
 const VideoPlayerHeaderContent = styled.div`
@@ -56,17 +63,26 @@ const VideoPlayerMain = styled.main`
 const VideoPlayerWrapper = styled.div`
   position: relative;
   width: 100%;
-  background-color: ${props => props.theme === 'dark' ? colors.surface : colors.background};
-  border-radius: ${spacing.md};
+  background: ${props => props.theme === 'dark' ?
+    'linear-gradient(135deg, #1E293B 0%, #334155 100%)' :
+    'linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%)'};
+  border-radius: ${borderRadius.xl};
   overflow: hidden;
   margin-bottom: ${spacing.xl};
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  box-shadow: ${shadow.md};
+  transition: all ${animations.durations.normal} cubic-bezier(0.4, 0, 0.2, 1);
+  
+  &:hover {
+    box-shadow: ${shadow.lg};
+    transform: translateY(-2px);
+  }
 `;
 
 const VideoPlayer = styled.video`
   width: 100%;
   height: ${props => props.isMobile ? '300px' : '600px'};
   background-color: #000;
+  border-radius: ${borderRadius.xl};
   
   @media (max-width: ${breakpoints.tablet}) {
     height: 450px;
@@ -84,23 +100,50 @@ const VideoPlayerControls = styled.div`
   right: 0;
   background: linear-gradient(
     to top,
-    rgba(0, 0, 0, 0.8) 0%,
-    rgba(0, 0, 0, 0.4) 50%,
+    rgba(0, 0, 0, 0.95) 0%,
+    rgba(0, 0, 0, 0.7) 40%,
     rgba(0, 0, 0, 0) 100%
   );
+  backdrop-filter: blur(10px);
   padding: ${spacing.md};
   display: flex;
   flex-direction: column;
   gap: ${spacing.sm};
+  border-bottom-left-radius: ${borderRadius.xl};
+  border-bottom-right-radius: ${borderRadius.xl};
+  transition: all ${animations.durations.normal} cubic-bezier(0.4, 0, 0.2, 1);
+  
+  ${props => !props.visible && `
+    opacity: 0;
+    transform: translateY(20px);
+    pointer-events: none;
+  `}
 `;
 
 const VideoPlayerProgress = styled.div`
   width: 100%;
-  height: 4px;
-  background-color: rgba(255, 255, 255, 0.3);
-  border-radius: 2px;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: ${borderRadius.sm};
   cursor: pointer;
   position: relative;
+  overflow: hidden;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg,
+      ${colors.primary} 0%,
+      ${colors.secondary} 50%,
+      ${colors.primary} 100%);
+    background-size: 200% 100%;
+    animation: ${animations.keyframes.shimmer} 3s infinite;
+    opacity: 0.1;
+  }
 `;
 
 const VideoPlayerProgressFilled = styled.div`
@@ -108,9 +151,12 @@ const VideoPlayerProgressFilled = styled.div`
   top: 0;
   left: 0;
   height: 100%;
-  background-color: ${colors.primary};
-  border-radius: 2px;
+  background: linear-gradient(90deg,
+    ${colors.primary} 0%,
+    ${colors.secondary} 100%);
+  border-radius: ${borderRadius.sm};
   width: ${props => props.progress}%;
+  transition: width ${animations.durations.normal} ease;
 `;
 
 const VideoPlayerProgressBuffered = styled.div`
@@ -118,8 +164,8 @@ const VideoPlayerProgressBuffered = styled.div`
   top: 0;
   left: 0;
   height: 100%;
-  background-color: rgba(255, 255, 255, 0.2);
-  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: ${borderRadius.sm};
   width: ${props => props.progress}%;
 `;
 
@@ -142,17 +188,24 @@ const VideoPlayerControlsRight = styled.div`
 `;
 
 const VideoPlayerButton = styled.button`
-  background: none;
-  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   color: white;
   font-size: ${props => props.fontSize}px;
   cursor: pointer;
   padding: ${spacing.xs};
-  border-radius: ${spacing.sm};
-  transition: background-color 0.2s ease;
+  border-radius: ${borderRadius.full};
+  transition: all ${animations.durations.fast} ease;
+  backdrop-filter: blur(10px);
   
   &:hover {
-    background-color: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: scale(1.05);
+  }
+  
+  &:active {
+    transform: scale(0.95);
   }
   
   &:focus {
@@ -166,6 +219,8 @@ const VideoPlayerTime = styled.div`
   font-size: ${props => props.fontSize}px;
   min-width: 100px;
   text-align: center;
+  font-weight: ${props => props.theme.typography.fontWeight.medium};
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 `;
 
 const VideoPlayerVolume = styled.div`
@@ -179,42 +234,62 @@ const VideoPlayerVolumeSlider = styled.input`
   height: 4px;
   -webkit-appearance: none;
   appearance: none;
-  background: rgba(255, 255, 255, 0.3);
-  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: ${borderRadius.sm};
   outline: none;
   
   &::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
-    width: 12px;
-    height: 12px;
+    width: 14px;
+    height: 14px;
     border-radius: 50%;
     background: ${colors.primary};
     cursor: pointer;
+    transition: all ${animations.durations.fast} ease;
+    
+    &:hover {
+      transform: scale(1.2);
+      box-shadow: 0 0 8px ${colors.primary};
+    }
   }
   
   &::-moz-range-thumb {
-    width: 12px;
-    height: 12px;
+    width: 14px;
+    height: 14px;
     border-radius: 50%;
     background: ${colors.primary};
     cursor: pointer;
     border: none;
+    transition: all ${animations.durations.fast} ease;
+    
+    &:hover {
+      transform: scale(1.2);
+      box-shadow: 0 0 8px ${colors.primary};
+    }
   }
 `;
 
 const VideoPlayerQuality = styled.select`
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.6);
   color: white;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: ${spacing.sm};
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: ${borderRadius.sm};
   padding: ${spacing.xs} ${spacing.sm};
   font-size: ${props => props.fontSize}px;
   cursor: pointer;
+  backdrop-filter: blur(10px);
+  transition: all ${animations.durations.fast} ease;
+  
+  &:hover {
+    background: rgba(0, 0, 0, 0.7);
+    border-color: rgba(255, 255, 255, 0.3);
+  }
   
   &:focus {
     outline: none;
     border-color: ${colors.primary};
+    box-shadow: 0 0 0 2px ${colors.primary}20;
   }
 `;
 
@@ -225,6 +300,8 @@ const VideoPlayerEpisodes = styled.div`
 const VideoPlayerEpisodesTitle = styled.h2`
   font-size: ${props => props.fontSize * 1.8}px;
   margin-bottom: ${spacing.lg};
+  color: ${props => props.theme === 'dark' ? colors.text.primary : colors.text.primary};
+  font-weight: ${props => props.theme.typography.fontWeight.semibold};
 `;
 
 const VideoPlayerEpisodesGrid = styled.div`
@@ -242,43 +319,59 @@ const VideoPlayerEpisodesGrid = styled.div`
 `;
 
 const VideoPlayerEpisodeCard = styled.div`
-  background-color: ${props => props.theme === 'dark' ? colors.surface : colors.background};
+  background: ${props => props.theme === 'dark' ?
+    'linear-gradient(135deg, #1E293B 0%, #334155 100%)' :
+    'linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%)'};
   border: 2px solid ${props => props.active ? colors.primary : 'transparent'};
-  border-radius: ${spacing.md};
+  border-radius: ${borderRadius.lg};
   padding: ${spacing.sm};
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all ${animations.durations.normal} cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: ${props => props.active ? shadow.md : 'none'};
   
   &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: ${shadow.lg};
+    border-color: ${colors.primary}40;
   }
   
   &:focus {
     outline: none;
-    box-shadow: 0 0 0 2px ${colors.primary};
+    box-shadow: 0 0 0 3px ${colors.primary}20;
   }
 `;
 
 const VideoPlayerEpisodeNumber = styled.div`
   font-size: ${props => props.fontSize * 1.2}px;
-  font-weight: bold;
+  font-weight: ${props => props.theme.typography.fontWeight.bold};
   margin-bottom: ${spacing.xs};
   color: ${colors.primary};
+  background: linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 `;
 
 const VideoPlayerEpisodeTitle = styled.div`
   font-size: ${props => props.fontSize * 0.95}px;
-  color: ${props => props.theme === 'dark' ? colors.text : colors.text};
+  color: ${props => props.theme === 'dark' ? colors.text.secondary : colors.text.secondary};
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  transition: color ${animations.durations.fast} ease;
+  
+  &:hover {
+    color: ${props => props.theme === 'dark' ? colors.text.primary : colors.text.primary};
+  }
 `;
 
 const VideoPlayerEpisodeDuration = styled.div`
   font-size: ${props => props.fontSize * 0.85}px;
-  color: ${colors.textSecondary};
+  color: ${props => props.theme === 'dark' ? colors.text.tertiary : colors.text.tertiary};
   margin-top: ${spacing.xs};
+  display: flex;
+  align-items: center;
+  gap: ${spacing.xs};
 `;
 
 const VideoPlayerInfo = styled.div`
@@ -293,20 +386,36 @@ const VideoPlayerInfo = styled.div`
 `;
 
 const VideoPlayerAnimeInfo = styled.div`
-  background-color: ${props => props.theme === 'dark' ? colors.surface : colors.background};
-  border-radius: ${spacing.md};
+  background: ${props => props.theme === 'dark' ?
+    'linear-gradient(135deg, #1E293B 0%, #334155 100%)' :
+    'linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%)'};
+  border-radius: ${borderRadius.xl};
   padding: ${spacing.lg};
-  border: 1px solid ${props => props.theme === 'dark' ? colors.border : colors.border};
+  border: 1px solid ${props => props.theme === 'dark' ? colors.border.lightDark : colors.border.light};
+  box-shadow: ${shadow.sm};
+  transition: all ${animations.durations.normal} ease;
+  
+  &:hover {
+    box-shadow: ${shadow.md};
+    transform: translateY(-2px);
+  }
 `;
 
 const VideoPlayerAnimeTitle = styled.h2`
   font-size: ${props => props.fontSize * 2}px;
   margin-bottom: ${spacing.md};
+  color: ${props => props.theme === 'dark' ? colors.text.primary : colors.text.primary};
+  font-weight: ${props => props.theme.typography.fontWeight.semibold};
+  background: linear-gradient(135deg, ${props => props.theme === 'dark' ? colors.text.primary : colors.text.primary} 0%, ${colors.primary} 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 `;
 
 const VideoPlayerAnimeDescription = styled.div`
   line-height: 1.6;
   margin-bottom: ${spacing.lg};
+  color: ${props => props.theme === 'dark' ? colors.text.secondary : colors.text.secondary};
 `;
 
 const VideoPlayerAnimeStats = styled.div`
@@ -319,19 +428,33 @@ const VideoPlayerAnimeStats = styled.div`
 const VideoPlayerAnimeStat = styled.div`
   text-align: center;
   padding: ${spacing.sm};
-  background-color: ${props => props.theme === 'dark' ? colors.border : colors.borderLight};
-  border-radius: ${spacing.sm};
+  background: ${props => props.theme === 'dark' ?
+    'linear-gradient(135deg, #334155 0%, #475569 100%)' :
+    'linear-gradient(135deg, #F1F5F9 0%, #E2E8F0 100%)'};
+  border-radius: ${borderRadius.lg};
+  border: 1px solid ${props => props.theme === 'dark' ? colors.border.lightDark : colors.border.light};
+  transition: all ${animations.durations.fast} ease;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: ${shadow.sm};
+  }
 `;
 
 const VideoPlayerAnimeStatValue = styled.div`
   font-size: ${props => props.fontSize * 1.3}px;
-  font-weight: bold;
+  font-weight: ${props => props.theme.typography.fontWeight.bold};
   color: ${colors.primary};
+  background: linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 `;
 
 const VideoPlayerAnimeStatLabel = styled.div`
   font-size: ${props => props.fontSize * 0.9}px;
-  color: ${colors.textSecondary};
+  color: ${props => props.theme === 'dark' ? colors.text.tertiary : colors.text.tertiary};
+  margin-top: ${spacing.xs};
 `;
 
 const VideoPlayerAnimeActions = styled.div`
@@ -341,15 +464,20 @@ const VideoPlayerAnimeActions = styled.div`
 `;
 
 const VideoPlayerComments = styled.div`
-  background-color: ${props => props.theme === 'dark' ? colors.surface : colors.background};
-  border-radius: ${spacing.md};
+  background: ${props => props.theme === 'dark' ?
+    'linear-gradient(135deg, #1E293B 0%, #334155 100%)' :
+    'linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%)'};
+  border-radius: ${borderRadius.xl};
   padding: ${spacing.lg};
-  border: 1px solid ${props => props.theme === 'dark' ? colors.border : colors.border};
+  border: 1px solid ${props => props.theme === 'dark' ? colors.border.lightDark : colors.border.light};
+  box-shadow: ${shadow.sm};
 `;
 
 const VideoPlayerCommentsTitle = styled.h2`
   font-size: ${props => props.fontSize * 1.8}px;
   margin-bottom: ${spacing.lg};
+  color: ${props => props.theme === 'dark' ? colors.text.primary : colors.text.primary};
+  font-weight: ${props => props.theme.typography.fontWeight.semibold};
 `;
 
 const VideoPlayerCommentsList = styled.div`
@@ -361,17 +489,30 @@ const VideoPlayerCommentsList = styled.div`
 const VideoPlayerComment = styled.div`
   display: flex;
   gap: ${spacing.md};
+  padding: ${spacing.md};
+  background: ${props => props.theme === 'dark' ?
+    'linear-gradient(135deg, #334155 0%, #475569 100%)' :
+    'linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%)'};
+  border-radius: ${borderRadius.lg};
+  transition: all ${animations.durations.fast} ease;
+  
+  &:hover {
+    transform: translateX(4px);
+    box-shadow: ${shadow.sm};
+  }
 `;
 
 const VideoPlayerCommentAvatar = styled.div`
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background-color: ${props => props.theme === 'dark' ? colors.border : colors.borderLight};
+  background: linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: ${props => props.fontSize * 1.5}px;
+  color: white;
+  flex-shrink: 0;
 `;
 
 const VideoPlayerCommentContent = styled.div`
@@ -379,18 +520,20 @@ const VideoPlayerCommentContent = styled.div`
 `;
 
 const VideoPlayerCommentAuthor = styled.div`
-  font-weight: bold;
+  font-weight: ${props => props.theme.typography.fontWeight.semibold};
   margin-bottom: ${spacing.xs};
+  color: ${props => props.theme === 'dark' ? colors.text.primary : colors.text.primary};
 `;
 
 const VideoPlayerCommentText = styled.div`
   line-height: 1.5;
   margin-bottom: ${spacing.xs};
+  color: ${props => props.theme === 'dark' ? colors.text.secondary : colors.text.secondary};
 `;
 
 const VideoPlayerCommentTime = styled.div`
   font-size: ${props => props.fontSize * 0.85}px;
-  color: ${colors.textSecondary};
+  color: ${props => props.theme === 'dark' ? colors.text.tertiary : colors.text.tertiary};
 `;
 
 const VideoPlayerCommentActions = styled.div`
@@ -402,12 +545,13 @@ const VideoPlayerCommentActions = styled.div`
 const VideoPlayerCommentAction = styled.button`
   background: none;
   border: none;
-  color: ${colors.textSecondary};
+  color: ${props => props.theme === 'dark' ? colors.text.tertiary : colors.text.tertiary};
   font-size: ${props => props.fontSize * 0.9}px;
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: ${spacing.xs};
+  transition: color ${animations.durations.fast} ease;
   
   &:hover {
     color: ${colors.primary};
@@ -427,8 +571,10 @@ const VideoPlayerLoading = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(5px);
   z-index: 10;
+  border-radius: ${borderRadius.xl};
 `;
 
 const VideoPlayerLoadingSpinner = styled.div`
@@ -454,36 +600,51 @@ const VideoPlayerError = styled.div`
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background-color: rgba(0, 0, 0, 0.8);
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.9) 0%, rgba(30, 41, 59, 0.9) 100%);
+  backdrop-filter: blur(10px);
   z-index: 10;
   color: white;
   padding: ${spacing.lg};
   text-align: center;
+  border-radius: ${borderRadius.xl};
+  animation: ${animations.keyframes.slideFadeIn} 0.5s ease-out;
 `;
 
 const VideoPlayerErrorIcon = styled.div`
   font-size: 3rem;
   margin-bottom: ${spacing.lg};
+  background: linear-gradient(135deg, ${colors.error} 0%, ${colors.warning} 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 `;
 
 const VideoPlayerErrorTitle = styled.h2`
   font-size: ${props => props.fontSize * 1.8}px;
   margin-bottom: ${spacing.sm};
+  color: ${colors.text.inverse};
+  font-weight: ${props => props.theme.typography.fontWeight.semibold};
 `;
 
 const VideoPlayerErrorText = styled.p`
   font-size: ${props => props.fontSize * 1.1}px;
   margin-bottom: ${spacing.lg};
   max-width: 600px;
+  color: ${colors.text.tertiary};
+  line-height: 1.6;
 `;
 
 const VideoPlayerErrorButton = styled(Button)`
-  background-color: ${colors.primary};
+  background: linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 100%);
   color: white;
   border: none;
+  padding: ${spacing.sm} ${spacing.lg};
+  font-weight: ${props => props.theme.typography.fontWeight.medium};
+  transition: all ${animations.durations.normal} ease;
   
   &:hover {
-    background-color: ${colors.primaryHover};
+    transform: translateY(-2px);
+    box-shadow: ${shadow.lg};
   }
 `;
 
@@ -577,6 +738,8 @@ const VideoPlayerPage = ({ id: propId }) => {
   const [quality, setQuality] = useState('1080p');
   const [showControls, setShowControls] = useState(true);
   const [controlsTimeout, setControlsTimeout] = useState(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isBuffering, setIsBuffering] = useState(false);
   
   // Get video ID from props or URL params
   const videoId = propId || id;
@@ -696,6 +859,50 @@ const VideoPlayerPage = ({ id: propId }) => {
     }, 3000));
   };
   
+  const handleMouseActivity = useCallback(() => {
+    setShowControls(true);
+    if (controlsTimeout) {
+      clearTimeout(controlsTimeout);
+    }
+    const timeout = setTimeout(() => {
+      if (!isMobile) {
+        setShowControls(false);
+      }
+    }, 3000);
+    setControlsTimeout(timeout);
+  }, [controlsTimeout, isMobile]);
+  
+  const handleMouseLeave = useCallback(() => {
+    if (controlsTimeout) {
+      clearTimeout(controlsTimeout);
+      setControlsTimeout(null);
+    }
+  }, [controlsTimeout]);
+  
+  const handleBuffering = useCallback(() => {
+    setIsBuffering(true);
+    setTimeout(() => setIsBuffering(false), 1000);
+  }, []);
+  
+  // Обработка событий для полноэкранного режима
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+    
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
+    };
+  }, []);
+  
   // Format time
   const formatTime = (time) => {
     const minutes = Math.floor(time / 60);
@@ -768,7 +975,11 @@ const VideoPlayerPage = ({ id: propId }) => {
   }
   
   return (
-    <VideoPlayerContainer theme={theme} onMouseMove={handleMouseMove}>
+    <VideoPlayerContainer
+      theme={theme}
+      onMouseMove={handleMouseActivity}
+      onMouseLeave={handleMouseLeave}
+    >
       <VideoPlayerHeader>
         <VideoPlayerHeaderContent>
           <Breadcrumb
@@ -797,11 +1008,12 @@ const VideoPlayerPage = ({ id: propId }) => {
             onPause={handlePause}
             onTimeUpdate={handleTimeUpdate}
             onLoadedMetadata={handleLoadedMetadata}
+            onWaiting={handleBuffering}
             isMobile={isMobile}
           />
           
           {showControls && (
-            <VideoPlayerControls>
+            <VideoPlayerControls visible={showControls}>
               <VideoPlayerProgress onClick={handleProgressClick}>
                 <VideoPlayerProgressBuffered progress={75} />
                 <VideoPlayerProgressFilled progress={progress} />
@@ -849,16 +1061,18 @@ const VideoPlayerPage = ({ id: propId }) => {
                   </VideoPlayerQuality>
                   
                   <VideoPlayerButton onClick={handleFullscreen} fontSize={fontSize}>
-                    ⛶
+                    {isFullscreen ? '⛶' : '⛶'}
                   </VideoPlayerButton>
                 </VideoPlayerControlsRight>
               </VideoPlayerControlsRow>
             </VideoPlayerControls>
           )}
           
-          <VideoPlayerLoading>
-            <VideoPlayerLoadingSpinner />
-          </VideoPlayerLoading>
+          {isBuffering && (
+            <VideoPlayerLoading>
+              <VideoPlayerLoadingSpinner />
+            </VideoPlayerLoading>
+          )}
         </VideoPlayerWrapper>
         
         <VideoPlayerEpisodes>

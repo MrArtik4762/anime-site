@@ -32,17 +32,19 @@ const authenticate = async (req, res, next) => {
         return res.status(HTTP_STATUS.UNAUTHORIZED).json({
           success: false,
           error: {
-            message: ERROR_MESSAGES.USER_NOT_FOUND
+            message: ERROR_MESSAGES.USER_NOT_FOUND,
+            code: 'USER_NOT_FOUND'
           }
         });
       }
 
       // РџСЂРѕРІРµСЂСЏРµРј Р°РєС‚РёРІРЅРѕСЃС‚СЊ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
-      if (!user.is_active) {
+      if (!user.isUserActive()) {
         return res.status(HTTP_STATUS.FORBIDDEN).json({
           success: false,
           error: {
-            message: 'РђРєРєР°СѓРЅС‚ Р·Р°Р±Р»РѕРєРёСЂРѕРІР°РЅ РёР»Рё РЅРµР°РєС‚РёРІРµРЅ'
+            message: 'РђРєРєР°СѓРЅС‚ Р·Р°Р±Р»РѕРєРёСЂРѕРІР°РЅ РёР»Рё РЅРµР°РєС‚РёРІРµРЅ',
+            code: 'ACCOUNT_INACTIVE'
           }
         });
       }
@@ -52,12 +54,40 @@ const authenticate = async (req, res, next) => {
       next();
 
     } catch (error) {
-      return res.status(HTTP_STATUS.UNAUTHORIZED).json({
-        success: false,
-        error: {
-          message: ERROR_MESSAGES.INVALID_TOKEN
-        }
-      });
+      if (error.name === 'TokenExpiredError') {
+        return res.status(HTTP_STATUS.UNAUTHORIZED).json({
+          success: false,
+          error: {
+            message: 'Срок действия токена истек',
+            code: 'TOKEN_EXPIRED'
+          }
+        });
+      } else if (error.name === 'JsonWebTokenError') {
+        return res.status(HTTP_STATUS.UNAUTHORIZED).json({
+          success: false,
+          error: {
+            message: 'Недействительный токен',
+            code: 'INVALID_TOKEN'
+          }
+        });
+      } else if (error.name === 'NotBeforeError') {
+        return res.status(HTTP_STATUS.UNAUTHORIZED).json({
+          success: false,
+          error: {
+            message: 'Токен еще не активен',
+            code: 'TOKEN_NOT_ACTIVE'
+          }
+        });
+      } else {
+        console.error('Token verification error:', error);
+        return res.status(HTTP_STATUS.UNAUTHORIZED).json({
+          success: false,
+          error: {
+            message: 'Ошибка проверки токена',
+            code: 'TOKEN_VERIFICATION_ERROR'
+          }
+        });
+      }
     }
 
   } catch (error) {
@@ -119,7 +149,7 @@ const optionalAuth = async (req, res, next) => {
       // РџРѕР»СѓС‡Р°РµРј РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РёР· Р±Р°Р·С‹ РґР°РЅРЅС‹С…
       const user = await User.findById(decoded.id);
 
-      if (user && user.is_active) {
+      if (user && user.isUserActive()) {
         req.user = user;
       } else {
         req.user = null;

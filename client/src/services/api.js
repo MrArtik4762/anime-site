@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { authService } from './authService';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
@@ -14,7 +15,7 @@ const api = axios.create({
 // Интерцептор для добавления токена авторизации
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
+    const token = require('../services/authService').authService.getToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }

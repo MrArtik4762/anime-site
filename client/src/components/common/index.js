@@ -7,6 +7,9 @@ export { default as Checkbox, CheckboxGroup as CheckboxGroupComponent } from './
 export { default as Radio, RadioGroup as RadioGroupComponent } from './Radio';
 export { default as Switch } from './Switch';
 
+// Экспорт компонента поиска
+export { default as SearchBox } from './SearchBox';
+
 // Экспорт компонентов отображения
 export { default as Modal, ModalSimple, ModalConfirm } from './Modal';
 export { default as Card, CardGroup as CardGroupComponent, CardGrid as CardGridComponent, CardList as CardListComponent } from './Card';

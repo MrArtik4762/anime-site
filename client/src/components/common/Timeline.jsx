@@ -1,695 +1,613 @@
-import React from 'react';
-import styled from 'styled-components';
+import React, { memo } from 'react';
 import PropTypes from 'prop-types';
+import { styled } from 'styled-components';
 
-// Контейнер для временной линии
+// Стилизованный контейнер для временной линии
 const TimelineContainer = styled.div`
   position: relative;
-  padding-left: ${props => props.theme.spacing[6]};
+  padding-left: ${props => props.theme.spacing.medium};
   
-  &::before {
-    content: '';
-    position: absolute;
-    left: ${props => props.theme.spacing[3]};
-    top: 0;
-    bottom: 0;
-    width: 2px;
-    background-color: ${props => props.theme.colors.border.medium};
-  }
+  ${props => props.size === 'small' && `
+    padding-left: ${props.theme.spacing.small};
+  `}
+  
+  ${props => props.size === 'large' && `
+    padding-left: ${props.theme.spacing.large};
+  `}
+  
+  ${props => props.vertical === 'right' && `
+    padding-left: 0;
+    padding-right: ${props.theme.spacing.medium};
+  `}
+  
+  ${props => props.compact && `
+    padding-left: ${props.theme.spacing.xsmall};
+  `}
 `;
 
-// Элемент временной линии
+// Стилизованная линия временной шкалы
+const TimelineLine = styled.div`
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background-color: ${props => props.theme.colors.border};
+  
+  ${props => props.vertical === 'right' && `
+    right: 0;
+    left: auto;
+  `}
+  
+  ${props => props.variant === 'dashed' && `
+    background-image: linear-gradient(to bottom, ${props.theme.colors.border} 50%, transparent 50%);
+    background-size: 8px 8px;
+  `}
+  
+  ${props => props.variant === 'dotted' && `
+    background-image: radial-gradient(circle, ${props.theme.colors.border} 1px, transparent 1px);
+    background-size: 8px 8px;
+  `}
+  
+  ${props => props.variant === 'double' && `
+    width: 4px;
+    background: linear-gradient(to right, ${props.theme.colors.border} 0%, ${props.theme.colors.surface} 50%, ${props.theme.colors.border} 100%);
+  `}
+  
+  ${props => props.variant === 'gradient' && `
+    background: linear-gradient(to bottom, ${props.theme.colors.primary}, ${props.theme.colors.secondary});
+  `}
+`;
+
+// Стилизованная точка временной шкалы
+const TimelineDot = styled.div`
+  position: absolute;
+  width: ${props => {
+    if (props.size === 'small') return '8px';
+    if (props.size === 'large') return '16px';
+    return '12px';
+  }};
+  height: ${props => {
+    if (props.size === 'small') return '8px';
+    if (props.size === 'large') return '16px';
+    return '12px';
+  }};
+  border-radius: 50%;
+  background-color: ${props => {
+    if (props.variant === 'primary') return props.theme.colors.primary;
+    if (props.variant === 'secondary') return props.theme.colors.secondary;
+    if (props.variant === 'success') return props.theme.colors.success;
+    if (props.variant === 'warning') return props.theme.colors.warning;
+    if (props.variant === 'error') return props.theme.colors.error;
+    if (props.variant === 'info') return props.theme.colors.info;
+    if (props.variant === 'dark') return props.theme.colors.dark;
+    return props.theme.colors.border;
+  }};
+  left: ${props => {
+    if (props.vertical === 'right') return 'auto';
+    if (props.size === 'small') return `-${props.theme.spacing.xxsmall}`;
+    if (props.size === 'large') return `-${props.theme.spacing.small}`;
+    return `-${props.theme.spacing.xsmall}`;
+  }};
+  right: ${props => {
+    if (props.vertical === 'right') {
+      if (props.size === 'small') return `-${props.theme.spacing.xxsmall}`;
+      if (props.size === 'large') return `-${props.theme.spacing.small}`;
+      return `-${props.theme.spacing.xsmall}`;
+    }
+    return 'auto';
+  }};
+  transform: translateX(-50%);
+  border: 2px solid ${props => props.theme.colors.surface};
+  z-index: 1;
+  
+  ${props => props.variant === 'outline' && `
+    background-color: transparent;
+    border-color: ${props => {
+      if (props.variant === 'primary') return props.theme.colors.primary;
+      if (props.variant === 'secondary') return props.theme.colors.secondary;
+      if (props.variant === 'success') return props.theme.colors.success;
+      if (props.variant === 'warning') return props.theme.colors.warning;
+      if (props.variant === 'error') return props.theme.colors.error;
+      if (props.variant === 'info') return props.theme.colors.info;
+      if (props.variant === 'dark') return props.theme.colors.dark;
+      return props.theme.colors.border;
+    }};
+  `}
+  
+  ${props => props.variant === 'ghost' && `
+    background-color: transparent;
+    border-color: transparent;
+    box-shadow: 0 0 0 2px ${props => {
+      if (props.variant === 'primary') return props.theme.colors.primary;
+      if (props.variant === 'secondary') return props.theme.colors.secondary;
+      if (props.variant === 'success') return props.theme.colors.success;
+      if (props.variant === 'warning') return props.theme.colors.warning;
+      if (props.variant === 'error') return props.theme.colors.error;
+      if (props.variant === 'info') return props.theme.colors.info;
+      if (props.variant === 'dark') return props.theme.colors.dark;
+      return props.theme.colors.border;
+    }};
+  `}
+`;
+
+// Стилизованный контейнер элемента временной шкалы
 const TimelineItem = styled.div`
   position: relative;
-  padding-bottom: ${props => props.theme.spacing[4]};
+  padding-bottom: ${props => props.theme.spacing.medium};
+  margin-left: ${props => props.theme.spacing.medium};
   
-  &:last-child {
-    padding-bottom: 0;
-  }
+  ${props => props.size === 'small' && `
+    padding-bottom: ${props.theme.spacing.small};
+    margin-left: ${props.theme.spacing.small};
+  `}
   
-  .timeline-marker {
-    position: absolute;
-    left: ${props => props.theme.spacing[1]};
-    top: ${props => props.theme.spacing[3]};
-    width: ${props => props.theme.spacing[3]};
-    height: ${props => props.theme.spacing[3]};
-    border-radius: 50%;
-    background-color: ${props => props.theme.colors.surface.primary};
-    border: 2px solid ${props => props.theme.colors.border.medium};
-    z-index: 1;
-    
-    ${props => props.variant === 'success' && `
-      border-color: ${props.theme.colors.success};
-      background-color: ${props.theme.colors.success};
-    `}
-    
-    ${props => props.variant === 'danger' && `
-      border-color: ${props.theme.colors.danger};
-      background-color: ${props.theme.colors.danger};
-    `}
-    
-    ${props => props.variant === 'warning' && `
-      border-color: ${props.theme.colors.warning};
-      background-color: ${props.theme.colors.warning};
-    `}
-    
-    ${props => props.variant === 'info' && `
-      border-color: ${props.theme.colors.info};
-      background-color: ${props.theme.colors.info};
-    `}
-    
-    ${props => props.icon && `
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background-color: ${props.theme.colors.surface.primary};
-      
-      svg {
-        width: ${props.theme.spacing[2]};
-        height: ${props.theme.spacing[2]};
-        stroke: ${props => props.theme.colors.text.primary};
-      }
-    `}
-  }
+  ${props => props.size === 'large' && `
+    padding-bottom: ${props.theme.spacing.large};
+    margin-left: ${props.theme.spacing.large};
+  `}
   
-  .timeline-content {
-    margin-left: ${props => props.theme.spacing[5]};
-    padding: ${props => props.theme.spacing[2]};
-    background-color: ${props => props.theme.colors.surface.primary};
-    border-radius: ${props => props.theme.borderRadius.md};
-    box-shadow: ${props => props.theme.shadow.sm};
-    
-    .timeline-title {
-      font-size: ${props => props.theme.typography.fontSize.base[0]};
-      font-weight: ${props => props.theme.typography.fontWeight.semibold};
-      color: ${props => props.theme.colors.text.primary};
-      margin-bottom: ${props => props.theme.spacing[1]};
-    }
-    
-    .timeline-subtitle {
-      font-size: ${props => props.theme.typography.fontSize.sm[0]};
-      color: ${props => props.theme.colors.text.tertiary};
-      margin-bottom: ${props => props.theme.spacing[2]};
-    }
-    
-    .timeline-description {
-      font-size: ${props => props.theme.typography.fontSize.sm[0]};
-      color: ${props => props.theme.colors.text.secondary};
-      line-height: ${props => props.theme.typography.lineHeight.normal};
-    }
-    
-    .timeline-footer {
-      margin-top: ${props => props.theme.spacing[2]};
-      display: flex;
-      justify-content: flex-end;
-      
-      button {
-        font-size: ${props => props.theme.typography.fontSize.sm[0]};
-      }
-    }
-  }
+  ${props => props.vertical === 'right' && `
+    margin-left: 0;
+    margin-right: ${props.theme.spacing.medium};
+  `}
   
-  ${props => props.placement === 'alternate' && `
-    .timeline-content {
+  ${props => props.compact && `
+    padding-bottom: ${props.theme.spacing.xsmall};
+    margin-left: ${props.theme.spacing.xsmall};
+  `}
+  
+  ${props => props.alternate && `
+    &:nth-child(even) {
       margin-left: 0;
-      margin-right: ${props => props.theme.spacing[5]};
-    }
-    
-    .timeline-marker {
-      left: auto;
-      right: ${props => props.theme.spacing[1]};
+      margin-right: ${props.theme.spacing.medium};
+      padding-left: ${props.theme.spacing.medium};
+      padding-right: 0;
+      
+      ${props => props.vertical === 'right' && `
+        margin-left: ${props.theme.spacing.medium};
+        margin-right: 0;
+        padding-left: 0;
+        padding-right: ${props.theme.spacing.medium};
+      `}
     }
   `}
 `;
 
-// Компонент Timeline
-const Timeline = ({
+// Стилизованный контент элемента временной шкалы
+const TimelineContent = styled.div`
+  background-color: ${props => props.theme.colors.surface};
+  border-radius: ${props => props.theme.border.radius.md};
+  padding: ${props => props.theme.spacing.medium};
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  
+  ${props => props.size === 'small' && `
+    padding: ${props.theme.spacing.small};
+  `}
+  
+  ${props => props.size === 'large' && `
+    padding: ${props.theme.spacing.large};
+  `}
+  
+  ${props => props.variant === 'filled' && `
+    background-color: ${props.theme.colors.text};
+    color: ${props.theme.colors.surface};
+  `}
+  
+  ${props => props.variant === 'outlined' && `
+    border: 1px solid ${props.theme.colors.border};
+  `}
+  
+  ${props => props.variant === 'elevated' && `
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  `}
+  
+  ${props => props.variant === 'ghost' && `
+    background-color: transparent;
+    border: 1px solid transparent;
+  `}
+`;
+
+// Стилизованный заголовок элемента временной шкалы
+const TimelineHeader = styled.div`
+  font-weight: ${props => props.theme.fontWeights.semibold};
+  color: ${props => props.theme.colors.text};
+  margin-bottom: ${props => props.theme.spacing.xsmall};
+  font-size: ${props => props.theme.fontSizes.base};
+  
+  ${props => props.size === 'small' && `
+    font-size: ${props.theme.fontSizes.sm};
+  `}
+  
+  ${props => props.size === 'large' && `
+    font-size: ${props.theme.fontSizes.lg};
+  `}
+`;
+
+// Стилизованный подзаголовок элемента временной шкалы
+const TimelineSubheader = styled.div`
+  font-size: ${props => props.theme.fontSizes.sm};
+  color: ${props => props.theme.colors.textSecondary};
+  margin-bottom: ${props => props.theme.spacing.xsmall};
+  
+  ${props => props.size === 'small' && `
+    font-size: ${props.theme.fontSizes.xs};
+  `}
+  
+  ${props => props.size === 'large' && `
+    font-size: ${props.theme.fontSizes.base};
+  `}
+`;
+
+// Стилизованный текст элемента временной шкалы
+const TimelineText = styled.div`
+  font-size: ${props => props.theme.fontSizes.sm};
+  color: ${props => props.theme.colors.textSecondary};
+  line-height: 1.5;
+  
+  ${props => props.size === 'small' && `
+    font-size: ${props.theme.fontSizes.xs};
+  `}
+  
+  ${props => props.size === 'large' && `
+    font-size: ${props.theme.fontSizes.base};
+  `}
+  
+  ${props => props.bold && `
+    font-weight: ${props => props.theme.fontWeights.semibold};
+    color: ${props => props.theme.colors.text};
+  `}
+`;
+
+// Стилизованная метка времени элемента временной шкалы
+const TimelineTime = styled.div`
+  font-size: ${props => props.theme.fontSizes.xs};
+  color: ${props => props.theme.colors.textSecondary};
+  margin-top: ${props => props.theme.spacing.xsmall};
+  
+  ${props => props.size === 'small' && `
+    font-size: ${props.theme.fontSizes.xxs};
+  `}
+  
+  ${props => props.size === 'large' && `
+    font-size: ${props.theme.fontSizes.xs};
+  `}
+`;
+
+// Основной компонент Timeline
+export const Timeline = memo(({
   items,
-  placement = 'default',
-  className = '',
+  size = 'medium',
+  variant = 'default',
+  lineVariant = 'default',
+  vertical = 'left',
+  alternate = false,
+  compact = false,
+  className,
+  style,
   ...props
 }) => {
   return (
     <TimelineContainer
-      placement={placement}
-      className={`${className} timeline ${placement}`}
+      size={size}
+      variant={variant}
+      vertical={vertical}
+      alternate={alternate}
+      compact={compact}
+      className={className}
+      style={style}
       {...props}
     >
+      <TimelineLine
+        variant={lineVariant}
+        vertical={vertical}
+      />
+      
       {items.map((item, index) => (
         <TimelineItem
           key={index}
-          placement={placement}
+          size={size}
           variant={item.variant}
-          icon={item.icon}
+          vertical={vertical}
+          alternate={alternate}
+          compact={compact}
         >
-          <div className="timeline-marker">
-            {item.icon && (
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                {item.icon}
-              </svg>
-            )}
-          </div>
+          <TimelineDot
+            size={size}
+            variant={item.dotVariant || 'primary'}
+            vertical={vertical}
+          />
           
-          <div className="timeline-content">
+          <TimelineContent
+            size={size}
+            variant={item.contentVariant}
+          >
             {item.title && (
-              <div className="timeline-title">{item.title}</div>
+              <TimelineHeader size={size}>
+                {item.title}
+              </TimelineHeader>
             )}
             
             {item.subtitle && (
-              <div className="timeline-subtitle">{item.subtitle}</div>
+              <TimelineSubheader size={size}>
+                {item.subtitle}
+              </TimelineSubheader>
             )}
             
-            {item.description && (
-              <div className="timeline-description">{item.description}</div>
+            {item.text && (
+              <TimelineText size={size} bold={item.bold}>
+                {item.text}
+              </TimelineText>
             )}
             
-            {item.footer && (
-              <div className="timeline-footer">
-                {item.footer}
-              </div>
+            {item.time && (
+              <TimelineTime size={size}>
+                {item.time}
+              </TimelineTime>
             )}
-          </div>
+            
+            {item.children}
+          </TimelineContent>
         </TimelineItem>
       ))}
     </TimelineContainer>
   );
-};
+});
 
-// Пропс-types для TypeScript
 Timeline.propTypes = {
   items: PropTypes.arrayOf(
     PropTypes.shape({
       title: PropTypes.string,
       subtitle: PropTypes.string,
-      description: PropTypes.string,
-      variant: PropTypes.oneOf(['default', 'success', 'danger', 'warning', 'info']),
-      icon: PropTypes.node,
-      footer: PropTypes.node,
+      text: PropTypes.string,
+      time: PropTypes.string,
+      dotVariant: PropTypes.oneOf(['primary', 'secondary', 'success', 'warning', 'error', 'info', 'dark']),
+      contentVariant: PropTypes.oneOf(['default', 'filled', 'outlined', 'elevated', 'ghost']),
+      bold: PropTypes.bool,
+      children: PropTypes.node,
     })
   ).isRequired,
-  placement: PropTypes.oneOf(['default', 'alternate']),
+  size: PropTypes.oneOf(['small', 'medium', 'large']),
+  variant: PropTypes.oneOf(['default', 'alternate']),
+  lineVariant: PropTypes.oneOf(['default', 'dashed', 'dotted', 'double', 'gradient']),
+  vertical: PropTypes.oneOf(['left', 'right']),
+  alternate: PropTypes.bool,
+  compact: PropTypes.bool,
   className: PropTypes.string,
+  style: PropTypes.object,
 };
 
-// Компонент TimelineVertical для вертикальной временной линии
-const TimelineVerticalContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${props => props.theme.spacing[4]};
-  
-  .timeline-item {
-    display: flex;
-    align-items: flex-start;
-    gap: ${props => props.theme.spacing[3]};
-    
-    .timeline-marker {
-      flex-shrink: 0;
-      width: ${props => props.theme.spacing[4]};
-      height: ${props => props.theme.spacing[4]};
-      border-radius: 50%;
-      background-color: ${props => props.theme.colors.surface.primary};
-      border: 2px solid ${props => props.theme.colors.border.medium};
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      
-      ${props => props.variant === 'success' && `
-        border-color: ${props.theme.colors.success};
-        background-color: ${props.theme.colors.success};
-      `}
-      
-      ${props => props.variant === 'danger' && `
-        border-color: ${props.theme.colors.danger};
-        background-color: ${props.theme.colors.danger};
-      `}
-      
-      ${props => props.variant === 'warning' && `
-        border-color: ${props.theme.colors.warning};
-        background-color: ${props.theme.colors.warning};
-      `}
-      
-      ${props => props.variant === 'info' && `
-        border-color: ${props.theme.colors.info};
-        background-color: ${props.theme.colors.info};
-      `}
-      
-      ${props => props.icon && `
-        background-color: ${props.theme.colors.surface.primary};
-        
-        svg {
-          width: ${props.theme.spacing[2]};
-          height: ${props.theme.spacing[2]};
-          stroke: ${props => props.theme.colors.text.primary};
-        }
-      `}
-    }
-    
-    .timeline-content {
-      flex: 1;
-      padding: ${props => props.theme.spacing[3]};
-      background-color: ${props => props.theme.colors.surface.primary};
-      border-radius: ${props => props.theme.borderRadius.md};
-      box-shadow: ${props => props.theme.shadow.sm};
-      
-      .timeline-title {
-        font-size: ${props => props.theme.typography.fontSize.base[0]};
-        font-weight: ${props => props.theme.typography.fontWeight.semibold};
-        color: ${props => props.theme.colors.text.primary};
-        margin-bottom: ${props => props.theme.spacing[1]};
-      }
-      
-      .timeline-subtitle {
-        font-size: ${props => props.theme.typography.fontSize.sm[0]};
-        color: ${props => props.theme.colors.text.tertiary};
-        margin-bottom: ${props => props.theme.spacing[2]};
-      }
-      
-      .timeline-description {
-        font-size: ${props => props.theme.typography.fontSize.sm[0]};
-        color: ${props => props.theme.colors.text.secondary};
-        line-height: ${props => props.theme.typography.lineHeight.normal};
-      }
-      
-      .timeline-footer {
-        margin-top: ${props => props.theme.spacing[2]};
-        display: flex;
-        justify-content: flex-end;
-        
-        button {
-          font-size: ${props => props.theme.typography.fontSize.sm[0]};
-        }
-      }
-    }
-    
-    ${props => props.placement === 'right' && `
-      flex-direction: row-reverse;
-      
-      .timeline-content {
-        text-align: right;
-      }
-    `}
-  }
-`;
-
-// Компонент TimelineVertical
-const TimelineVertical = ({
+// Компонент для горизонтальной временной шкалы
+export const HorizontalTimeline = memo(({
   items,
-  placement = 'left',
-  className = '',
+  size = 'medium',
+  variant = 'default',
+  lineVariant = 'default',
+  className,
+  style,
   ...props
 }) => {
   return (
-    <TimelineVerticalContainer
-      placement={placement}
-      className={`${className} timeline-vertical ${placement}`}
-      {...props}
-    >
-      {items.map((item, index) => (
-        <div key={index} className="timeline-item">
-          <div className="timeline-marker">
-            {item.icon && (
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                {item.icon}
-              </svg>
-            )}
-          </div>
-          
-          <div className="timeline-content">
-            {item.title && (
-              <div className="timeline-title">{item.title}</div>
-            )}
+    <div className={className} style={{ display: 'flex', overflowX: 'auto', ...style }} {...props}>
+      <div style={{ display: 'flex', minWidth: '100%' }}>
+        {items.map((item, index) => (
+          <div
+            key={index}
+            style={{
+              flex: '0 0 auto',
+              width: size === 'small' ? '200px' : size === 'large' ? '300px' : '250px',
+              margin: '0 8px',
+              position: 'relative',
+            }}
+          >
+            <TimelineDot
+              size={size}
+              variant={item.dotVariant || 'primary'}
+              vertical="right"
+            />
             
-            {item.subtitle && (
-              <div className="timeline-subtitle">{item.subtitle}</div>
-            )}
-            
-            {item.description && (
-              <div className="timeline-description">{item.description}</div>
-            )}
-            
-            {item.footer && (
-              <div className="timeline-footer">
-                {item.footer}
-              </div>
-            )}
-          </div>
-        </div>
-      ))}
-    </TimelineVerticalContainer>
-  );
-};
-
-// Пропп-types для TimelineVertical
-TimelineVertical.propTypes = {
-  items: PropTypes.arrayOf(
-    PropTypes.shape({
-      title: PropTypes.string,
-      subtitle: PropTypes.string,
-      description: PropTypes.string,
-      variant: PropTypes.oneOf(['default', 'success', 'danger', 'warning', 'info']),
-      icon: PropTypes.node,
-      footer: PropTypes.node,
-    })
-  ).isRequired,
-  placement: PropTypes.oneOf(['left', 'right']),
-  className: PropTypes.string,
-};
-
-// Компонент TimelineHorizontal для горизонтальной временной линии
-const TimelineHorizontalContainer = styled.div`
-  display: flex;
-  overflow-x: auto;
-  padding: ${props => props.theme.spacing[4]} 0;
-  gap: ${props => props.theme.spacing[4]};
-  -webkit-overflow-scrolling: touch;
-  
-  &::-webkit-scrollbar {
-    height: 4px;
-  }
-  
-  &::-webkit-scrollbar-track {
-    background: ${props => props.theme.colors.border.light};
-  }
-  
-  &::-webkit-scrollbar-thumb {
-    background: ${props => props.theme.colors.border.medium};
-    border-radius: 2px;
-  }
-  
-  .timeline-item {
-    flex: 0 0 auto;
-    width: ${props => props.itemWidth || '250px'};
-    text-align: center;
-    
-    .timeline-marker {
-      width: ${props => props.theme.spacing[5]};
-      height: ${props => props.theme.spacing[5]};
-      border-radius: 50%;
-      background-color: ${props => props.theme.colors.surface.primary};
-      border: 2px solid ${props => props.theme.colors.border.medium};
-      margin: 0 auto ${props => props.theme.spacing[2]};
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      
-      ${props => props.variant === 'success' && `
-        border-color: ${props.theme.colors.success};
-        background-color: ${props.theme.colors.success};
-      `}
-      
-      ${props => props.variant === 'danger' && `
-        border-color: ${props.theme.colors.danger};
-        background-color: ${props.theme.colors.danger};
-      `}
-      
-      ${props => props.variant === 'warning' && `
-        border-color: ${props.theme.colors.warning};
-        background-color: ${props.theme.colors.warning};
-      `}
-      
-      ${props => props.variant === 'info' && `
-        border-color: ${props.theme.colors.info};
-        background-color: ${props.theme.colors.info};
-      `}
-      
-      ${props => props.icon && `
-        background-color: ${props.theme.colors.surface.primary};
-        
-        svg {
-          width: ${props.theme.spacing[2]};
-          height: ${props.theme.spacing[2]};
-          stroke: ${props => props.theme.colors.text.primary};
-        }
-      `}
-    }
-    
-    .timeline-content {
-      padding: ${props => props.theme.spacing[3]};
-      background-color: ${props => props.theme.colors.surface.primary};
-      border-radius: ${props => props.theme.borderRadius.md};
-      box-shadow: ${props => props.theme.shadow.sm};
-      
-      .timeline-title {
-        font-size: ${props => props.theme.typography.fontSize.base[0]};
-        font-weight: ${props => props.theme.typography.fontWeight.semibold};
-        color: ${props => props.theme.colors.text.primary};
-        margin-bottom: ${props => props.theme.spacing[1]};
-      }
-      
-      .timeline-subtitle {
-        font-size: ${props => props.theme.typography.fontSize.sm[0]};
-        color: ${props => props.theme.colors.text.tertiary};
-        margin-bottom: ${props => props.theme.spacing[2]};
-      }
-      
-      .timeline-description {
-        font-size: ${props => props.theme.typography.fontSize.sm[0]};
-        color: ${props => props.theme.colors.text.secondary};
-        line-height: ${props => props.theme.typography.lineHeight.normal};
-      }
-      
-      .timeline-footer {
-        margin-top: ${props => props.theme.spacing[2]};
-        display: flex;
-        justify-content: center;
-        
-        button {
-          font-size: ${props => props.theme.typography.fontSize.sm[0]};
-        }
-      }
-    }
-  }
-`;
-
-// Компонент TimelineHorizontal
-const TimelineHorizontal = ({
-  items,
-  itemWidth,
-  className = '',
-  ...props
-}) => {
-  return (
-    <TimelineHorizontalContainer
-      itemWidth={itemWidth}
-      className={`${className} timeline-horizontal`}
-      {...props}
-    >
-      {items.map((item, index) => (
-        <div key={index} className="timeline-item">
-          <div className="timeline-marker">
-            {item.icon && (
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                {item.icon}
-              </svg>
-            )}
-          </div>
-          
-          <div className="timeline-content">
-            {item.title && (
-              <div className="timeline-title">{item.title}</div>
-            )}
-            
-            {item.subtitle && (
-              <div className="timeline-subtitle">{item.subtitle}</div>
-            )}
-            
-            {item.description && (
-              <div className="timeline-description">{item.description}</div>
-            )}
-            
-            {item.footer && (
-              <div className="timeline-footer">
-                {item.footer}
-              </div>
-            )}
-          </div>
-        </div>
-      ))}
-    </TimelineHorizontalContainer>
-  );
-};
-
-// Пропп-types для TimelineHorizontal
-TimelineHorizontal.propTypes = {
-  items: PropTypes.arrayOf(
-    PropTypes.shape({
-      title: PropTypes.string,
-      subtitle: PropTypes.string,
-      description: PropTypes.string,
-      variant: PropTypes.oneOf(['default', 'success', 'danger', 'warning', 'info']),
-      icon: PropTypes.node,
-      footer: PropTypes.node,
-    })
-  ).isRequired,
-  itemWidth: PropTypes.string,
-  className: PropTypes.string,
-};
-
-// Компонент TimelineStep для шаговой временной линии
-const TimelineStepContainer = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: ${props => props.theme.spacing[4]};
-  
-  &:last-child {
-    margin-bottom: 0;
-  }
-  
-  .timeline-step {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    flex: 1;
-    
-    .timeline-marker {
-      width: ${props => props.theme.spacing[5]};
-      height: ${props => props.theme.spacing[5]};
-      border-radius: 50%;
-      background-color: ${props => props.theme.colors.surface.primary};
-      border: 2px solid ${props => props.theme.colors.border.medium};
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: ${props => props.theme.spacing[2]};
-      z-index: 1;
-      
-      ${props => props.variant === 'success' && `
-        border-color: ${props.theme.colors.success};
-        background-color: ${props.theme.colors.success};
-      `}
-      
-      ${props => props.variant === 'danger' && `
-        border-color: ${props.theme.colors.danger};
-        background-color: ${props.theme.colors.danger};
-      `}
-      
-      ${props => props.variant === 'warning' && `
-        border-color: ${props.theme.colors.warning};
-        background-color: ${props.theme.colors.warning};
-      `}
-      
-      ${props => props.variant === 'info' && `
-        border-color: ${props.theme.colors.info};
-        background-color: ${props.theme.colors.info};
-      `}
-      
-      ${props => props.active && `
-        border-color: ${props.theme.colors.primary};
-        background-color: ${props.theme.colors.primary};
-      }
-      
-      ${props => props.completed && `
-        border-color: ${props.theme.colors.success};
-        background-color: ${props.theme.colors.success};
-      }
-      
-      ${props => props.icon && `
-        background-color: ${props.theme.colors.surface.primary};
-        
-        svg {
-          width: ${props.theme.spacing[2]};
-          height: ${props.theme.spacing[2]};
-          stroke: ${props => props.theme.colors.text.primary};
-        }
-      `}
-    }
-    
-    .timeline-content {
-      text-align: center;
-      
-      .timeline-title {
-        font-size: ${props => props.theme.typography.fontSize.base[0]};
-        font-weight: ${props => props.theme.typography.fontWeight.semibold};
-        color: ${props => props.active ? props.theme.colors.text.primary : props.theme.colors.text.tertiary};
-        margin-bottom: ${props => props.theme.spacing[0.5]};
-      }
-      
-      .timeline-subtitle {
-        font-size: ${props => props.theme.typography.fontSize.sm[0]};
-        color: ${props => props.theme.colors.text.tertiary};
-      }
-    }
-  }
-  
-  .timeline-connector {
-    flex: 1;
-    height: 2px;
-    background-color: ${props => props.theme.colors.border.medium};
-    margin: 0 ${props => props.theme.spacing[2]};
-    
-    ${props => props.active && `
-      background-color: ${props.theme.colors.primary};
-    `}
-  }
-`;
-
-// Компонент TimelineStep
-const TimelineStep = ({
-  steps,
-  activeStep = 0,
-  className = '',
-  ...props
-}) => {
-  return (
-    <TimelineStepContainer
-      activeStep={activeStep}
-      className={`${className} timeline-step`}
-      {...props}
-    >
-      {steps.map((step, index) => (
-        <React.Fragment key={index}>
-          <div className="timeline-step">
-            <div
-              className={`timeline-marker ${activeStep >= index ? 'active' : ''} ${activeStep > index ? 'completed' : ''}`}
-              variant={step.variant}
-              icon={step.icon}
+            <TimelineContent
+              size={size}
+              variant={item.contentVariant}
+              style={{ marginLeft: size === 'small' ? '16px' : size === 'large' ? '24px' : '20px' }}
             >
-              {activeStep > index && (
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M20 6L9 17l-5-5"></path>
-                </svg>
-              )}
-            </div>
-            
-            <div className="timeline-content">
-              {step.title && (
-                <div className="timeline-title">{step.title}</div>
+              {item.title && (
+                <TimelineHeader size={size}>
+                  {item.title}
+                </TimelineHeader>
               )}
               
-              {step.subtitle && (
-                <div className="timeline-subtitle">{step.subtitle}</div>
+              {item.subtitle && (
+                <TimelineSubheader size={size}>
+                  {item.subtitle}
+                </TimelineSubheader>
               )}
-            </div>
+              
+              {item.text && (
+                <TimelineText size={size} bold={item.bold}>
+                  {item.text}
+                </TimelineText>
+              )}
+              
+              {item.time && (
+                <TimelineTime size={size}>
+                  {item.time}
+                </TimelineTime>
+              )}
+              
+              {item.children}
+            </TimelineContent>
+            
+            {index < items.length - 1 && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '50%',
+                  right: '-16px',
+                  transform: 'translateY(-50%)',
+                  width: '32px',
+                  height: '2px',
+                  backgroundColor: variant === 'dashed' ? 'transparent' : 'currentColor',
+                  backgroundImage: variant === 'dashed' ? 
+                    'linear-gradient(to right, currentColor 50%, transparent 50%)' : 'none',
+                  backgroundSize: '8px 8px',
+                }}
+              />
+            )}
           </div>
-          
-          {index < steps.length - 1 && (
-            <div className={`timeline-connector ${activeStep > index ? 'active' : ''}`}></div>
-          )}
-        </React.Fragment>
-      ))}
-    </TimelineStepContainer>
+        ))}
+      </div>
+    </div>
   );
-};
+});
 
-// Пропп-types для TimelineStep
-TimelineStep.propTypes = {
-  steps: PropTypes.arrayOf(
+HorizontalTimeline.propTypes = {
+  items: PropTypes.arrayOf(
     PropTypes.shape({
       title: PropTypes.string,
       subtitle: PropTypes.string,
-      variant: PropTypes.oneOf(['default', 'success', 'danger', 'warning', 'info']),
-      icon: PropTypes.node,
+      text: PropTypes.string,
+      time: PropTypes.string,
+      dotVariant: PropTypes.oneOf(['primary', 'secondary', 'success', 'warning', 'error', 'info', 'dark']),
+      contentVariant: PropTypes.oneOf(['default', 'filled', 'outlined', 'elevated', 'ghost']),
+      bold: PropTypes.bool,
+      children: PropTypes.node,
     })
   ).isRequired,
-  activeStep: PropTypes.number,
+  size: PropTypes.oneOf(['small', 'medium', 'large']),
+  variant: PropTypes.oneOf(['default', 'dashed']),
+  lineVariant: PropTypes.oneOf(['default', 'dashed']),
   className: PropTypes.string,
+  style: PropTypes.object,
 };
 
-// Экспорт компонентов
-export {
-  Timeline,
-  TimelineVertical as TimelineVerticalComponent,
-  TimelineHorizontal as TimelineHorizontalComponent,
-  TimelineStep as TimelineStepComponent,
+// Компонент для временной шкалы с иконками
+export const IconTimeline = memo(({
+  items,
+  size = 'medium',
+  variant = 'default',
+  lineVariant = 'default',
+  vertical = 'left',
+  alternate = false,
+  compact = false,
+  className,
+  style,
+  ...props
+}) => {
+  return (
+    <TimelineContainer
+      size={size}
+      variant={variant}
+      vertical={vertical}
+      alternate={alternate}
+      compact={compact}
+      className={className}
+      style={style}
+      {...props}
+    >
+      <TimelineLine
+        variant={lineVariant}
+        vertical={vertical}
+      />
+      
+      {items.map((item, index) => (
+        <TimelineItem
+          key={index}
+          size={size}
+          variant={item.variant}
+          vertical={vertical}
+          alternate={alternate}
+          compact={compact}
+        >
+          <div
+            style={{
+              position: 'absolute',
+              left: vertical === 'right' ? 'auto' : 
+                (size === 'small' ? `-${props.theme.spacing.xxsmall}` : 
+                 size === 'large' ? `-${props.theme.spacing.small}` : `-${props.theme.spacing.xsmall}`),
+              right: vertical === 'right' ? 
+                (size === 'small' ? `-${props.theme.spacing.xxsmall}` : 
+                 size === 'large' ? `-${props.theme.spacing.small}` : `-${props.theme.spacing.xsmall}`) : 'auto',
+              transform: 'translateX(-50%)',
+              width: size === 'small' ? '24px' : size === 'large' ? '32px' : '28px',
+              height: size === 'small' ? '24px' : size === 'large' ? '32px' : '28px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: item.dotVariant ? 
+                (item.dotVariant === 'primary' ? props.theme.colors.primary :
+                 item.dotVariant === 'secondary' ? props.theme.colors.secondary :
+                 item.dotVariant === 'success' ? props.theme.colors.success :
+                 item.dotVariant === 'warning' ? props.theme.colors.warning :
+                 item.dotVariant === 'error' ? props.theme.colors.error :
+                 item.dotVariant === 'info' ? props.theme.colors.info :
+                 item.dotVariant === 'dark' ? props.theme.colors.dark : props.theme.colors.border) :
+                props.theme.colors.border,
+              borderRadius: '50%',
+              border: '2px solid ' + props.theme.colors.surface,
+              zIndex: 1,
+            }}
+          >
+            {item.icon}
+          </div>
+          
+          <TimelineContent
+            size={size}
+            variant={item.contentVariant}
+          >
+            {item.title && (
+              <TimelineHeader size={size}>
+                {item.title}
+              </TimelineHeader>
+            )}
+            
+            {item.subtitle && (
+              <TimelineSubheader size={size}>
+                {item.subtitle}
+              </TimelineSubheader>
+            )}
+            
+            {item.text && (
+              <TimelineText size={size} bold={item.bold}>
+                {item.text}
+              </TimelineText>
+            )}
+            
+            {item.time && (
+              <TimelineTime size={size}>
+                {item.time}
+              </TimelineTime>
+            )}
+            
+            {item.children}
+          </TimelineContent>
+        </TimelineItem>
+      ))}
+    </TimelineContainer>
+  );
+});
+
+IconTimeline.propTypes = {
+  items: PropTypes.arrayOf(
+    PropTypes.shape({
+      title: PropTypes.string,
+      subtitle: PropTypes.string,
+      text: PropTypes.string,
+      time: PropTypes.string,
+      icon: PropTypes.node.isRequired,
+      dotVariant: PropTypes.oneOf(['primary', 'secondary', 'success', 'warning', 'error', 'info', 'dark']),
+      contentVariant: PropTypes.oneOf(['default', 'filled', 'outlined', 'elevated', 'ghost']),
+      bold: PropTypes.bool,
+      children: PropTypes.node,
+    })
+  ).isRequired,
+  size: PropTypes.oneOf(['small', 'medium', 'large']),
+  variant: PropTypes.oneOf(['default', 'alternate']),
+  lineVariant: PropTypes.oneOf(['default', 'dashed', 'dotted', 'double', 'gradient']),
+  vertical: PropTypes.oneOf(['left', 'right']),
+  alternate: PropTypes.bool,
+  compact: PropTypes.bool,
+  className: PropTypes.string,
+  style: PropTypes.object,
 };
+
+export default Timeline;

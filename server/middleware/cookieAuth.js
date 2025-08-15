@@ -16,18 +16,20 @@ const setAuthCookies = (req, res, next) => {
     res.cookie('accessToken', accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production', // Только HTTPS в продакшене
-      sameSite: 'strict', // Защита от CSRF
+      sameSite: process.env.NODE_ENV === 'production' ? 'Strict' : 'Lax', // Более строгая защита в продакшене
       maxAge: 15 * 60 * 1000, // 15 минут
-      path: '/'
+      path: '/',
+      domain: process.env.COOKIE_DOMAIN || undefined
     });
 
     // Устанавливаем refresh token в HttpOnly cookie с безопасными настройками
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: process.env.NODE_ENV === 'production' ? 'Strict' : 'Lax',
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 дней
-      path: '/'
+      path: '/',
+      domain: process.env.COOKIE_DOMAIN || undefined
     });
 
     next();
@@ -89,9 +91,10 @@ const refreshTokenFromCookie = async (req, res, next) => {
     res.cookie('accessToken', newAccessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: process.env.NODE_ENV === 'production' ? 'Strict' : 'Lax',
       maxAge: 15 * 60 * 1000,
-      path: '/'
+      path: '/',
+      domain: process.env.COOKIE_DOMAIN || undefined
     });
 
     // Добавляем пользователя в запрос
@@ -110,8 +113,20 @@ const refreshTokenFromCookie = async (req, res, next) => {
  * Middleware для очистки auth cookies
  */
 const clearAuthCookies = (req, res, next) => {
-  res.clearCookie('accessToken');
-  res.clearCookie('refreshToken');
+  res.clearCookie('accessToken', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'Strict' : 'Lax',
+    path: '/',
+    domain: process.env.COOKIE_DOMAIN || undefined
+  });
+  res.clearCookie('refreshToken', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'Strict' : 'Lax',
+    path: '/',
+    domain: process.env.COOKIE_DOMAIN || undefined
+  });
   next();
 };
 

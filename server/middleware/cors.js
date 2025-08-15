@@ -5,12 +5,16 @@ const cors = require('cors');
  */
 const corsOptions = {
   origin: function (origin, callback) {
-    // Разрешенные домены в продакшене
-    const allowedOrigins = [
-      'https://anime-site.com',
-      'https://www.anime-site.com',
-      'https://api.anime-site.com'
-    ];
+    // Разрешенные домены из переменной окружения или по умолчанию
+    const allowedOrigins = process.env.ALLOWED_ORIGINS
+      ? process.env.ALLOWED_ORIGINS.split(',')
+      : [
+          'http://localhost:3000',
+          'http://localhost:8080',
+          'https://anime-site.com',
+          'https://www.anime-site.com',
+          'https://api.anime-site.com'
+        ];
     
     // В разработке разрешаем все
     if (process.env.NODE_ENV === 'development') {
@@ -22,7 +26,7 @@ const corsOptions = {
       return callback(null, true);
     } else {
       console.log('CORS blocked origin:', origin);
-      return callback(new Error('Недопустимый источник CORS'), false);
+      return callback(new Error(`Недопустимый источник CORS: ${origin}`), false);
     }
   },
   credentials: true, // Разрешаем передачу credentials

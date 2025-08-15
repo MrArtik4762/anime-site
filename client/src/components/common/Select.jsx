@@ -1,285 +1,681 @@
-import React, { useState } from 'react';
-import styled from 'styled-components';
+import React, { useState, useEffect, useRef, forwardRef, memo } from 'react';
 import PropTypes from 'prop-types';
+import { styled } from 'styled-components';
+import { useResponsive } from './Responsive';
 
-// Основной select
-const BaseSelect = styled.select`
+// Стилизованный компонент для select
+const StyledSelect = styled.select`
   width: 100%;
-  padding: ${props => props.theme.spacing[3]} ${props => props.theme.spacing[4]};
-  font-size: ${props => props.theme.typography.fontSize.base[0]};
-  font-weight: ${props => props.theme.typography.fontWeight.normal};
-  line-height: ${props => props.theme.typography.lineHeight.normal};
-  color: ${props => props.theme.colors.text.primary};
-  background: ${props => props.theme.colors.surface.primary};
-  border: ${props => props.theme.form.input.border} solid ${props => props.theme.colors.border.medium};
-  border-radius: ${props => props.theme.borderRadius.lg};
-  transition: ${props => props.theme.transitions.normal};
-  outline: none;
+  padding: ${props => props.theme.spacing.small} ${props => props.theme.spacing.medium};
+  font-size: ${props => props.theme.fontSizes.md};
+  font-family: ${props => props.theme.fonts.body};
+  border: ${props => props.theme.border.width.sm} solid ${props => {
+    if (props.error) return props.theme.colors.error;
+    if (props.focused) return props.theme.colors.primary;
+    return props.theme.colors.border;
+  }};
+  border-radius: ${props => props.theme.borderRadius.md};
+  background-color: ${props => props.theme.colors.background};
+  color: ${props => props.theme.colors.text};
+  transition: all ${props => props.theme.transitions.fast};
   cursor: ${props => props.disabled ? 'not-allowed' : 'pointer'};
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='${props => props.theme.colors.text.tertiary}' d='M10.293 3.293L6 7.586 1.707 3.293A1 1 0 00.293 4.707l5 5a1 1 0 001.414 0l5-5a1 1 0 10-1.414-1.414z'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M10.293 3.293L6 7.586 1.707 3.293A1 1 0 00.293 4.707l5 5a1 1 0 001.414 0l5-5a1 1 0 10-1.414-1.414z'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right ${props => props.theme.spacing[3]} center;
-  background-size: ${props => props.theme.spacing[4]};
-  padding-right: ${props => props.theme.spacing[10]};
+  background-position: right ${props => props.theme.spacing.medium} center;
+  background-size: 12px;
+  padding-right: ${props => props.theme.spacing.large};
   
   &:focus {
+    outline: none;
     border-color: ${props => props.theme.colors.primary};
     box-shadow: 0 0 0 3px ${props => props.theme.colors.primary}20;
   }
   
+  &:hover:not(:disabled) {
+    border-color: ${props => props.theme.colors.primary};
+  }
+  
+  &::placeholder {
+    color: ${props => props.theme.colors.textSecondary};
+  }
+  
+  /* Состояния */
+  ${props => props.error && `
+    border-color: ${props.theme.colors.error};
+    
+    &:focus {
+      box-shadow: 0 0 0 3px ${props.theme.colors.error}20;
+    }
+  `}
+  
+  ${props => props.disabled && `
+    background-color: ${props.theme.colors.backgroundSecondary};
+    color: ${props => props.theme.colors.textSecondary};
+    cursor: not-allowed;
+    opacity: 0.7;
+    
+    &:hover {
+      border-color: ${props.theme.colors.border};
+    }
+  `}
+  
+  /* Адаптивность */
+  @media (max-width: 768px) {
+    padding: ${props => props.theme.spacing.xsmall} ${props => props.theme.spacing.medium};
+    font-size: ${props => props.theme.fontSizes.sm};
+    background-position: right ${props => props.theme.spacing.small} center;
+    padding-right: ${props => props.theme.spacing.medium};
+  }
+  
+  /* Размеры */
+  ${props => props.size === 'small' && `
+    padding: ${props => props.theme.spacing.xsmall} ${props.theme.spacing.small};
+    font-size: ${props.theme.fontSizes.sm};
+  `}
+  
+  ${props => props.size === 'large' && `
+    padding: ${props.theme.spacing.medium} ${props.theme.spacing.large};
+    font-size: ${props.theme.fontSizes.lg};
+  `}
+  
+  /* Стиль для групп */
+  ${props => props.grouped && `
+    padding-right: ${props.theme.spacing.medium};
+    background-image: none;
+  `}
+`;
+
+// Стилизованный компонент для option
+const StyledOption = styled.option`
+  padding: ${props => props.theme.spacing.small} ${props => props.theme.spacing.medium};
+  
   &:disabled {
-    opacity: ${props => props.theme.opacity[50]};
+    color: ${props => props.theme.colors.textSecondary};
     cursor: not-allowed;
   }
   
-  &:read-only {
-    background: ${props => props.theme.colors.surface.tertiary};
-    cursor: default;
-  }
-  
-  /* Placeholder */
-  &::placeholder {
-    color: ${props => props.theme.colors.text.tertiary};
-  }
-  
-  /* Опции */
-  option {
-    background: ${props => props.theme.colors.surface.primary};
-    color: ${props => props.theme.colors.text.primary};
-    padding: ${props => props.theme.spacing[2]};
-    
-    &:disabled {
-      opacity: ${props => props.theme.opacity[50]};
-      cursor: not-allowed;
-    }
-  }
-  
-  /* Для мобильных устройств */
-  ${props => props.theme.media.coarse} {
-    font-size: ${props => props.theme.typography.fontSize.lg[0]};
-    padding: ${props => props.theme.spacing[4]} ${props => props.theme.spacing[5]};
-    padding-right: ${props => props.theme.spacing[12]};
-  }
+  ${props => props.group && `
+    font-weight: ${props => props.theme.fontWeights.medium};
+    color: ${props => props.theme.colors.textSecondary};
+    background-color: ${props => props.theme.colors.backgroundSecondary};
+  `}
 `;
 
-// Select с иконкой слева
-const SelectWithLeftIcon = styled(BaseSelect)`
-  padding-left: ${props => props.theme.spacing[8]};
-  
-  & + .select-icon-left {
-    position: absolute;
-    left: ${props => props.theme.spacing[4]};
-    top: 50%;
-    transform: translateY(-50%);
-    color: ${props => props.theme.colors.text.tertiary};
-    pointer-events: none;
-    z-index: 1;
-  }
-`;
-
-// Select с иконкой справа
-const SelectWithRightIcon = styled(BaseSelect)`
-  padding-right: ${props => props.theme.spacing[12]};
-  
-  & + .select-icon-right {
-    position: absolute;
-    right: ${props => props.theme.spacing[4]};
-    top: 50%;
-    transform: translateY(-50%);
-    color: ${props => props.theme.colors.text.tertiary};
-    cursor: pointer;
-    z-index: 1;
-    
-    &:hover {
-      color: ${props => props.theme.colors.text.primary};
-    }
-  }
-`;
-
-// Select с обеими иконками
-const SelectWithIcons = styled(BaseSelect)`
-  padding-left: ${props => props.theme.spacing[8]};
-  padding-right: ${props => props.theme.spacing[12]};
-  
-  & + .select-icon-left {
-    position: absolute;
-    left: ${props => props.theme.spacing[4]};
-    top: 50%;
-    transform: translateY(-50%);
-    color: ${props => props.theme.colors.text.tertiary};
-    pointer-events: none;
-    z-index: 1;
-  }
-  
-  & + .select-icon-right {
-    position: absolute;
-    right: ${props => props.theme.spacing[4]};
-    top: 50%;
-    transform: translateY(-50%);
-    color: ${props => props.theme.colors.text.tertiary};
-    cursor: pointer;
-    z-index: 1;
-    
-    &:hover {
-      color: ${props => props.theme.colors.text.primary};
-    }
-  }
-`;
-
-// Контейнер для select с иконками
-const SelectContainer = styled.div`
+// Компонент для обертки select с меткой и ошибками
+const SelectWrapper = styled.div`
   position: relative;
-  display: inline-block;
-  width: 100%;
-`;
-
-// Состояния select
-const ValidSelect = styled(BaseSelect)`
-  &:focus {
-    border-color: ${props => props.theme.colors.success};
-    box-shadow: 0 0 0 3px ${props => props.theme.colors.success}20;
-  }
-`;
-
-const InvalidSelect = styled(BaseSelect)`
-  &:focus {
-    border-color: ${props => props.theme.colors.error};
-    box-shadow: 0 0 0 3px ${props => props.theme.colors.error}20;
-  }
-`;
-
-// Select с меткой
-const LabeledSelect = styled.div`
-  margin-bottom: ${props => props.theme.spacing[4]};
+  margin-bottom: ${props => props.theme.spacing.medium};
   
-  label {
+  .select-label {
     display: block;
-    font-size: ${props => props.theme.typography.fontSize.sm[0]};
-    font-weight: ${props => props.theme.typography.fontWeight.medium};
-    color: ${props => props.theme.colors.text.primary};
-    margin-bottom: ${props => props.theme.spacing[2]};
+    margin-bottom: ${props => props.theme.spacing.xsmall};
+    font-weight: ${props => props.theme.fontWeights.medium};
+    color: ${props => props.theme.colors.text};
+    font-size: ${props => props.theme.fontSizes.sm};
     
-    .required {
-      color: ${props => props.theme.colors.error};
+    @media (max-width: 768px) {
+      font-size: ${props => props.theme.fontSizes.xs};
     }
   }
   
   .select-description {
-    font-size: ${props => props.theme.typography.fontSize.xs[0]};
-    color: ${props => props.theme.colors.text.tertiary};
-    margin-top: ${props => props.theme.spacing[1]};
+    display: block;
+    margin-bottom: ${props => props.theme.spacing.xsmall};
+    font-size: ${props => props.theme.fontSizes.sm};
+    color: ${props => props.theme.colors.textSecondary};
+    
+    @media (max-width: 768px) {
+      font-size: ${props => props.theme.fontSizes.xs};
+    }
   }
   
   .select-error {
-    font-size: ${props => props.theme.typography.fontSize.xs[0]};
+    display: block;
+    margin-top: ${props => props.theme.spacing.xsmall};
+    font-size: ${props => props.theme.fontSizes.xs};
     color: ${props => props.theme.colors.error};
-    margin-top: ${props => props.theme.spacing[1]};
+    
+    @media (max-width: 768px) {
+      font-size: ${props => props.theme.fontSizes.xs};
+    }
+  }
+  
+  .select-suffix {
+    position: absolute;
+    right: ${props => props.theme.spacing.medium};
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    color: ${props => props.theme.colors.textSecondary};
+    font-size: ${props => props.theme.fontSizes.sm};
+    
+    @media (max-width: 768px) {
+      right: ${props => props.theme.spacing.small};
+      font-size: ${props => props.theme.fontSizes.xs};
+    }
+  }
+  
+  .select-clear {
+    position: absolute;
+    right: ${props => props.theme.spacing.medium};
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: ${props => props.theme.colors.textSecondary};
+    padding: 4px;
+    
+    &:hover {
+      color: ${props => props.theme.colors.text};
+    }
+    
+    @media (max-width: 768px) {
+      right: ${props => props.theme.spacing.small};
+    }
   }
 `;
 
-// Компонент Select
-const Select = ({
+// Компонент для группы select
+const SelectGroup = styled.div`
+  display: flex;
+  align-items: stretch;
+  
+  .select-group-addon {
+    display: flex;
+    align-items: center;
+    padding: ${props => props.theme.spacing.small} ${props => props.theme.spacing.medium};
+    background-color: ${props => props.theme.colors.backgroundSecondary};
+    border: ${props => props.theme.border.width.sm} solid ${props => props.theme.colors.border};
+    border-right: none;
+    border-radius: ${props => props.theme.borderRadius.md} 0 0 ${props => props.theme.borderRadius.md};
+    color: ${props => props.theme.colors.textSecondary};
+    font-size: ${props => props.theme.fontSizes.sm};
+    
+    @media (max-width: 768px) {
+      padding: ${props => props.theme.spacing.xsmall} ${props => props.theme.spacing.small};
+      font-size: ${props => props.theme.fontSizes.xs};
+    }
+  }
+  
+  .select-group-select {
+    border-radius: 0 ${props => props.theme.borderRadius.md} ${props => props.theme.borderRadius.md} 0;
+    border-left: none;
+  }
+  
+  .select-group-button {
+    display: flex;
+    align-items: center;
+    padding: 0 ${props => props.theme.spacing.medium};
+    background-color: ${props => props.theme.colors.backgroundSecondary};
+    border: ${props => props.theme.border.width.sm} solid ${props => props.theme.colors.border};
+    border-left: none;
+    border-radius: 0 ${props => props.theme.borderRadius.md} ${props => props.theme.borderRadius.md} 0;
+    cursor: pointer;
+    transition: background-color ${props => props.theme.transitions.fast};
+    
+    &:hover {
+      background-color: ${props => props.theme.colors.hover};
+    }
+    
+    @media (max-width: 768px) {
+      padding: 0 ${props => props.theme.spacing.small};
+    }
+  }
+`;
+
+// Основной компонент Select
+export const Select = memo(forwardRef(({
   label,
-  required = false,
-  error,
   description,
-  leftIcon,
-  rightIcon,
-  valid = false,
-  invalid = false,
-  className = '',
+  error,
+  value,
+  onChange,
+  onBlur,
+  onFocus,
+  placeholder,
+  disabled = false,
+  required = false,
+  readOnly = false,
+  autoFocus = false,
+  size = 'medium',
+  options = [],
+  grouped = false,
+  clearable = false,
+  groupAddon,
+  groupButton,
+  className,
+  style,
   ...props
-}) => {
-  // Определяем стили в зависимости от пропсов
-  const getSelectStyle = () => {
-    if (valid) return ValidSelect;
-    if (invalid) return InvalidSelect;
-    return BaseSelect;
+}, ref) => {
+  const { isMobile } = useResponsive();
+  const [focused, setFocused] = useState(false);
+  const [internalValue, setInternalValue] = useState(value);
+  const selectRef = useRef(ref);
+  
+  // Синхронизация внутреннего значения с внешним
+  useEffect(() => {
+    setInternalValue(value);
+  }, [value]);
+  
+  // Обработка изменений
+  const handleChange = (e) => {
+    const newValue = e.target.value;
+    setInternalValue(newValue);
+    
+    if (onChange) {
+      onChange(e);
+    }
   };
   
-  // Определяем стили в зависимости от иконок
-  const getIconStyle = () => {
-    if (leftIcon && rightIcon) return SelectWithIcons;
-    if (leftIcon) return SelectWithLeftIcon;
-    if (rightIcon) return SelectWithRightIcon;
-    return BaseSelect;
+  // Обработка потери фокуса
+  const handleBlur = (e) => {
+    setFocused(false);
+    if (onBlur) {
+      onBlur(e);
+    }
   };
   
-  const SelectStyle = getSelectStyle();
-  const IconStyle = getIconStyle();
-  const CombinedSelect = IconStyle.withComponent(SelectStyle);
+  // Обработка получения фокуса
+  const handleFocus = (e) => {
+    setFocused(true);
+    if (onFocus) {
+      onFocus(e);
+    }
+  };
+  
+  // Очистка значения
+  const handleClear = () => {
+    setInternalValue('');
+    if (onChange) {
+      const event = {
+        target: {
+          name: props.name,
+          value: ''
+        }
+      };
+      onChange(event);
+    }
+    
+    // Возвращаем фокус на select после очистки
+    setTimeout(() => {
+      if (selectRef.current) {
+        selectRef.current.focus();
+      }
+    }, 0);
+  };
+  
+  // Генерация уникального ID
+  const selectId = props.id || `select-${props.name || Math.random().toString(36).substr(2, 9)}`;
+  
+  // Определяем, показывать ли кнопку очистки
+  const showClearButton = clearable && internalValue && !disabled;
   
   return (
-    <LabeledSelect className={className}>
+    <SelectWrapper className={className} style={style}>
       {label && (
-        <label htmlFor={props.id}>
+        <label 
+          htmlFor={selectId} 
+          className="select-label"
+        >
           {label}
-          {required && <span className="required"> *</span>}
+          {required && <span style={{ color: 'red' }}>*</span>}
         </label>
       )}
       
-      <SelectContainer>
-        <CombinedSelect
-          id={props.id}
-          {...props}
-        />
-        
-        {leftIcon && (
-          <span className="select-icon-left">
-            {leftIcon}
-          </span>
-        )}
-        
-        {rightIcon && (
-          <span className="select-icon-right">
-            {rightIcon}
-          </span>
-        )}
-      </SelectContainer>
-      
-      {description && !error && (
-        <div className="select-description">
-          {description}
-        </div>
+      {description && (
+        <span className="select-description">{description}</span>
       )}
       
-      {error && (
-        <div className="select-error">
-          {error}
-        </div>
+      {groupAddon ? (
+        <SelectGroup>
+          <div className="select-group-addon">{groupAddon}</div>
+          <StyledSelect
+            id={selectId}
+            value={internalValue}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            onFocus={handleFocus}
+            placeholder={placeholder}
+            disabled={disabled}
+            readOnly={readOnly}
+            autoFocus={autoFocus}
+            size={size}
+            error={!!error}
+            focused={focused}
+            ref={selectRef}
+            className="select-group-select"
+            {...props}
+          />
+          {showClearButton && (
+            <button 
+              type="button" 
+              className="select-clear"
+              onClick={handleClear}
+              aria-label="Очистить выбор"
+            >
+              ✕
+            </button>
+          )}
+        </SelectGroup>
+      ) : groupButton ? (
+        <SelectGroup>
+          <StyledSelect
+            id={selectId}
+            value={internalValue}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            onFocus={handleFocus}
+            placeholder={placeholder}
+            disabled={disabled}
+            readOnly={readOnly}
+            autoFocus={autoFocus}
+            size={size}
+            error={!!error}
+            focused={focused}
+            ref={selectRef}
+            {...props}
+          />
+          <button 
+            type="button" 
+            className="select-group-button"
+            onClick={groupButton.onClick}
+            disabled={disabled}
+          >
+            {groupButton.children}
+          </button>
+        </SelectGroup>
+      ) : (
+        <>
+          <StyledSelect
+            id={selectId}
+            value={internalValue}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            onFocus={handleFocus}
+            placeholder={placeholder}
+            disabled={disabled}
+            readOnly={readOnly}
+            autoFocus={autoFocus}
+            size={size}
+            grouped={grouped}
+            error={!!error}
+            focused={focused}
+            ref={selectRef}
+            {...props}
+          >
+            {placeholder && (
+              <StyledOption value="" disabled>
+                {placeholder}
+              </StyledOption>
+            )}
+            
+            {options.map((option) => {
+              if (option.options) {
+                // Группа опций
+                return (
+                  <optgroup key={option.label} label={option.label}>
+                    {option.options.map((childOption) => (
+                      <StyledOption
+                        key={childOption.value}
+                        value={childOption.value}
+                        disabled={childOption.disabled}
+                        group
+                      >
+                        {childOption.label}
+                      </StyledOption>
+                    ))}
+                  </optgroup>
+                );
+              }
+              
+              // Обычная опция
+              return (
+                <StyledOption
+                  key={option.value}
+                  value={option.value}
+                  disabled={option.disabled}
+                >
+                  {option.label}
+                </StyledOption>
+              );
+            })}
+          </StyledSelect>
+          
+          {showClearButton && (
+            <button 
+              type="button" 
+              className="select-clear"
+              onClick={handleClear}
+              aria-label="Очистить выбор"
+            >
+              ✕
+            </button>
+          )}
+        </>
       )}
-    </LabeledSelect>
+      
+      {error && <span className="select-error">{error}</span>}
+    </SelectWrapper>
   );
-};
+}));
 
-// Пропс-types для TypeScript
 Select.propTypes = {
-  id: PropTypes.string,
   label: PropTypes.string,
-  required: PropTypes.bool,
-  error: PropTypes.string,
   description: PropTypes.string,
-  leftIcon: PropTypes.node,
-  rightIcon: PropTypes.node,
-  valid: PropTypes.bool,
-  invalid: PropTypes.bool,
+  error: PropTypes.string,
+  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  onChange: PropTypes.func,
+  onBlur: PropTypes.func,
+  onFocus: PropTypes.func,
+  placeholder: PropTypes.string,
+  disabled: PropTypes.bool,
+  required: PropTypes.bool,
+  readOnly: PropTypes.bool,
+  autoFocus: PropTypes.bool,
+  size: PropTypes.oneOf(['small', 'medium', 'large']),
+  options: PropTypes.arrayOf(
+    PropTypes.oneOfType([
+      PropTypes.shape({
+        value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+        label: PropTypes.string.isRequired,
+        disabled: PropTypes.bool
+      }),
+      PropTypes.shape({
+        label: PropTypes.string.isRequired,
+        options: PropTypes.arrayOf(
+          PropTypes.shape({
+            value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+            label: PropTypes.string.isRequired,
+            disabled: PropTypes.bool
+          })
+        ).isRequired
+      })
+    ])
+  ),
+  grouped: PropTypes.bool,
+  clearable: PropTypes.bool,
+  groupAddon: PropTypes.node,
+  groupButton: PropTypes.shape({
+    onClick: PropTypes.func,
+    children: PropTypes.node
+  }),
   className: PropTypes.string,
-  children: PropTypes.node,
+  style: PropTypes.object,
 };
 
-// Экспорт всех типов select
-export const SelectVariants = {
-  Base: BaseSelect,
-  WithLeftIcon: SelectWithLeftIcon,
-  WithRightIcon: SelectWithRightIcon,
-  WithIcons: SelectWithIcons,
-  Valid: ValidSelect,
-  Invalid: InvalidSelect,
+// Компонент для группы Select
+export const SelectGroupComponent = memo(({ children, className, style }) => {
+  return (
+    <SelectGroup className={className} style={style}>
+      {children}
+    </SelectGroup>
+  );
+});
+
+SelectGroupComponent.propTypes = {
+  children: PropTypes.node.isRequired,
+  className: PropTypes.string,
+  style: PropTypes.object,
 };
 
-// Экспорт контейнера
-export const SelectContainerComponent = SelectContainer;
+// Компонент для мультиселекта
+export const MultiSelect = memo(forwardRef(({
+  ...props
+}, ref) => {
+  return (
+    <Select
+      ref={ref}
+      multiple
+      {...props}
+    />
+  );
+}));
 
-// Экспорт основного компонента
+MultiSelect.propTypes = {
+  ...Select.propTypes,
+  multiple: PropTypes.bool
+};
+
+// Компонент для поиска с автодополнением
+export const SearchSelect = memo(forwardRef(({
+  onSearch,
+  options = [],
+  loading = false,
+  debounceTime = 300,
+  ...props
+}, ref) => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filteredOptions, setFilteredOptions] = useState(options);
+  const [isSearching, setIsSearching] = useState(false);
+  const searchTimeout = useRef(null);
+  
+  // Обработка поиска
+  const handleSearch = (term) => {
+    setSearchTerm(term);
+    
+    if (searchTimeout.current) {
+      clearTimeout(searchTimeout.current);
+    }
+    
+    searchTimeout.current = setTimeout(() => {
+      if (onSearch) {
+        setIsSearching(true);
+        onSearch(term)
+          .then(results => {
+            setFilteredOptions(results);
+          })
+          .finally(() => {
+            setIsSearching(false);
+          });
+      } else {
+        // Локальная фильтрация
+        const filtered = options.filter(option =>
+          option.label.toLowerCase().includes(term.toLowerCase())
+        );
+        setFilteredOptions(filtered);
+      }
+    }, debounceTime);
+  };
+  
+  // Сброс поиска при изменении опций
+  useEffect(() => {
+    setFilteredOptions(options);
+  }, [options]);
+  
+  return (
+    <Select
+      ref={ref}
+      {...props}
+      value={searchTerm}
+      onChange={(e) => handleSearch(e.target.value)}
+    >
+      {isSearching ? (
+        <option value="" disabled>Поиск...</option>
+      ) : (
+        <>
+          {props.placeholder && (
+            <option value="" disabled>
+              {props.placeholder}
+            </option>
+          )}
+          {filteredOptions.map(option => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </>
+      )}
+    </Select>
+  );
+}));
+
+SearchSelect.propTypes = {
+  onSearch: PropTypes.func,
+  options: PropTypes.arrayOf(
+    PropTypes.shape({
+      value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+      label: PropTypes.string.isRequired
+    })
+  ),
+  loading: PropTypes.bool,
+  debounceTime: PropTypes.number,
+  ...Select.propTypes
+};
+
+// Хук для управления состоянием select
+export const useSelect = (initialValue = '', options = [], validate) => {
+  const [value, setValue] = useState(initialValue);
+  const [error, setError] = useState('');
+  const [touched, setTouched] = useState(false);
+  
+  const handleChange = (e) => {
+    setValue(e.target.value);
+    
+    // Валидация при изменении
+    if (validate) {
+      const validationError = validate(e.target.value);
+      setError(validationError);
+    }
+  };
+  
+  const handleBlur = () => {
+    setTouched(true);
+    
+    // Валидация при потере фокуса
+    if (validate) {
+      const validationError = validate(value);
+      setError(validationError);
+    }
+  };
+  
+  const reset = () => {
+    setValue(initialValue);
+    setError('');
+    setTouched(false);
+  };
+  
+  const isValid = !error && (options.some(opt => opt.value === value) || value === '');
+  
+  return {
+    value,
+    setValue,
+    error,
+    setError,
+    touched,
+    setTouched,
+    handleChange,
+    handleBlur,
+    reset,
+    isValid,
+    selectProps: {
+      value,
+      onChange: handleChange,
+      onBlur: handleBlur,
+      error: touched ? error : undefined
+    }
+  };
+};
+
 export default Select;

@@ -2,55 +2,218 @@ import React from 'react';
 import styled from 'styled-components';
 import PropTypes from 'prop-types';
 
+const { spacing, colors, gradients, animations, shadows } = {
+  spacing: {
+    xs: '4px',
+    sm: '8px',
+    md: '16px',
+    lg: '24px',
+    xl: '32px'
+  },
+  colors: {
+    primary: '#3b82f6',
+    secondary: '#64748b',
+    accent: '#8b5cf6',
+    success: '#10b981',
+    warning: '#f59e0b',
+    error: '#ef4444',
+    text: {
+      primary: '#0f172a',
+      secondary: '#475569',
+      tertiary: '#94a3b8'
+    },
+    surface: {
+      primary: '#ffffff',
+      secondary: '#f8fafc',
+      tertiary: '#f1f5f9'
+    },
+    border: {
+      light: '#e2e8f0',
+      medium: '#cbd5e1',
+      heavy: '#94a3b8'
+    }
+  },
+  gradients: {
+    primary: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+    secondary: 'linear-gradient(135deg, #64748b 0%, #475569 100%)',
+    accent: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+    success: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+    warning: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+    error: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'
+  },
+  animations: {
+    durations: {
+      fast: '0.15s',
+      normal: '0.3s',
+      slow: '0.5s'
+    },
+    easing: {
+      ease: 'cubic-bezier(0.4, 0, 0.2, 1)',
+      easeInOut: 'cubic-bezier(0.4, 0, 0.2, 1)',
+      easeOut: 'cubic-bezier(0, 0, 0, 1)'
+    },
+    keyframes: {
+      spin: `
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `,
+      pulse: `
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.5; }
+        }
+      `,
+      bounce: `
+        @keyframes bounce {
+          0%, 80%, 100% { transform: scale(0); }
+          40% { transform: scale(1); }
+        }
+      `,
+      shimmer: `
+        @keyframes shimmer {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(100%); }
+        }
+      `
+    }
+  },
+  shadows: {
+    sm: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+    md: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+    lg: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+    xl: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
+  }
+};
+
 // Контейнер для индикатора загрузки
 const LoadingContainer = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: ${props => props.padding || props.theme.spacing[4]};
+  padding: ${props => props.padding || spacing.lg};
   min-height: ${props => props.minHeight || '100px'};
   width: 100%;
+  position: relative;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(145deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+    border-radius: ${spacing.md};
+    z-index: -1;
+  }
 `;
 
 // Спиннер
 const Spinner = styled.div`
-  width: ${props => props.size === 'small' ? '20px' : props.size === 'medium' ? '40px' : '60px'};
-  height: ${props => props.size === 'small' ? '20px' : props.size === 'medium' ? '40px' : '60px'};
-  border: ${props => props.size === 'small' ? '2px' : props.size === 'medium' ? '3px' : '4px'} solid ${props => props.theme.colors.border.light};
-  border-top-color: ${props => props.theme.colors.primary};
+  width: ${props => {
+    switch (props.size) {
+      case 'small': return '24px';
+      case 'large': return '64px';
+      default: return '40px';
+    }
+  }};
+  height: ${props => {
+    switch (props.size) {
+      case 'small': return '24px';
+      case 'large': return '64px';
+      default: return '40px';
+    }
+  }};
   border-radius: 50%;
+  background: ${gradients.primary};
+  position: relative;
   animation: spin 1s linear infinite;
   
-  @keyframes spin {
-    0% {
-      transform: rotate(0deg);
-    }
-    100% {
-      transform: rotate(360deg);
-    }
+  &::before {
+    content: '';
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    right: 4px;
+    bottom: 4px;
+    background: ${props => props.theme.colors.surface.primary};
+    border-radius: 50%;
+    z-index: -1;
   }
+  
+  &::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 60%;
+    height: 60%;
+    background: ${props => props.theme.colors.surface.secondary};
+    border-radius: 50%;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  ${animations.keyframes.spin}
 `;
 
 // Текст загрузки
 const LoadingText = styled.div`
-  margin-top: ${props => props.theme.spacing[2]};
+  margin-top: ${spacing.sm};
   font-size: ${props => props.theme.typography.fontSize.sm[0]};
-  color: ${props => props.theme.colors.text.tertiary};
+  color: ${props => props.theme.colors.text.secondary};
   text-align: center;
+  font-weight: 500;
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+  background: linear-gradient(135deg, ${props => props.theme.colors.text.primary} 0%, ${props => props.theme.colors.text.secondary} 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer 2s ease-in-out infinite;
 `;
 
 // Точки анимации
 const Dots = styled.div`
   display: flex;
-  gap: ${props => props.theme.spacing[1]};
+  gap: ${spacing.sm};
   
   span {
-    width: ${props => props.size === 'small' ? '6px' : props.size === 'medium' ? '8px' : '10px'};
-    height: ${props => props.size === 'small' ? '6px' : props.size === 'medium' ? '8px' : '10px'};
-    background-color: ${props => props.theme.colors.primary};
+    width: ${props => {
+      switch (props.size) {
+        case 'small': return '8px';
+        case 'large': return '12px';
+        default: return '10px';
+      }
+    }};
+    height: ${props => {
+      switch (props.size) {
+        case 'small': return '8px';
+        case 'large': return '12px';
+        default: return '10px';
+      }
+    }};
+    background: ${gradients.primary};
     border-radius: 50%;
+    box-shadow: ${shadows.md};
     animation: bounce 1.4s infinite ease-in-out both;
+    position: relative;
+    overflow: hidden;
+    
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(45deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0) 100%);
+      border-radius: 50%;
+      animation: shimmer 1.5s ease-in-out infinite;
+    }
     
     &:nth-child(1) {
       animation-delay: -0.32s;
@@ -60,83 +223,185 @@ const Dots = styled.div`
       animation-delay: -0.16s;
     }
     
-    @keyframes bounce {
-      0%, 80%, 100% {
-        transform: scale(0);
-      }
-      40% {
-        transform: scale(1);
-      }
+    &:nth-child(3) {
+      animation-delay: 0s;
     }
+    
+    ${animations.keyframes.bounce}
+    ${animations.keyframes.shimmer}
   }
 `;
 
 // Линии анимации
 const Bars = styled.div`
   display: flex;
-  gap: ${props => props.theme.spacing[1]};
+  gap: ${spacing.sm};
   
   span {
-    width: ${props => props.size === 'small' ? '4px' : props.size === 'medium' ? '6px' : '8px'};
-    height: ${props => props.size === 'small' ? '12px' : props.size === 'medium' ? '16px' : '20px'};
-    background-color: ${props => props.theme.colors.primary};
+    width: ${props => {
+      switch (props.size) {
+        case 'small': return '4px';
+        case 'large': return '8px';
+        default: return '6px';
+      }
+    }};
+    height: ${props => {
+      switch (props.size) {
+        case 'small': return '16px';
+        case 'large': return '32px';
+        default: return '24px';
+      }
+    }};
+    background: ${gradients.primary};
+    border-radius: ${spacing.xs};
+    box-shadow: ${shadows.md};
     animation: stretch 1.2s infinite ease-in-out;
+    position: relative;
+    overflow: hidden;
+    
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(45deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0) 100%);
+      border-radius: ${spacing.xs};
+      animation: shimmer 1.5s ease-in-out infinite;
+    }
     
     &:nth-child(1) {
       animation-delay: -1.2s;
+      height: ${props => {
+        switch (props.size) {
+          case 'small': return '12px';
+          case 'large': return '24px';
+          default: return '18px';
+        }
+      }};
     }
     
     &:nth-child(2) {
       animation-delay: -1.1s;
+      height: ${props => {
+        switch (props.size) {
+          case 'small': return '20px';
+          case 'large': return '36px';
+          default: return '28px';
+        }
+      }};
     }
     
     &:nth-child(3) {
       animation-delay: -1s;
+      height: ${props => {
+        switch (props.size) {
+          case 'small': return '16px';
+          case 'large': return '32px';
+          default: return '24px';
+        }
+      }};
     }
     
     &:nth-child(4) {
       animation-delay: -0.9s;
+      height: ${props => {
+        switch (props.size) {
+          case 'small': return '24px';
+          case 'large': return '40px';
+          default: return '32px';
+        }
+      }};
     }
     
     &:nth-child(5) {
       animation-delay: -0.8s;
+      height: ${props => {
+        switch (props.size) {
+          case 'small': return '18px';
+          case 'large': return '32px';
+          default: return '26px';
+        }
+      }};
     }
     
     @keyframes stretch {
       0%, 40%, 100% {
-      transform: scaleY(0.4);
+        transform: scaleY(0.4);
+      }
+      20% {
+        transform: scaleY(1);
+      }
     }
-    20% {
-      transform: scaleY(1);
-    }
+    
+    ${animations.keyframes.shimmer}
   }
 `;
 
 // Круговая прогресс-бар
 const CircularProgress = styled.div`
   position: relative;
-  width: ${props => props.size === 'small' ? '40px' : props.size === 'medium' ? '60px' : '80px'};
-  height: ${props => props.size === 'small' ? '40px' : props.size === 'medium' ? '60px' : '80px'};
+  width: ${props => {
+    switch (props.size) {
+      case 'small': return '48px';
+      case 'large': return '80px';
+      default: return '64px';
+    }
+  }};
+  height: ${props => {
+    switch (props.size) {
+      case 'small': return '48px';
+      case 'large': return '80px';
+      default: return '64px';
+    }
+  }};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: ${gradients.primary};
+    border-radius: 50%;
+    opacity: 0.1;
+    z-index: -1;
+  }
   
   svg {
     transform: rotate(-90deg);
+    width: 100%;
+    height: 100%;
   }
   
   circle {
     fill: none;
-    stroke-width: ${props => props.size === 'small' ? '3' : props.size === 'medium' ? '4' : '5'};
+    stroke-width: ${props => {
+      switch (props.size) {
+        case 'small': return '3';
+        case 'large': return '6';
+        default: return '4';
+      }
+    }};
     stroke-linecap: round;
   }
   
   .background {
     stroke: ${props => props.theme.colors.border.light};
+    opacity: 0.2;
   }
   
   .progress {
-    stroke: ${props => props.theme.colors.primary};
+    stroke: ${gradients.primary};
     stroke-dasharray: ${props => props.circumference};
     stroke-dashoffset: ${props => props.circumference * (1 - props.percentage / 100)};
     animation: progress 1s ease-out forwards;
+    filter: drop-shadow(0 0 4px rgba(59, 130, 246, 0.5));
   }
   
   @keyframes progress {

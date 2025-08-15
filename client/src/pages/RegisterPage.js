@@ -68,6 +68,17 @@ const ErrorMessage = styled.span`
   display: block;
 `;
 
+const APIError = styled.div`
+  background: ${props => props.theme.colors.error + '20'};
+  border: 1px solid ${props => props.theme.colors.error};
+  color: ${props => props.theme.colors.error};
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  margin-bottom: 16px;
+  text-align: left;
+`;
+
 const CheckboxGroup = styled.div`
   display: flex;
   align-items: flex-start;
@@ -134,7 +145,8 @@ const LoginLink = styled.p`
 
 const RegisterPage = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const { register: registerUser } = useAuth();
+  const [apiError, setApiError] = useState(null);
+  const { register: registerUser, error: authError } = useAuth();
   const navigate = useNavigate();
 
   const {
@@ -149,6 +161,7 @@ const RegisterPage = () => {
   const onSubmit = async (data) => {
     console.log('🔍 REGISTER PAGE DEBUG - Form data:', data);
     setIsLoading(true);
+    setApiError(null);
 
     try {
       const { confirmPassword, terms, ...userData } = data;
@@ -160,14 +173,21 @@ const RegisterPage = () => {
         toast.success('Регистрация успешна! Добро пожаловать!');
         navigate('/');
       } else {
+        setApiError(result.error);
         toast.error(result.error || 'Ошибка регистрации');
       }
     } catch (error) {
       console.log('🔍 REGISTER PAGE DEBUG - Catch error:', error);
+      setApiError(error.message || 'Произошла ошибка. Попробуйте снова.');
       toast.error('Произошла ошибка. Попробуйте снова.');
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Clear API error when form input changes
+  const handleInputChange = () => {
+    if (apiError) setApiError(null);
   };
 
   return (
@@ -181,6 +201,16 @@ const RegisterPage = () => {
           <RegisterCard>
             <Title>Создать аккаунт</Title>
             <Subtitle>Присоединяйтесь к сообществу любителей аниме!</Subtitle>
+
+            {/* Display authentication error from context */}
+            {authError && (
+              <APIError>{authError}</APIError>
+            )}
+
+            {/* Display API error from current request */}
+            {apiError && (
+              <APIError>{apiError}</APIError>
+            )}
 
             <Form onSubmit={handleSubmit(onSubmit)}>
               <FormRow>
@@ -197,6 +227,7 @@ const RegisterPage = () => {
                         message: 'Имя должно содержать минимум 2 символа',
                       },
                     })}
+                    onChange={handleInputChange}
                   />
                   {errors.firstName && (
                     <ErrorMessage>{errors.firstName.message}</ErrorMessage>
@@ -216,6 +247,7 @@ const RegisterPage = () => {
                         message: 'Фамилия должна содержать минимум 2 символа',
                       },
                     })}
+                    onChange={handleInputChange}
                   />
                   {errors.lastName && (
                     <ErrorMessage>{errors.lastName.message}</ErrorMessage>
@@ -240,6 +272,7 @@ const RegisterPage = () => {
                       message: 'Только буквы, цифры и подчеркивания',
                     },
                   })}
+                  onChange={handleInputChange}
                 />
                 {errors.username && (
                   <ErrorMessage>{errors.username.message}</ErrorMessage>
@@ -259,6 +292,7 @@ const RegisterPage = () => {
                       message: 'Некорректный email адрес',
                     },
                   })}
+                  onChange={handleInputChange}
                 />
                 {errors.email && (
                   <ErrorMessage>{errors.email.message}</ErrorMessage>
@@ -283,6 +317,7 @@ const RegisterPage = () => {
                         message: 'Пароль должен содержать строчные, заглавные буквы и цифры',
                       },
                     })}
+                    onChange={handleInputChange}
                   />
                   {errors.password && (
                     <ErrorMessage>{errors.password.message}</ErrorMessage>
@@ -300,6 +335,7 @@ const RegisterPage = () => {
                       validate: (value) =>
                         value === password || 'Пароли не совпадают',
                     })}
+                    onChange={handleInputChange}
                   />
                   {errors.confirmPassword && (
                     <ErrorMessage>{errors.confirmPassword.message}</ErrorMessage>

@@ -15,13 +15,20 @@ export const lightTheme = {
     // Акцентные цвета
     accent: colors.accent,
     
-    // Текстовые цвета
+    // Текстовые цвета - улучшенные для новой цветовой схемы
     text: {
       primary: colors.text.primary,
       secondary: colors.text.secondary,
       tertiary: colors.text.tertiary,
       disabled: colors.text.disabled,
       inverse: colors.text.inverse,
+      // Улучшенная контрастность для темной темы
+      dark: {
+        primary: colors.text.dark.primary,
+        secondary: colors.text.dark.secondary,
+        tertiary: colors.text.dark.tertiary,
+        disabled: colors.text.dark.disabled,
+      },
     },
     
     // Фоновые цвета
@@ -1194,12 +1201,12 @@ export const darkTheme = {
     // Акцентные цвета
     accent: colors.accent,
     
-    // Текстовые цвета (инвертированные для темной темы)
+    // Текстовые цвета (улучшенные для темной темы)
     text: {
-      primary: colors.text.inverse,
-      secondary: '#B0BEC5',
-      tertiary: '#90A4AE',
-      disabled: '#607D8B',
+      primary: colors.text.dark.primary,
+      secondary: colors.text.dark.secondary,
+      tertiary: colors.text.dark.tertiary,
+      disabled: colors.text.dark.disabled,
       inverse: colors.text.primary,
     },
     
@@ -1213,7 +1220,7 @@ export const darkTheme = {
       darkTertiary: colors.background.tertiary,
     },
     
-    // Поверхности (темные)
+    // Поверхности (темные) - улучшенные для новой схемы
     surface: {
       primary: colors.surface.dark,
       secondary: colors.surface.darkSecondary,
@@ -1221,6 +1228,9 @@ export const darkTheme = {
       dark: colors.surface.primary,
       darkSecondary: colors.surface.secondary,
       darkTertiary: colors.surface.tertiary,
+      // Добавляем новые поверхности для лучшей иерархии
+      card: colors.background.darkSecondary,
+      cardBorder: colors.border.lightDark,
     },
     
     // Границы и разделители (темные)
@@ -1293,11 +1303,16 @@ export const darkTheme = {
   // Радиусы скругления (остаются теми же)
   borderRadius: borderRadius,
   
-  // Анимации (остаются теми же)
+  // Анимации (улучшенные для новой схемы)
   animation: {
     duration: animation.duration,
     easing: animation.easing,
     keyframes: animation.keyframes,
+    // Добавляем новые анимации для улучшенного UX
+    shimmer: animation.shimmer,
+    float: animation.float,
+    wiggle: animation.wiggle,
+    slideFadeIn: animation.slideFadeIn,
   },
   
   // Точки останова для адаптивности (остаются теми же)

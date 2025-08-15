@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { useTheme } from './ThemeProvider';
 import Icon from './Icon';
@@ -9,17 +9,24 @@ import Checkbox from './Checkbox';
 import Badge from './Badge';
 import Divider from './Divider';
 
-// Компонент фильтра аниме
-const AnimeFilter = ({ 
+// Компонент фильтра аниме с полной адаптивностью
+const AnimeFilter = ({
   onFilterChange,
   initialFilters = {},
   className = '',
-  showAdvanced = false
+  showAdvanced = false,
+  responsive = true,
+  mobileLayout = 'drawer',
+  maxVisibleFilters = 3,
+  enableSaveFilters = false,
+  savedFilters = []
 }) => {
   const { colors } = useTheme();
   const [isOpen, setIsOpen] = useState(showAdvanced);
   const [filters, setFilters] = useState(initialFilters);
   const [hasActiveFilters, setHasActiveFilters] = useState(false);
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+  const [visibleFilterCount, setVisibleFilterCount] = useState(maxVisibleFilters);
   
   // Проверка, есть ли активные фильтры
   useEffect(() => {
@@ -32,15 +39,15 @@ const AnimeFilter = ({
     setHasActiveFilters(active);
   }, [filters]);
   
-  // Обработка изменений фильтров
-  const handleFilterChange = (key, value) => {
+  // Оптимизация с помощью useCallback
+  const handleFilterChange = useCallback((key, value) => {
     const newFilters = { ...filters, [key]: value };
     setFilters(newFilters);
     onFilterChange(newFilters);
-  };
+  }, [filters, onFilterChange]);
   
   // Сброс всех фильтров
-  const handleReset = () => {
+  const handleReset = useCallback(() => {
     const resetFilters = {
       search: '',
       status: '',
@@ -55,12 +62,27 @@ const AnimeFilter = ({
     };
     setFilters(resetFilters);
     onFilterChange(resetFilters);
-  };
+  }, [onFilterChange]);
   
   // Переключение расширенных фильтров
-  const toggleAdvanced = () => {
+  const toggleAdvanced = useCallback(() => {
     setIsOpen(!isOpen);
-  };
+  }, [isOpen]);
+  
+  // Переключение мобильного меню
+  const toggleMobileDrawer = useCallback(() => {
+    setMobileDrawerOpen(!mobileDrawerOpen);
+  }, [mobileDrawerOpen]);
+  
+  // Показать больше фильтров
+  const showMoreFilters = useCallback(() => {
+    setVisibleFilterCount(prev => prev + maxVisibleFilters);
+  }, [maxVisibleFilters]);
+  
+  // Показать меньше фильтров
+  const showLessFilters = useCallback(() => {
+    setVisibleFilterCount(maxVisibleFilters);
+  }, [maxVisibleFilters]);
   
   // Предустановленные фильтры
   const presetFilters = [
@@ -73,14 +95,173 @@ const AnimeFilter = ({
   ];
   
   // Применение предустановленного фильтра
-  const applyPreset = (presetValue) => {
+  const applyPreset = useCallback((presetValue) => {
     const newFilters = { ...filters, ...presetValue };
     setFilters(newFilters);
     onFilterChange(newFilters);
-  };
+  }, [filters, onFilterChange]);
   
+  // Сохранение текущих фильтров
+  const saveCurrentFilters = useCallback(() => {
+    const filterName = prompt('Введите название для набора фильтров:');
+    if (filterName) {
+      const newSavedFilters = [...savedFilters, { name: filterName, filters }];
+      // В реальном приложении здесь был бы вызов API или сохранение в localStorage
+      console.log('Сохраненные фильтры:', newSavedFilters);
+    }
+  }, [savedFilters, filters]);
+  
+  // Применение сохраненных фильтров
+  const applySavedFilters = useCallback((savedFilter) => {
+    setFilters(savedFilter.filters);
+    onFilterChange(savedFilter.filters);
+  }, [onFilterChange]);
+  
+  // Удаление сохраненных фильтров
+  const removeSavedFilters = useCallback((index) => {
+    const newSavedFilters = savedFilters.filter((_, i) => i !== index);
+    // В реальном приложении здесь был бы вызов API или сохранение в localStorage
+    console.log('Удаленные фильтры:', newSavedFilters);
+  }, [savedFilters]);
+  
+  // Рендеринг основных фильтров с адаптивностью
+  const renderMainFilters = useMemo(() => {
+    const mainFilters = [
+      {
+        key: 'status',
+        label: 'Статус',
+        options: [
+          { value: '', label: 'Все статусы' },
+          { value: 'ongoing', label: 'В эфире' },
+          { value: 'completed', label: 'Завершено' },
+          { value: 'upcoming', label: 'Скоро выйдет' },
+          { value: 'hiatus', label: 'Перерыв' }
+        ]
+      },
+      {
+        key: 'type',
+        label: 'Тип',
+        options: [
+          { value: '', label: 'Все типы' },
+          { value: 'tv', label: 'ТВ-сериал' },
+          { value: 'movie', label: 'Фильм' },
+          { value: 'ova', label: 'OVA' },
+          { value: 'ona', label: 'ONA' },
+          { value: 'special', label: 'Спешл' }
+        ]
+      },
+      {
+        key: 'rating',
+        label: 'Рейтинг',
+        options: [
+          { value: '', label: 'Любой рейтинг' },
+          { value: '9', label: '9+ Отлично' },
+          { value: '8', label: '8+ Очень хорошо' },
+          { value: '7', label: '7+ Хорошо' },
+          { value: '6', label: '6+ Ниже среднего' },
+          { value: '5', label: '5+ Средне' }
+        ]
+      },
+      {
+        key: 'year',
+        label: 'Год выпуска',
+        options: [
+          { value: '', label: 'Все годы' },
+          { value: '2024', label: '2024' },
+          { value: '2023', label: '2023' },
+          { value: '2022', label: '2022' },
+          { value: '2021', label: '2021' },
+          { value: '2020', label: '2020' },
+          { value: 'older', label: 'Раньше 2020' }
+        ]
+      }
+    ];
+
+    // Ограничиваем количество видимых фильтров на мобильных устройствах
+    const filtersToShow = responsive
+      ? mainFilters.slice(0, visibleFilterCount)
+      : mainFilters;
+
+    return (
+      <div className={`grid gap-4 mb-6 ${
+        responsive
+          ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4'
+          : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4'
+      }`}>
+        {filtersToShow.map((filter) => (
+          <div key={filter.key}>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              {filter.label}
+            </label>
+            <Select
+              value={filters[filter.key] || ''}
+              onChange={(e) => handleFilterChange(filter.key, e.target.value)}
+              className="w-full"
+            >
+              {filter.options.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </Select>
+          </div>
+        ))}
+        
+        {/* Кнопка показать больше/меньше для мобильных устройств */}
+        {responsive && visibleFilterCount < mainFilters.length && (
+          <div className="flex justify-center items-center sm:col-span-2 lg:col-span-4">
+            <Button
+              variant="ghost"
+              size="small"
+              onClick={showMoreFilters}
+              className="text-xs"
+            >
+              Показать ещё фильтры
+            </Button>
+          </div>
+        )}
+        
+        {responsive && visibleFilterCount > maxVisibleFilters && (
+          <div className="flex justify-center items-center sm:col-span-2 lg:col-span-4">
+            <Button
+              variant="ghost"
+              size="small"
+              onClick={showLessFilters}
+              className="text-xs"
+            >
+              Скрыть фильтры
+            </Button>
+          </div>
+        )}
+      </div>
+    );
+  }, [filters, handleFilterChange, responsive, visibleFilterCount, maxVisibleFilters, showMoreFilters, showLessFilters]);
+
   return (
-    <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 ${className}`}>
+    <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6 ${className}`}>
+      {/* Мобильная кнопка открытия фильтров */}
+      {responsive && mobileLayout === 'drawer' && (
+        <div className="sm:hidden mb-4">
+          <Button
+            variant="outline"
+            size="medium"
+            onClick={toggleMobileDrawer}
+            className="w-full flex items-center justify-center gap-2"
+          >
+            <Icon name="filter" size={20} />
+            Фильтры
+            {hasActiveFilters && (
+              <Badge variant="secondary" size="small">
+                {Object.values(filters).filter(value => {
+                  if (Array.isArray(value)) return value.length > 0;
+                  return value !== '' && value !== null && value !== undefined;
+                }).length}
+              </Badge>
+            )}
+          </Button>
+        </div>
+      )}
+      
       {/* Поиск */}
       <div className="mb-6">
         <div className="relative">
@@ -93,6 +274,7 @@ const AnimeFilter = ({
             value={filters.search || ''}
             onChange={(e) => handleFilterChange('search', e.target.value)}
             className="pl-10"
+            responsive={responsive}
           />
         </div>
       </div>
@@ -108,6 +290,7 @@ const AnimeFilter = ({
               size="small"
               onClick={() => applyPreset(filter.value)}
               className="text-xs"
+              responsive={responsive}
             >
               {filter.label}
             </Button>
@@ -116,93 +299,22 @@ const AnimeFilter = ({
       </div>
       
       {/* Основные фильтры */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Статус
-          </label>
-          <Select
-            value={filters.status || ''}
-            onChange={(e) => handleFilterChange('status', e.target.value)}
-            className="w-full"
-          >
-            <option value="">Все статусы</option>
-            <option value="ongoing">В эфире</option>
-            <option value="completed">Завершено</option>
-            <option value="upcoming">Скоро выйдет</option>
-            <option value="hiatus">Перерыв</option>
-          </Select>
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Тип
-          </label>
-          <Select
-            value={filters.type || ''}
-            onChange={(e) => handleFilterChange('type', e.target.value)}
-            className="w-full"
-          >
-            <option value="">Все типы</option>
-            <option value="tv">ТВ-сериал</option>
-            <option value="movie">Фильм</option>
-            <option value="ova">OVA</option>
-            <option value="ona">ONA</option>
-            <option value="special">Спешл</option>
-          </Select>
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Рейтинг
-          </label>
-          <Select
-            value={filters.rating || ''}
-            onChange={(e) => handleFilterChange('rating', e.target.value)}
-            className="w-full"
-          >
-            <option value="">Любой рейтинг</option>
-            <option value="9">9+ Отлично</option>
-            <option value="8">8+ Очень хорошо</option>
-            <option value="7">7+ Хорошо</option>
-            <option value="6">6+ Ниже среднего</option>
-            <option value="5">5+ Средне</option>
-          </Select>
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Год выпуска
-          </label>
-          <Select
-            value={filters.year || ''}
-            onChange={(e) => handleFilterChange('year', e.target.value)}
-            className="w-full"
-          >
-            <option value="">Все годы</option>
-            <option value="2024">2024</option>
-            <option value="2023">2023</option>
-            <option value="2022">2022</option>
-            <option value="2021">2021</option>
-            <option value="2020">2020</option>
-            <option value="older">Раньше 2020</option>
-          </Select>
-        </div>
-      </div>
+      {renderMainFilters}
       
       {/* Кнопка расширенных фильтров */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-2">
         <Button
           variant="outline"
           size="small"
           onClick={toggleAdvanced}
           className="flex items-center gap-2"
+          responsive={responsive}
         >
           <Icon name={isOpen ? 'chevronUp' : 'chevronDown'} size={16} />
           Расширенные фильтры
         </Button>
         
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {hasActiveFilters && (
             <Badge variant="secondary" size="small">
               {Object.values(filters).filter(value => {
@@ -211,16 +323,61 @@ const AnimeFilter = ({
               }).length} активных
             </Badge>
           )}
+          
           <Button
             variant="ghost"
             size="small"
             onClick={handleReset}
             disabled={!hasActiveFilters}
+            responsive={responsive}
           >
             Сбросить
           </Button>
+          
+          {enableSaveFilters && (
+            <Button
+              variant="ghost"
+              size="small"
+              onClick={saveCurrentFilters}
+              responsive={responsive}
+            >
+              <Icon name="bookmark" size={16} />
+              Сохранить
+            </Button>
+          )}
         </div>
       </div>
+      
+      {/* Сохраненные фильтры */}
+      {enableSaveFilters && savedFilters.length > 0 && (
+        <div className="mb-4">
+          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Сохраненные фильтры
+          </h3>
+          <div className="flex flex-wrap gap-2">
+            {savedFilters.map((savedFilter, index) => (
+              <div key={index} className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 rounded-md p-1">
+                <Button
+                  variant="ghost"
+                  size="small"
+                  onClick={() => applySavedFilters(savedFilter)}
+                  className="text-xs"
+                >
+                  {savedFilter.name}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="small"
+                  onClick={() => removeSavedFilters(index)}
+                  className="text-xs p-1 h-auto"
+                >
+                  <Icon name="x" size={14} />
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       
       {/* Расширенные фильтры */}
       {isOpen && (
@@ -380,6 +537,22 @@ AnimeFilter.propTypes = {
   initialFilters: PropTypes.object,
   className: PropTypes.string,
   showAdvanced: PropTypes.bool,
+  responsive: PropTypes.bool,
+  mobileLayout: PropTypes.oneOf(['drawer', 'inline']),
+  maxVisibleFilters: PropTypes.number,
+  enableSaveFilters: PropTypes.bool,
+  savedFilters: PropTypes.array,
+};
+
+AnimeFilter.defaultProps = {
+  initialFilters: {},
+  className: '',
+  showAdvanced: false,
+  responsive: true,
+  mobileLayout: 'drawer',
+  maxVisibleFilters: 3,
+  enableSaveFilters: false,
+  savedFilters: [],
 };
 
 // Компонент результатов фильтрации

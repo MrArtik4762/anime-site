@@ -1,462 +1,509 @@
-import React from 'react';
-import styled from 'styled-components';
+import React, { memo } from 'react';
 import PropTypes from 'prop-types';
+import { styled } from 'styled-components';
 
-// Контейнер для алерта
-const AlertContainer = styled.div`
+// Стилизованный компонент для алерта
+const StyledAlert = styled.div`
   display: flex;
   align-items: flex-start;
-  padding: ${props => props.theme.spacing[3]};
-  border-radius: ${props => props.theme.borderRadius.md};
-  margin-bottom: ${props => props.theme.spacing[3]};
-  border: 1px solid;
+  padding: ${props => {
+    if (props.size === 'small') return `${props.theme.spacing.small} ${props.theme.spacing.medium}`;
+    if (props.size === 'large') return `${props.theme.spacing.medium} ${props.theme.spacing.large}`;
+    return `${props.theme.spacing.medium} ${props.theme.spacing.medium}`;
+  }};
   background-color: ${props => {
-    switch (props.variant) {
-      case 'success':
-        return props.theme.colors.success + '10';
-      case 'error':
-        return props.theme.colors.danger + '10';
-      case 'warning':
-        return props.theme.colors.warning + '10';
-      case 'info':
-        return props.theme.colors.info + '10';
-      default:
-        return props.theme.colors.border.light;
-    }
+    if (props.variant === 'info') return props.theme.colors.infoBg;
+    if (props.variant === 'success') return props.theme.colors.successBg;
+    if (props.variant === 'warning') return props.theme.colors.warningBg;
+    if (props.variant === 'error') return props.theme.colors.errorBg;
+    if (props.variant === 'dark') return props.theme.colors.darkBg;
+    return props.theme.colors.infoBg;
   }};
-  border-color: ${props => {
-    switch (props.variant) {
-      case 'success':
-        return props.theme.colors.success;
-      case 'error':
-        return props.theme.colors.danger;
-      case 'warning':
-        return props.theme.colors.warning;
-      case 'info':
-        return props.theme.colors.info;
-      default:
-        return props.theme.colors.border.medium;
-    }
+  border-left: ${props => props.theme.border.width.md} solid ${props => {
+    if (props.variant === 'info') return props.theme.colors.info;
+    if (props.variant === 'success') return props.theme.colors.success;
+    if (props.variant === 'warning') return props.theme.colors.warning;
+    if (props.variant === 'error') return props.theme.colors.error;
+    if (props.variant === 'dark') return props.theme.colors.dark;
+    return props.theme.colors.info;
   }};
-  color: ${props => {
-    switch (props.variant) {
-      case 'success':
-        return props.theme.colors.success;
-      case 'error':
-        return props.theme.colors.danger;
-      case 'warning':
-        return props.theme.colors.warning;
-      case 'info':
-        return props.theme.colors.info;
-      default:
-        return props.theme.colors.text.primary;
-    }
-  }};
-  transition: ${props => props.theme.transitions.normal};
+  border-radius: ${props => props.theme.border.radius.md};
+  margin-bottom: ${props => props.theme.spacing.medium};
+  box-shadow: ${props => props.theme.shadows.sm};
+  transition: all ${props => props.theme.transitions.medium} ease;
+  position: relative;
+  overflow: hidden;
   
   ${props => props.closable && `
-    position: relative;
-    
-    .close-button {
-      position: absolute;
-      top: ${props.theme.spacing[2]};
-      right: ${props.theme.spacing[2]};
-      background: none;
-      border: none;
-      cursor: pointer;
-      padding: ${props.theme.spacing[0.5]};
-      border-radius: ${props.theme.borderRadius.sm};
-      color: ${props => {
-        switch (props.variant) {
-          case 'success':
-            return props.theme.colors.success;
-          case 'error':
-            return props.theme.colors.danger;
-          case 'warning':
-            return props.theme.colors.warning;
-          case 'info':
-            return props.theme.colors.info;
-          default:
-            return props.theme.colors.text.tertiary;
-        }
-      }};
-      transition: ${props => props.theme.transitions.normal};
-      
-      &:hover {
-        background-color: ${props => props.theme.colors.border.light};
-      }
-      
-      &:focus {
-        outline: none;
-        
-        &::after {
-          content: '';
-          position: absolute;
-          top: -2px;
-          left: -2px;
-          right: -2px;
-          bottom: -2px;
-          border: 2px solid ${props => props.theme.colors.primary};
-          border-radius: ${props => props.theme.borderRadius.sm};
-        }
-      }
-    }
-  `}
-  
-  ${props => props.withIcon && `
-    padding-left: ${props.theme.spacing[4]};
-    
-    .icon {
-      flex-shrink: 0;
-      width: ${props.theme.spacing[4]};
-      height: ${props.theme.spacing[4]};
-      margin-right: ${props.theme.spacing[2]};
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: ${props.theme.borderRadius.md};
-      background-color: ${props => {
-        switch (props.variant) {
-          case 'success':
-            return props.theme.colors.success + '20';
-          case 'error':
-            return props.theme.colors.danger + '20';
-          case 'warning':
-            return props.theme.colors.warning + '20';
-          case 'info':
-            return props.theme.colors.info + '20';
-          default:
-            return props.theme.colors.border.light;
-        }
-      }};
-      
-      svg {
-        width: ${props.theme.spacing[3]};
-        height: ${props.theme.spacing[3]};
-        stroke: ${props => {
-          switch (props.variant) {
-            case 'success':
-              return props.theme.colors.success;
-            case 'error':
-              return props.theme.colors.danger;
-            case 'warning':
-              return props.theme.colors.warning;
-            case 'info':
-              return props.theme.colors.info;
-            default:
-              return props.theme.colors.text.primary;
-          }
-        }};
-      }
-    }
-  `}
-  
-  ${props => props.shadow && `
-    box-shadow: ${props => props.theme.shadow.md};
-  `}
-  
-  ${props => props.rounded && `
-    border-radius: ${props.theme.borderRadius.lg};
+    padding-right: ${props.theme.spacing.large};
   `}
   
   ${props => props.outlined && `
     background-color: transparent;
+    border: ${props => props.theme.border.width.sm} solid ${props => {
+      if (props.variant === 'info') return props.theme.colors.info;
+      if (props.variant === 'success') return props.theme.colors.success;
+      if (props.variant === 'warning') return props.theme.colors.warning;
+      if (props.variant === 'error') return props.theme.colors.error;
+      if (props.variant === 'dark') return props.theme.colors.dark;
+      return props.theme.colors.info;
+    }};
+    box-shadow: none;
+  `}
+  
+  ${props => props.shadow && `
+    box-shadow: ${props => props.theme.shadows.md};
+  `}
+  
+  ${props => props.rounded && `
+    border-radius: ${props => props.theme.border.radius.lg};
+  `}
+  
+  ${props => props.bordered && `
+    border: ${props => props.theme.border.width.sm} solid ${props => {
+      if (props.variant === 'info') return props.theme.colors.info;
+      if (props.variant === 'success') return props.theme.colors.success;
+      if (props.variant === 'warning') return props.theme.colors.warning;
+      if (props.variant === 'error') return props.theme.colors.error;
+      if (props.variant === 'dark') return props.theme.colors.dark;
+      return props.theme.colors.info;
+    }};
+  `}
+  
+  ${props => props.showIcon && `
+    &::before {
+      content: '';
+      position: absolute;
+      left: ${props.theme.spacing.medium};
+      top: 50%;
+      transform: translateY(-50%);
+      width: ${props.theme.iconSizes.md};
+      height: ${props.theme.iconSizes.md};
+      background-color: ${props => {
+        if (props.variant === 'info') return props.theme.colors.info;
+        if (props.variant === 'success') return props.theme.colors.success;
+        if (props.variant === 'warning') return props.theme.colors.warning;
+        if (props.variant === 'error') return props.theme.colors.error;
+        if (props.variant === 'dark') return props.theme.colors.dark;
+        return props.theme.colors.info;
+      }};
+      border-radius: 50%;
+      opacity: 0.2;
+    }
+  `}
+  
+  ${props => props.size === 'small' && `
+    padding: ${props.theme.spacing.small} ${props.theme.spacing.medium};
+    font-size: ${props.theme.fontSizes.sm};
+    
+    ${props => props.showIcon && `
+      &::before {
+        width: ${props.theme.iconSizes.sm};
+        height: ${props.theme.iconSizes.sm};
+        left: ${props.theme.spacing.small};
+      }
+    `}
+  `}
+  
+  ${props => props.size === 'large' && `
+    padding: ${props.theme.spacing.medium} ${props.theme.spacing.large};
+    font-size: ${props.theme.fontSizes.lg};
+    
+    ${props => props.showIcon && `
+      &::before {
+        width: ${props.theme.iconSizes.lg};
+        height: ${props.theme.iconSizes.lg};
+        left: ${props.theme.spacing.medium};
+      }
+    `}
+  `}
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: ${props => props.theme.shadows.md};
+  }
+  
+  @media (max-width: 768px) {
+    ${props => props.size === 'small' && `
+      padding: ${props.theme.spacing.xsmall} ${props.theme.spacing.small};
+      font-size: ${props.theme.fontSizes.xs};
+    `}
+    
+    ${props => props.size === 'large' && `
+      padding: ${props.theme.spacing.small} ${props.theme.spacing.medium};
+      font-size: ${props.theme.fontSizes.md};
+    `}
+    
+    ${props => props.shadow && `
+      box-shadow: ${props => props.theme.shadows.sm};
+    `}
+  }
+`;
+
+// Стилизованный заголовок алерта
+const AlertTitle = styled.h3`
+  font-size: ${props => {
+    if (props.size === 'small') return props.theme.fontSizes.sm;
+    if (props.size === 'large') return props.theme.fontSizes.lg;
+    return props.theme.fontSizes.base;
+  }};
+  font-weight: ${props => props.theme.fontWeights.semibold};
+  margin: 0 0 ${props => props.theme.spacing.small} 0;
+  color: ${props => {
+    if (props.variant === 'info') return props.theme.colors.info;
+    if (props.variant === 'success') return props.theme.colors.success;
+    if (props.variant === 'warning') return props.theme.colors.warning;
+    if (props.variant === 'error') return props.theme.colors.error;
+    if (props.variant === 'dark') return props.theme.colors.dark;
+    return props.theme.colors.info;
+  }};
+  
+  ${props => props.size === 'small' && `
+    font-size: ${props.theme.fontSizes.xs};
+    margin-bottom: ${props.theme.spacing.xsmall};
+  `}
+  
+  ${props => props.size === 'large' && `
+    font-size: ${props.theme.fontSizes.xl};
+    margin-bottom: ${props.theme.spacing.medium};
   `}
 `;
 
-// Содержимое алерта
+// Стилизованное содержимое алерта
 const AlertContent = styled.div`
   flex: 1;
+  color: ${props => props.theme.colors.text};
+  font-size: ${props => {
+    if (props.size === 'small') return props.theme.fontSizes.sm;
+    if (props.size === 'large') return props.theme.fontSizes.lg;
+    return props.theme.fontSizes.base;
+  }};
+  line-height: ${props => props.theme.lineHeights.normal};
   
-  .title {
-    font-size: ${props => props.theme.typography.fontSize.base[0]};
-    font-weight: ${props => props.theme.typography.fontWeight.semibold};
-    margin-bottom: ${props => props.theme.spacing[1]};
-    color: ${props => props.theme.colors.text.primary};
-  }
+  ${props => props.size === 'small' && `
+    font-size: ${props.theme.fontSizes.xs};
+  `}
   
-  .description {
-    font-size: ${props => props.theme.typography.fontSize.sm[0]};
-    line-height: ${props => props.theme.typography.lineHeight.normal};
-    color: ${props => props.theme.colors.text.secondary};
+  ${props => props.size === 'large' && `
+    font-size: ${props.theme.fontSizes.md};
+  `}
+  
+  p {
+    margin: 0 0 ${props => props.theme.spacing.small} 0;
+    
+    &:last-child {
+      margin-bottom: 0;
+    }
   }
 `;
 
-// Действия в алерте
-const AlertActions = styled.div`
-  display: flex;
-  gap: ${props => props.theme.spacing[2]};
-  margin-top: ${props => props.theme.spacing[2]};
+// Стилизованная кнопка закрытия
+const CloseButton = styled.button`
+  position: absolute;
+  top: ${props => props.theme.spacing.small};
+  right: ${props => props.theme.spacing.small};
+  background: none;
+  border: none;
+  color: ${props => props.theme.colors.textSecondary};
+  cursor: pointer;
+  padding: ${props => props.theme.spacing.xsmall};
+  border-radius: ${props => props.theme.border.radius.sm};
+  transition: all ${props => props.theme.transitions.fast} ease;
   
-  button {
-    font-size: ${props => props.theme.typography.fontSize.sm[0]};
+  &:hover {
+    background-color: ${props => props.theme.colors.hover};
+    color: ${props => props.theme.colors.text};
   }
+  
+  ${props => props.size === 'small' && `
+    top: ${props.theme.spacing.xsmall};
+    right: ${props.theme.spacing.xsmall};
+    padding: ${props.theme.spacing.xsmall};
+  `}
+  
+  ${props => props.size === 'large' && `
+    top: ${props.theme.spacing.medium};
+    right: ${props.theme.spacing.medium};
+    padding: ${props.theme.spacing.small};
+  `}
 `;
 
-// Компонент Alert
-const Alert = ({
+// Основной компонент Alert
+export const Alert = memo(({
   title,
-  description,
+  children,
   variant = 'info',
-  withIcon = true,
+  size = 'medium',
   closable = false,
+  outlined = false,
   shadow = false,
   rounded = false,
-  outlined = false,
-  actions,
-  className = '',
+  bordered = false,
+  showIcon = false,
   onClose,
+  className,
+  style,
   ...props
 }) => {
-  const getIcon = () => {
-    switch (variant) {
-      case 'success':
-        return (
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-            <polyline points="22 4 12 14.01 9 11.01"></polyline>
-          </svg>
-        );
-      case 'error':
-        return (
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="10"></circle>
-            <line x1="15" y1="9" x2="9" y2="15"></line>
-            <line x1="9" y1="9" x2="15" y2="15"></line>
-          </svg>
-        );
-      case 'warning':
-        return (
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
-            <line x1="12" y1="9" x2="12" y2="13"></line>
-            <line x1="12" y1="17" x2="12.01" y2="17"></line>
-          </svg>
-        );
-      case 'info':
-        return (
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="10"></circle>
-            <line x1="12" y1="16" x2="12" y2="12"></line>
-            <line x1="12" y1="8" x2="12.01" y2="8"></line>
-          </svg>
-        );
-      default:
-        return null;
+  const handleClose = (e) => {
+    e.preventDefault();
+    if (onClose) {
+      onClose();
     }
   };
   
   return (
-    <AlertContainer
+    <StyledAlert
       variant={variant}
-      withIcon={withIcon}
+      size={size}
       closable={closable}
+      outlined={outlined}
       shadow={shadow}
       rounded={rounded}
-      outlined={outlined}
-      className={`${className} alert ${variant}${withIcon ? ' with-icon' : ''}${closable ? ' closable' : ''}${shadow ? ' shadow' : ''}${rounded ? ' rounded' : ''}${outlined ? ' outlined' : ''}`}
+      bordered={bordered}
+      showIcon={showIcon}
+      className={className}
+      style={style}
       {...props}
     >
-      {withIcon && (
-        <div className="icon">
-          {getIcon()}
+      {showIcon && (
+        <div
+          style={{
+            marginRight: props.theme.spacing.medium,
+            color: variant === 'info' ? props.theme.colors.info :
+                   variant === 'success' ? props.theme.colors.success :
+                   variant === 'warning' ? props.theme.colors.warning :
+                   variant === 'error' ? props.theme.colors.error :
+                   props.theme.colors.dark,
+            flexShrink: 0,
+            marginTop: props.size === 'small' ? '2px' : '4px'
+          }}
+        >
+          {variant === 'info' && 'ℹ️'}
+          {variant === 'success' && '✅'}
+          {variant === 'warning' && '⚠️'}
+          {variant === 'error' && '❌'}
+          {variant === 'dark' && '🔒'}
         </div>
       )}
       
-      <AlertContent>
-        {title && <div className="title">{title}</div>}
-        {description && <div className="description">{description}</div>}
-        
-        {actions && (
-          <AlertActions>
-            {actions}
-          </AlertActions>
+      <div style={{ flex: 1 }}>
+        {title && (
+          <AlertTitle variant={variant} size={size}>
+            {title}
+          </AlertTitle>
         )}
-      </AlertContent>
+        <AlertContent size={size}>
+          {children}
+        </AlertContent>
+      </div>
       
       {closable && (
-        <button
-          className="close-button"
-          onClick={onClose}
-          aria-label="Закрыть уведомление"
+        <CloseButton
+          size={size}
+          onClick={handleClose}
+          aria-label="Закрыть"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-        </button>
+          ×
+        </CloseButton>
       )}
-    </AlertContainer>
+    </StyledAlert>
   );
-};
+});
 
-// Пропс-types для TypeScript
 Alert.propTypes = {
   title: PropTypes.string,
-  description: PropTypes.string,
-  variant: PropTypes.oneOf(['success', 'error', 'warning', 'info']),
-  withIcon: PropTypes.bool,
+  children: PropTypes.node,
+  variant: PropTypes.oneOf(['info', 'success', 'warning', 'error', 'dark']),
+  size: PropTypes.oneOf(['small', 'medium', 'large']),
   closable: PropTypes.bool,
+  outlined: PropTypes.bool,
   shadow: PropTypes.bool,
   rounded: PropTypes.bool,
-  outlined: PropTypes.bool,
-  actions: PropTypes.node,
-  className: PropTypes.string,
+  bordered: PropTypes.bool,
+  showIcon: PropTypes.bool,
   onClose: PropTypes.func,
+  className: PropTypes.string,
+  style: PropTypes.object,
 };
 
-// Компонент AlertGroup для группы алертов
-const AlertGroupContainer = styled.div`
-  position: fixed;
-  top: ${props => props.theme.spacing[4]};
-    right: ${props => props.theme.spacing[4]};
-  z-index: ${props => props.theme.zIndex.alert};
-  max-width: 400px;
-  width: 100%;
-  
-  @media (max-width: ${props => props.theme.breakpoints.md}) {
-    left: ${props => props.theme.spacing[4]};
-    right: ${props => props.theme.spacing[4]};
-  }
-`;
-
-// Компонент AlertGroup
-const AlertGroup = ({
-  alerts,
-  onDismiss,
-  className = '',
+// Компонент AlertGroup для группировки алертов
+export const AlertGroup = memo(({
+  children,
+  className,
+  style,
   ...props
 }) => {
   return (
-    <AlertGroupContainer className={`${className} alert-group`} {...props}>
+    <div className={className} style={style} {...props}>
+      {React.Children.map(children, (child, index) => {
+        if (React.isValidElement(child)) {
+          return React.cloneElement(child, {
+            ...child.props,
+            style: {
+              marginBottom: index === React.Children.count(children) - 1 ? 0 : child.props.theme.spacing.medium,
+              ...child.props.style
+            }
+          });
+        }
+        return child;
+      })}
+    </div>
+  );
+});
+
+AlertGroup.propTypes = {
+  children: PropTypes.node,
+  className: PropTypes.string,
+  style: PropTypes.object,
+};
+
+// Компонент AlertBanner для баннеров
+export const AlertBanner = memo(({
+  title,
+  children,
+  variant = 'info',
+  size = 'medium',
+  closable = false,
+  onClose,
+  className,
+  style,
+  ...props
+}) => {
+  return (
+    <Alert
+      title={title}
+      variant={variant}
+      size={size}
+      closable={closable}
+      onClose={onClose}
+      className={className}
+      style={{
+        borderRadius: 0,
+        marginBottom: 0,
+        ...style
+      }}
+      {...props}
+    >
+      {children}
+    </Alert>
+  );
+});
+
+AlertBanner.propTypes = {
+  title: PropTypes.string,
+  children: PropTypes.node,
+  variant: PropTypes.oneOf(['info', 'success', 'warning', 'error', 'dark']),
+  size: PropTypes.oneOf(['small', 'medium', 'large']),
+  closable: PropTypes.bool,
+  onClose: PropTypes.func,
+  className: PropTypes.string,
+  style: PropTypes.object,
+};
+
+// Компонент Toast для всплывающих уведомлений
+export const Toast = memo(({
+  title,
+  children,
+  variant = 'info',
+  size = 'medium',
+  duration = 5000,
+  onClose,
+  className,
+  style,
+  ...props
+}) => {
+  React.useEffect(() => {
+    if (duration > 0) {
+      const timer = setTimeout(() => {
+        if (onClose) {
+          onClose();
+        }
+      }, duration);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [duration, onClose]);
+  
+  return (
+    <Alert
+      title={title}
+      variant={variant}
+      size={size}
+      closable={true}
+      onClose={onClose}
+      className={className}
+      style={{
+        position: 'fixed',
+        top: props.theme.spacing.medium,
+        right: props.theme.spacing.medium,
+        zIndex: props.theme.zIndex.toast,
+        minWidth: '300px',
+        maxWidth: '500px',
+        ...style
+      }}
+      {...props}
+    >
+      {children}
+    </Alert>
+  );
+});
+
+Toast.propTypes = {
+  title: PropTypes.string,
+  children: PropTypes.node,
+  variant: PropTypes.oneOf(['info', 'success', 'warning', 'error', 'dark']),
+  size: PropTypes.oneOf(['small', 'medium', 'large']),
+  duration: PropTypes.number,
+  onClose: PropTypes.func,
+  className: PropTypes.string,
+  style: PropTypes.object,
+};
+
+// Компонент AlertList для списка алертов
+export const AlertList = memo(({
+  alerts,
+  onDismiss,
+  className,
+  style,
+  ...props
+}) => {
+  return (
+    <div className={className} style={style} {...props}>
       {alerts.map((alert, index) => (
         <Alert
           key={alert.id || index}
-          {...alert}
-          onClose={() => onDismiss(alert.id || index)}
-        />
+          title={alert.title}
+          variant={alert.variant}
+          size={alert.size}
+          closable={true}
+          onClose={() => onDismiss(alert.id)}
+          style={{
+            marginBottom: index === alerts.length - 1 ? 0 : props.theme.spacing.medium,
+            ...alert.style
+          }}
+        >
+          {alert.message}
+        </Alert>
       ))}
-    </AlertGroupContainer>
+    </div>
   );
-};
+});
 
-// Пропп-types для AlertGroup
-AlertGroup.propTypes = {
+AlertList.propTypes = {
   alerts: PropTypes.arrayOf(
     PropTypes.shape({
       id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
       title: PropTypes.string,
-      description: PropTypes.string,
-      variant: PropTypes.oneOf(['success', 'error', 'warning', 'info']),
-      withIcon: PropTypes.bool,
-      closable: PropTypes.bool,
-      shadow: PropTypes.bool,
-      rounded: PropTypes.bool,
-      outlined: PropTypes.bool,
-      actions: PropTypes.node,
+      message: PropTypes.node,
+      variant: PropTypes.oneOf(['info', 'success', 'warning', 'error', 'dark']),
+      size: PropTypes.oneOf(['small', 'medium', 'large']),
+      style: PropTypes.object,
     })
-  ).isRequired,
-  onDismiss: PropTypes.func.isRequired,
+  ),
+  onDismiss: PropTypes.func,
   className: PropTypes.string,
+  style: PropTypes.object,
 };
 
-// Компонент Banner для баннеров
-const BannerContainer = styled(AlertContainer)`
-  position: relative;
-  border-radius: 0;
-  margin: 0;
-  border: none;
-  border-bottom: 1px solid ${props => props.theme.colors.border.medium};
-  
-  ${props => props.variant === 'success' && `
-    background-color: ${props.theme.colors.success + '05'};
-    color: ${props.theme.colors.success};
-  `}
-  
-  ${props => props.variant === 'error' && `
-    background-color: ${props.theme.colors.danger + '05'};
-    color: ${props.theme.colors.danger};
-  `}
-  
-  ${props => props.variant === 'warning' && `
-    background-color: ${props.theme.colors.warning + '05'};
-    color: ${props.theme.colors.warning};
-  `}
-  
-  ${props => props.variant === 'info' && `
-    background-color: ${props.theme.colors.info + '05'};
-    color: ${props.theme.colors.info};
-  `}
-`;
-
-// Компонент Banner
-const Banner = ({
-  title,
-  description,
-  variant = 'info',
-  withIcon = true,
-  closable = false,
-  actions,
-  className = '',
-  onClose,
-  ...props
-}) => {
-  return (
-    <BannerContainer
-      variant={variant}
-      withIcon={withIcon}
-      closable={closable}
-      className={`${className} banner ${variant}${withIcon ? ' with-icon' : ''}${closable ? ' closable' : ''}`}
-      {...props}
-    >
-      {withIcon && (
-        <div className="icon">
-          <Alert variant={variant} withIcon={true}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
-            </svg>
-          </Alert>
-        </div>
-      )}
-      
-      <AlertContent>
-        {title && <div className="title">{title}</div>}
-        {description && <div className="description">{description}</div>}
-        
-        {actions && (
-          <AlertActions>
-            {actions}
-          </AlertActions>
-        )}
-      </AlertContent>
-      
-      {closable && (
-        <button
-          className="close-button"
-          onClick={onClose}
-          aria-label="Закрыть баннер"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-        </button>
-      )}
-    </BannerContainer>
-  );
-};
-
-// Пропс-types для Banner
-Banner.propTypes = {
-  title: PropTypes.string,
-  description: PropTypes.string,
-  variant: PropTypes.oneOf(['success', 'error', 'warning', 'info']),
-  withIcon: PropTypes.bool,
-  closable: PropTypes.bool,
-  actions: PropTypes.node,
-  className: PropTypes.string,
-  onClose: PropTypes.func,
-};
-
-// Экспорт компонентов
-export { Alert, AlertGroup as AlertGroupComponent, Banner };
+export default Alert;

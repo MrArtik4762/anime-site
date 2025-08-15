@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { Container } from '../styles/GlobalStyles';
-import SearchBar from '../components/common/SearchBar';
+import SearchBox from '../components/common/SearchBox';
 import FilterPanel from '../components/common/FilterPanel';
 import PopularSection from '../components/sections/PopularSection';
 import NewEpisodesSection from '../components/sections/NewEpisodesSection';
@@ -168,7 +168,7 @@ const HomePage = () => {
             Откройте для себя тысячи аниме сериалов и фильмов.
             Смотрите, оценивайте и делитесь впечатлениями с сообществом.
           </HeroSubtitle>
-          <SearchBar onSearch={handleSearch} placeholder="Поиск аниме..." />
+          <SearchBox onSearch={handleSearch} placeholder="Поиск аниме..." />
         </Container>
       </HeroSection>
 

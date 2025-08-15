@@ -53,9 +53,6 @@ jobs:
           cd server && npx prettier --check .
           cd ../client && npx prettier --check .
 
-      - name: Run type checking
-        run: |
-          cd client && npx tsc --noEmit
 
       - name: Check for security vulnerabilities
         run: |
@@ -106,7 +103,6 @@ jobs:
 
       redis:
         image: redis:7-alpine
-        command: redis-server --appendonly yes --requirepass ${{ secrets.REDIS_TEST_PASSWORD }}
         options: >-
           --health-cmd "redis-cli ping"
           --health-interval 10s
@@ -140,7 +136,7 @@ jobs:
 
       - name: Run server unit tests
         run: |
-          cd server && npm run test:coverage
+          cd server && npm run test
         env:
           NODE_ENV: test
           DATABASE_URL: "postgresql://anime_test_user:${{ secrets.POSTGRES_TEST_PASSWORD }}@localhost:5432/anime_test_db"

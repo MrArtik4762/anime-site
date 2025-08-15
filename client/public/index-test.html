@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тестовое приложение аниме-сайта</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+        .search-section {
+            margin-bottom: 30px;
+        }
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .search-input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        .search-button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .search-button:hover {
+            background-color: #45a049;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        .status.success {
+            background-color: #dff0d8;
+            color: #3c763d;
+        }
+        .status.error {
+            background-color: #f2dede;
+            color: #a94442;
+        }
+        .results {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+        }
+        .anime-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+            transition: transform 0.2s;
+        }
+        .anime-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .anime-card img {
+            width: 100%;
+            height: 300px;
+            object-fit: cover;
+        }
+        .anime-card-content {
+            padding: 15px;
+        }
+        .anime-card h3 {
+            margin: 0 0 10px 0;
+            font-size: 18px;
+        }
+        .anime-card p {
+            margin: 5px 0;
+            color: #666;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Тестовое приложение аниме-сайта</h1>
+            <p>Проверка работы API поиска</p>
+        </div>
+        
+        <div class="search-section">
+            <div class="search-box">
+                <input type="text" class="search-input" id="searchInput" placeholder="Введите название аниме..." value="Naruto">
+                <button class="search-button" onclick="searchAnime()">Поиск</button>
+            </div>
+            
+            <div id="status" class="status" style="display: none;"></div>
+            
+            <div id="loading" class="loading" style="display: none;">
+                <p>Идет поиск...</p>
+            </div>
+            
+            <div id="results" class="results"></div>
+        </div>
+    </div>
+
+    <script>
+        async function searchAnime() {
+            const query = document.getElementById('searchInput').value.trim();
+            const statusDiv = document.getElementById('status');
+            const loadingDiv = document.getElementById('loading');
+            const resultsDiv = document.getElementById('results');
+            
+            if (!query) {
+                showStatus('Введите поисковый запрос', 'error');
+                resultsDiv.innerHTML = '';
+                return;
+            }
+            
+            hideStatus();
+            loadingDiv.style.display = 'block';
+            resultsDiv.innerHTML = '';
+            
+            try {
+                // Прямой вызов API для тестирования
+                const response = await fetch(`http://127.0.0.1:7000/api/anime/search?q=${encodeURIComponent(query)}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayResults(data.data);
+                    showStatus(`Найдено ${data.count} результатов`, 'success');
+                } else {
+                    showStatus('Ошибка поиска: ' + (data.error || 'Неизвестная ошибка'), 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showStatus('Ошибка при выполнении запроса: ' + error.message, 'error');
+            } finally {
+                loadingDiv.style.display = 'none';
+            }
+        }
+        
+        function displayResults(data) {
+            const resultsDiv = document.getElementById('results');
+            
+            if (data.anime.length === 0) {
+                resultsDiv.innerHTML = '<p style="text-align: center; color: #666;">Ничего не найдено</p>';
+                return;
+            }
+            
+            let html = '';
+            
+            data.anime.forEach(anime => {
+                // Используем placeholder изображение
+                const imageUrl = `https://picsum.photos/seed/${anime.id}/200/300.jpg`;
+                
+                html += `
+                    <div class="anime-card">
+                        <img src="${imageUrl}" alt="${anime.title}" onerror="this.src='https://picsum.photos/seed/placeholder/200/300.jpg'">
+                        <div class="anime-card-content">
+                            <h3>${anime.title}</h3>
+                            <p>Год: ${anime.year}</p>
+                            <p>ID: ${anime.id}</p>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            resultsDiv.innerHTML = html;
+        }
+        
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+            statusDiv.style.display = 'block';
+        }
+        
+        function hideStatus() {
+            const statusDiv = document.getElementById('status');
+            statusDiv.style.display = 'none';
+        }
+        
+        // Обработка нажатия Enter в поле ввода
+        document.getElementById('searchInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchAnime();
+            }
+        });
+        
+        // Автоматический поиск при загрузке страницы
+        window.addEventListener('load', function() {
+            searchAnime();
+        });
+    </script>
+</body>
+</html>

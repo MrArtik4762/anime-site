@@ -213,13 +213,21 @@ const NewAnimeSection = ({
             key={anime.id || index}
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: index * 0.1 }}
+            transition={{
+              duration: 0.5,
+              delay: index * 0.1,
+              ease: "easeOut"
+            }}
+            style={{
+              animation: `fadeInUp 0.6s ease-out ${index * 0.1}s both`
+            }}
           >
             <AnimeCardWrapper>
               {isNewAnime(anime) && <NewBadge />}
-              <AnimeCard 
-                anime={anime} 
+              <AnimeCard
+                anime={anime}
                 onClick={() => onAnimeClick?.(anime)}
+                animationDelay={`${index * 100}ms`}
               />
             </AnimeCardWrapper>
           </motion.div>

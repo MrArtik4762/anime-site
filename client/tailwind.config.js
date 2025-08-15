@@ -1,0 +1,352 @@
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+  content: [
+    "./src/**/*.{js,jsx,ts,tsx}",
+    "./public/index.html",
+  ],
+  darkMode: 'class',
+  theme: {
+    extend: {
+      // Цвета на основе существующих design tokens
+      colors: {
+        // Основные цвета
+        primary: {
+          50: '#F8FAFC',
+          100: '#F1F5F9',
+          200: '#E2E8F0',
+          300: '#CBD5E1',
+          400: '#94A3B8',
+          500: '#64748B',
+          600: '#475569',
+          700: '#334155',
+          800: '#1E293B',
+          900: '#0F172A',
+        },
+        secondary: {
+          50: '#FEF3C7',
+          100: '#FDE68A',
+          200: '#FCD34D',
+          300: '#FBBF24',
+          400: '#F59E0B',
+          500: '#D97706',
+          600: '#B45309',
+          700: '#92400E',
+          800: '#78350F',
+          900: '#451A03',
+        },
+        // Акцентные цвета
+        accent: {
+          blue: '#3B82F6',
+          purple: '#8B5CF6',
+          pink: '#EC4899',
+          teal: '#14B8A6',
+          indigo: '#6366F1',
+          cyan: '#06B6D4',
+          emerald: '#10B981',
+          rose: '#F43F5E',
+        },
+        // Семантические цвета
+        success: '#4CAF50',
+        warning: '#FF9800',
+        error: '#F44336',
+        info: '#2196F3',
+        // Текстовые цвета
+        text: {
+          primary: '#0F172A',
+          secondary: '#475569',
+          tertiary: '#64748B',
+          disabled: '#94A3B8',
+          inverse: '#FFFFFF',
+        },
+        // Фоновые цвета
+        background: {
+          primary: '#FFFFFF',
+          secondary: '#F8FAFC',
+          tertiary: '#F1F5F9',
+          dark: '#0F172A',
+          darkSecondary: '#1E293B',
+          darkTertiary: '#334155',
+        },
+        // Поверхности
+        surface: {
+          primary: '#FFFFFF',
+          secondary: '#FFFFFF',
+          tertiary: '#F8FAFC',
+          dark: '#1E293B',
+          darkSecondary: '#334155',
+          darkTertiary: '#475569',
+        },
+        // Границы
+        border: {
+          light: '#E2E8F0',
+          medium: '#CBD5E1',
+          dark: '#94A3B8',
+          lightDark: '#334155',
+          mediumDark: '#475569',
+          darkDark: '#64748B',
+        },
+        // Аниме-специфичные цвета
+        anime: {
+          ongoing: '#10B981',
+          completed: '#3B82F6',
+          upcoming: '#F59E0B',
+          hiatus: '#8B5CF6',
+          masterpiece: '#FCD34D',
+          great: '#10B981',
+          good: '#3B82F6',
+          average: '#F59E0B',
+          bad: '#EF4444',
+          sub: '#06B6D4',
+          dub: '#8B5CF6',
+          raw: '#6B7280',
+        },
+      },
+      // Размеры шрифтов на основе существующих токенов
+      fontSize: {
+        xs: ['12px', '16px'],
+        sm: ['14px', '20px'],
+        base: ['16px', '24px'],
+        lg: ['18px', '28px'],
+        xl: ['20px', '28px'],
+        '2xl': ['24px', '32px'],
+        '3xl': ['30px', '36px'],
+        '4xl': ['36px', '40px'],
+        '5xl': ['48px', '48px'],
+        '6xl': ['60px', '72px'],
+        '7xl': ['72px', '84px'],
+      },
+      // Толщины шрифтов
+      fontWeight: {
+        thin: 100,
+        extralight: 200,
+        light: 300,
+        normal: 400,
+        medium: 500,
+        semibold: 600,
+        bold: 700,
+        extrabold: 800,
+        black: 900,
+      },
+      // Высоты строк
+      lineHeight: {
+        tight: 1.25,
+        snug: 1.375,
+        normal: 1.5,
+        relaxed: 1.625,
+        loose: 2,
+      },
+      // Отступы между буквами
+      letterSpacing: {
+        tight: '-0.025em',
+        normal: '0em',
+        wide: '0.025em',
+        wider: '0.05em',
+        widest: '0.1em',
+      },
+      // Размеры и отступы на основе существующих токенов
+      spacing: {
+        0: '0',
+        1: '4px',
+        2: '8px',
+        3: '12px',
+        4: '16px',
+        5: '20px',
+        6: '24px',
+        7: '28px',
+        8: '32px',
+        9: '36px',
+        10: '40px',
+        11: '44px',
+        12: '48px',
+        14: '56px',
+        16: '64px',
+        20: '80px',
+        24: '96px',
+        28: '112px',
+        32: '128px',
+        36: '144px',
+        40: '160px',
+        44: '176px',
+        48: '192px',
+        56: '224px',
+        64: '256px',
+        // Дополнительные размеры для мобильных устройств
+        mobile: '16px',
+        mobileSm: '12px',
+        mobileMd: '20px',
+        mobileLg: '24px',
+        mobileXl: '32px',
+        // Дополнительные размеры для планшетов
+        tablet: '24px',
+        tabletSm: '20px',
+        tabletMd: '28px',
+        tabletLg: '32px',
+        tabletXl: '40px',
+        // Дополнительные размеры для десктопов
+        desktop: '32px',
+        desktopSm: '28px',
+        desktopMd: '36px',
+        desktopLg: '48px',
+        desktopXl: '64px',
+      },
+      // Радиусы скругления
+      borderRadius: {
+        none: '0',
+        sm: '2px',
+        md: '4px',
+        lg: '6px',
+        xl: '8px',
+        '2xl': '12px',
+        '3xl': '16px',
+        full: '9999px',
+        pill: '999px',
+        circle: '50%',
+      },
+      // Точки останова для адаптивности
+      screens: {
+        xs: '320px',
+        sm: '480px',
+        md: '768px',
+        lg: '1024px',
+        xl: '1280px',
+        '2xl': '1536px',
+      },
+      // Z-индексы
+      zIndex: {
+        auto: 'auto',
+        0: 0,
+        10: 10,
+        20: 20,
+        30: 30,
+        40: 40,
+        50: 50,
+        dropdown: 1000,
+        sticky: 1020,
+        fixed: 1030,
+        modalBackdrop: 1040,
+        modal: 1050,
+        popover: 1060,
+        tooltip: 1070,
+        toast: 1080,
+        loading: 1090,
+        navbar: 1100,
+      },
+      // Непрозрачность
+      opacity: {
+        0: '0',
+        25: '0.25',
+        50: '0.5',
+        75: '0.75',
+        100: '1',
+      },
+      // Анимации
+      animation: {
+        fadeIn: 'fadeIn 0.3s ease-in-out',
+        fadeOut: 'fadeOut 0.3s ease-in-out',
+        slideInUp: 'slideInUp 0.3s ease-out',
+        slideInDown: 'slideInDown 0.3s ease-out',
+        slideInLeft: 'slideInLeft 0.3s ease-out',
+        slideInRight: 'slideInRight 0.3s ease-out',
+        scaleIn: 'scaleIn 0.3s ease-out',
+        scaleUp: 'scaleUp 0.3s ease-out',
+        scaleDown: 'scaleDown 0.3s ease-out',
+        bounce: 'bounce 1s ease-in-out',
+        pulse: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        spin: 'spin 1s linear infinite',
+        shimmer: 'shimmer 2s ease-in-out infinite',
+        float: 'float 3s ease-in-out infinite',
+        wiggle: 'wiggle 1s ease-in-out',
+        slideFadeIn: 'slideFadeIn 0.3s ease-out',
+      },
+      // Ключевые кадры анимаций
+      keyframes: {
+        fadeIn: {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        fadeOut: {
+          '0%': { opacity: '1' },
+          '100%': { opacity: '0' },
+        },
+        slideInUp: {
+          '0%': { transform: 'translateY(100%)', opacity: '0' },
+          '100%': { transform: 'translateY(0)', opacity: '1' },
+        },
+        slideInDown: {
+          '0%': { transform: 'translateY(-100%)', opacity: '0' },
+          '100%': { transform: 'translateY(0)', opacity: '1' },
+        },
+        slideInLeft: {
+          '0%': { transform: 'translateX(-100%)', opacity: '0' },
+          '100%': { transform: 'translateX(0)', opacity: '1' },
+        },
+        slideInRight: {
+          '0%': { transform: 'translateX(100%)', opacity: '0' },
+          '100%': { transform: 'translateX(0)', opacity: '1' },
+        },
+        scaleIn: {
+          '0%': { transform: 'scale(0.95)', opacity: '0' },
+          '100%': { transform: 'scale(1)', opacity: '1' },
+        },
+        scaleUp: {
+          '0%': { transform: 'scale(1)' },
+          '100%': { transform: 'scale(1.05)' },
+        },
+        scaleDown: {
+          '0%': { transform: 'scale(1.05)' },
+          '100%': { transform: 'scale(1)' },
+        },
+        bounce: {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-10px)' },
+        },
+        pulse: {
+          '0%, 100%': { opacity: '1' },
+          '50%': { opacity: '0.5' },
+        },
+        spin: {
+          '0%': { transform: 'rotate(0deg)' },
+          '100%': { transform: 'rotate(360deg)' },
+        },
+        shimmer: {
+          '0%': { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(100%)' },
+        },
+        float: {
+          '0%, 100%': { transform: 'translateY(0px)' },
+          '50%': { transform: 'translateY(-20px)' },
+        },
+        wiggle: {
+          '0%, 7%': { transform: 'rotateZ(0)' },
+          '15%': { transform: 'rotateZ(-15deg)' },
+          '20%': { transform: 'rotateZ(10deg)' },
+          '25%': { transform: 'rotateZ(-10deg)' },
+          '30%': { transform: 'rotateZ(6deg)' },
+          '35%': { transform: 'rotateZ(-4deg)' },
+          '40%, 100%': { transform: 'rotateZ(0)' },
+        },
+        slideFadeIn: {
+          '0%': { transform: 'translateY(20px)', opacity: '0' },
+          '100%': { transform: 'translateY(0)', opacity: '1' },
+        },
+      },
+      // Длительности анимаций
+      transitionDuration: {
+        fast: '150ms',
+        normal: '300ms',
+        slow: '500ms',
+        slower: '700ms',
+      },
+      // Функции анимации
+      transitionTimingFunction: {
+        linear: 'linear',
+        ease: 'ease',
+        easeIn: 'ease-in',
+        easeOut: 'ease-out',
+        easeInOut: 'ease-in-out',
+        bounce: 'cubic-bezier(0.68, -0.55, 0.265, 1.55)',
+      },
+    },
+  },
+  plugins: [],
+}

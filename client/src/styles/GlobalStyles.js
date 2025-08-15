@@ -91,6 +91,88 @@ export const GlobalStyles = createGlobalStyle`
     to { opacity: 1; }
   }
 
+  @keyframes fadeInUp {
+    from {
+      transform: translateY(30px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes fadeInDown {
+    from {
+      transform: translateY(-30px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes fadeInLeft {
+    from {
+      transform: translateX(-30px);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes fadeInRight {
+    from {
+      transform: translateX(30px);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes scaleIn {
+    from {
+      transform: scale(0.9);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  @keyframes bounce {
+    0%, 20%, 50%, 80%, 100% {
+      transform: translateY(0);
+    }
+    40% {
+      transform: translateY(-10px);
+    }
+    60% {
+      transform: translateY(-5px);
+    }
+  }
+
+  @keyframes pulse {
+    0% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    50% {
+      transform: scale(1.05);
+      opacity: 0.8;
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
   @keyframes slideInUp {
     from {
       transform: translateY(30px);
@@ -113,9 +195,116 @@ export const GlobalStyles = createGlobalStyle`
     }
   }
 
+  @keyframes slideInLeft {
+    from {
+      transform: translateX(-100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes slideInRight {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes zoomIn {
+    from {
+      transform: scale(0);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  @keyframes flipInX {
+    from {
+      transform: perspective(400px) rotateX(90deg);
+      opacity: 0;
+    }
+    to {
+      transform: perspective(400px) rotateX(0deg);
+      opacity: 1;
+    }
+  }
+
+  @keyframes flipInY {
+    from {
+      transform: perspective(400px) rotateY(90deg);
+      opacity: 0;
+    }
+    to {
+      transform: perspective(400px) rotateY(0deg);
+      opacity: 1;
+    }
+  }
+
+  @keyframes shake {
+    0%, 100% {
+      transform: translateX(0);
+    }
+    10%, 30%, 50%, 70%, 90% {
+      transform: translateX(-5px);
+    }
+    20%, 40%, 60%, 80% {
+      transform: translateX(5px);
+    }
+  }
+
+  @keyframes gradient {
+    0% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+    100% {
+      background-position: 0% 50%;
+    }
+  }
+
   /* Utility classes */
   .fade-in {
     animation: fadeIn 0.5s ease-in-out;
+  }
+
+  .fade-in-up {
+    animation: fadeInUp 0.5s ease-out;
+  }
+
+  .fade-in-down {
+    animation: fadeInDown 0.5s ease-out;
+  }
+
+  .fade-in-left {
+    animation: fadeInLeft 0.5s ease-out;
+  }
+
+  .fade-in-right {
+    animation: fadeInRight 0.5s ease-out;
+  }
+
+  .scale-in {
+    animation: scaleIn 0.5s ease-out;
+  }
+
+  .bounce {
+    animation: bounce 1s ease infinite;
+  }
+
+  .pulse {
+    animation: pulse 2s ease infinite;
   }
 
   .slide-in-up {
@@ -126,9 +315,67 @@ export const GlobalStyles = createGlobalStyle`
     animation: slideInDown 0.5s ease-out;
   }
 
+  .slide-in-left {
+    animation: slideInLeft 0.5s ease-out;
+  }
+
+  .slide-in-right {
+    animation: slideInRight 0.5s ease-out;
+  }
+
+  .zoom-in {
+    animation: zoomIn 0.5s ease-out;
+  }
+
+  .flip-in-x {
+    animation: flipInX 0.6s ease-out;
+  }
+
+  .flip-in-y {
+    animation: flipInY 0.6s ease-out;
+  }
+
+  .shake {
+    animation: shake 0.5s ease-in-out;
+  }
+
+  .gradient-bg {
+    background: linear-gradient(-45deg, ${props => props.theme?.colors?.primary || '#FF4D4D'}, ${props => props.theme?.colors?.secondary || '#4D79FF'}, ${props => props.theme?.colors?.accent || '#FFD54D'}, ${props => props.theme?.colors?.primary || '#FF4D4D'});
+    background-size: 400% 400%;
+    animation: gradient 15s ease infinite;
+  }
+
   .loading {
     animation: spin 1s linear infinite;
   }
+
+  /* Animation delays */
+  .delay-100 { animation-delay: 100ms; }
+  .delay-200 { animation-delay: 200ms; }
+  .delay-300 { animation-delay: 300ms; }
+  .delay-400 { animation-delay: 400ms; }
+  .delay-500 { animation-delay: 500ms; }
+  .delay-600 { animation-delay: 600ms; }
+  .delay-700 { animation-delay: 700ms; }
+  .delay-800 { animation-delay: 800ms; }
+  .delay-900 { animation-delay: 900ms; }
+  .delay-1000 { animation-delay: 1000ms; }
+
+  /* Animation durations */
+  .duration-100 { animation-duration: 100ms; }
+  .duration-200 { animation-duration: 200ms; }
+  .duration-300 { animation-duration: 300ms; }
+  .duration-500 { animation-duration: 500ms; }
+  .duration-700 { animation-duration: 700ms; }
+  .duration-1000 { animation-duration: 1000ms; }
+
+  /* Animation easing functions */
+  .ease-linear { animation-timing-function: linear; }
+  .ease-in { animation-timing-function: ease-in; }
+  .ease-out { animation-timing-function: ease-out; }
+  .ease-in-out { animation-timing-function: ease-in-out; }
+  .ease-bounce { animation-timing-function: cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+  .ease-elastic { animation-timing-function: cubic-bezier(0.68, -0.55, 0.265, 1.55); }
 
   /* Responsive breakpoints */
   .container {

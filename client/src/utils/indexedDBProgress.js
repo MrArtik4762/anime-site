@@ -49,7 +49,7 @@ const initDB = () => {
 
       // Создаем хранилище настроек
       if (!db.objectStoreNames.contains(STORES.SETTINGS)) {
-        const settingsStore = db.createObjectStore(STORES.SETTINGS, { keyPath: 'key' });
+        db.createObjectStore(STORES.SETTINGS, { keyPath: 'key' });
       }
 
       // Создаем хранилище статистики

@@ -1,7 +1,30 @@
 services:
+  # PostgreSQL база данных
+  postgres:
+    image: postgres:15.5-alpine3.18
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-anime_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-anime_site_db}
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256 --auth-local=scram-sha-256"
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - pgdata_dev:/var/lib/postgresql/data
+      - ./server/db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-anime} -d ${POSTGRES_DB:-anime_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - anime-network
+
   # Node.js Backend для разработки
   server:
-    build: 
+    build:
       context: ./server
       dockerfile: Dockerfile
       target: base
@@ -18,22 +41,27 @@ services:
     environment:
       - NODE_ENV=development
       - PORT=5000
-      - MONGODB_URI=mongodb://admin:password@mongodb:27017/anime-site?authSource=admin
+      - DATABASE_URL=postgresql://anime_user:@postgres:5432/anime_site_db
       - REDIS_URL=redis://redis:6379
-      - JWT_SECRET=development-jwt-secret-not-for-production
+      - JWT_SECRET=
       - JWT_EXPIRE=30d
-      - JWT_REFRESH_SECRET=development-refresh-secret-not-for-production
+      - JWT_REFRESH_SECRET=
       - JWT_REFRESH_EXPIRE=7d
       - CLIENT_URL=http://localhost:3000
       - SOCKET_CORS_ORIGIN=http://localhost:3000
       - CHOKIDAR_USEPOLLING=true
+      - ANILIBERTY_API_BASE=${ANILIBERTY_API_BASE:-"https://anilibria.top/api"}
+      - PROXY_WHITELIST=${PROXY_WHITELIST:-"anilibria.top,anilibria.cc,cdn.anilibria.tv"}
+      - CORS_ALLOW_ORIGIN=${CORS_ALLOW_ORIGIN:-"*"}
+      - RATE_LIMIT_WINDOW_MS=${RATE_LIMIT_WINDOW_MS:-900000}
+      - RATE_LIMIT_MAX_REQUESTS=${RATE_LIMIT_MAX_REQUESTS:-100}
     depends_on:
-      mongodb:
+      postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
     networks:
-      - anime-site-network
+      - anime-network
     command: node server.js
     init: true
     healthcheck:
@@ -43,9 +71,24 @@ services:
       retries: 3
       start_period: 40s
 
+  # Nginx reverse proxy
+  nginx:
+    image: nginx:1.25.3-alpine3.18
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/conf.d:/etc/nginx/conf.d
+    depends_on:
+      - client
+      - server
+    networks:
+      - anime-network
+
   # React Frontend для разработки
   client:
-    build: 
+    build:
       context: ./client
       dockerfile: Dockerfile
       target: build
@@ -61,8 +104,11 @@ services:
       - NODE_ENV=development
       - CHOKIDAR_USEPOLLING=true
       - FAST_REFRESH=false
+      - REACT_APP_API_URL=http://localhost:8080
+    depends_on:
+      - nginx
     networks:
-      - anime-site-network
+      - anime-network
     command: npm start
     init: true
     healthcheck:
@@ -72,54 +118,34 @@ services:
       retries: 3
       start_period: 40s
 
-  # MongoDB Database
-  mongodb:
-    image: mongo:6.0
-    container_name: anime-site-mongodb-dev
-    restart: unless-stopped
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongodb_data_dev:/data/db
-      - ./scripts/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: password
-      MONGO_INITDB_DATABASE: anime-site
-    networks:
-      - anime-site-network
-    healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-
-  # Redis Cache
+  # Redis для кеширования и сессий
   redis:
-    image: redis:7.0-alpine
-    container_name: anime-site-redis-dev
+    image: redis:7.2.3-alpine3.18
     restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redispass}
+    volumes:
+      - redisdata_dev:/data
     ports:
       - "6379:6379"
-    volumes:
-      - redis_data_dev:/data
-    networks:
-      - anime-site-network
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
-      interval: 30s
-      timeout: 10s
+      interval: 10s
+      timeout: 3s
       retries: 3
+    networks:
+      - anime-network
 
 # Тома для разработки
 volumes:
-  mongodb_data_dev:
+  pgdata_dev:
     driver: local
-  redis_data_dev:
+  redisdata_dev:
     driver: local
 
 # Сеть для разработки
 networks:
-  anime-site-network:
+  anime-network:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

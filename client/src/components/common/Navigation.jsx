@@ -4,25 +4,59 @@ import { Link, useLocation } from 'react-router-dom';
 import { useTheme } from './ThemeProvider';
 import Icon from './Icon';
 import styled from 'styled-components';
+import { colors, spacing, breakpoints, borderRadius, shadow, animations } from '../../styles/designTokens';
 
 // Стили для компонента пункта меню
 const NavItemContainer = styled(Link)`
   display: flex;
   align-items: center;
-  gap: ${props => props.theme.spacing[3]};
-  padding: ${props => props.theme.spacing[3]} ${props => props.theme.spacing[4]};
-  border-radius: ${props => props.theme.borderRadius.lg};
-  transition: ${props => props.theme.transitions.normal};
+  gap: ${spacing.md};
+  padding: ${spacing.md} ${spacing.lg};
+  border-radius: ${borderRadius.lg};
+  transition: all ${animations.durations.normal} cubic-bezier(0.4, 0, 0.2, 1);
   font-weight: ${props => props.theme.typography.fontWeight.medium};
-  color: ${props => props.isActive ? props.theme.colors.text.inverse : props.theme.colors.text.primary};
-  background-color: ${props => props.isActive ? props.theme.colors.primary : 'transparent'};
+  color: ${props => props.isActive ? colors.text.inverse : colors.text.primary};
+  background: ${props => props.isActive ?
+    `linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 100%)` :
+    'transparent'};
+  backdrop-filter: blur(10px);
+  position: relative;
+  overflow: hidden;
+  animation: fadeInUp 0.5s ease-out;
+  animation-fill-mode: both;
   
-  &:hover {
-    background-color: ${props => props.isActive ? props.theme.colors.primary : props.theme.colors.surface.secondary};
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg,
+      transparent,
+      rgba(255, 255, 255, 0.1),
+      transparent);
+    transition: left 0.5s;
   }
   
-  ${props => props.theme.media.coarse} {
-    padding: ${props => props.theme.spacing[4]} ${props => props.theme.spacing[5]};
+  &:hover {
+    background: ${props => props.isActive ?
+      `linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 100%)` :
+      'linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%)'};
+    transform: translateY(-2px);
+    box-shadow: ${props => props.isActive ? 'none' : shadow.md};
+  }
+  
+  &:hover::before {
+    left: 100%;
+  }
+  
+  &:active {
+    transform: translateY(0);
+  }
+  
+  ${props => props.theme.media.medium} {
+    padding: ${spacing.lg} ${spacing.xl};
   }
 `;
 
@@ -32,13 +66,22 @@ const Badge = styled.span`
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  background-color: ${props => props.theme.colors.error};
-  color: ${props => props.theme.colors.text.inverse};
+  background: linear-gradient(135deg, ${colors.error} 0%, ${colors.secondary} 100%);
+  color: ${colors.text.inverse};
   font-size: ${props => props.theme.typography.fontSize.xs[0]};
   font-weight: ${props => props.theme.typography.fontWeight.bold};
-  border-radius: ${props => props.theme.borderRadius.full};
-  height: ${props => props.theme.spacing[5]};
-  width: ${props => props.theme.spacing[5]};
+  border-radius: ${borderRadius.full};
+  height: ${spacing.md};
+  width: ${spacing.md};
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  animation: ${animations.keyframes.pulse} 2s infinite;
+  backdrop-filter: blur(10px);
+  transition: all ${animations.durations.fast} ease;
+  
+  &:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  }
 `;
 
 // Компонент пункта меню
@@ -94,16 +137,25 @@ const DropdownMenuContainer = styled.div`
 
 const DropdownTrigger = styled.div`
   cursor-pointer;
+  transition: all ${animations.durations.fast} ease;
+  
+  &:hover {
+    transform: scale(1.05);
+  }
 `;
 
 const DropdownContent = styled.div`
   position: absolute;
   z-index: 50;
   width: 12rem;
-  border-radius: ${props => props.theme.borderRadius.lg};
-  box-shadow: ${props => props.theme.shadow.lg};
-  background-color: ${props => props.theme.colors.surface.primary};
-  border: 1px solid ${props => props.theme.colors.border.medium};
+  border-radius: ${borderRadius.lg};
+  box-shadow: ${shadow.lg};
+  background: ${props => props.theme === 'dark' ?
+    'linear-gradient(135deg, #1E293B 0%, #334155 100%)' :
+    'linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%)'};
+  border: 1px solid ${props => props.theme === 'dark' ? colors.border.lightDark : colors.border.light};
+  backdrop-filter: blur(10px);
+  animation: fadeInDown 0.3s ease-out;
   
   ${props => {
     switch (props.position) {
@@ -120,7 +172,7 @@ const DropdownContent = styled.div`
     }
   }}
   
-  ${props => props.theme.media.coarse} {
+  ${props => props.theme.media.medium} {
     width: 14rem;
   }
 `;
@@ -132,27 +184,32 @@ const DropdownItemsContainer = styled.div`
 const DropdownItem = styled.div`
   display: flex;
   align-items: center;
-  gap: ${props => props.theme.spacing[3]};
-  padding: ${props => props.theme.spacing[2]} ${props => props.theme.spacing[3]};
+  gap: ${spacing.md};
+  padding: ${spacing.sm} ${spacing.md};
   font-size: ${props => props.theme.typography.fontSize.sm[0]};
   cursor: pointer;
-  transition: ${props => props.theme.transitions.normal};
-  color: ${props => props.theme.colors.text.primary};
+  transition: all ${animations.durations.fast} ease;
+  color: ${props => props.theme === 'dark' ? colors.text.primary : colors.text.primary};
+  border-radius: ${borderRadius.md};
+  margin: 2px;
   
   &:hover {
-    background-color: ${props => props.theme.colors.surface.secondary};
+    background: ${props => props.theme === 'dark' ?
+      'linear-gradient(135deg, #334155 0%, #475569 100%)' :
+      'linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%)'};
+    transform: translateX(4px);
   }
   
   ${props => props.divider && `
-    border-top: 1px solid ${props.theme.colors.border.medium};
-    margin: 0.25rem 0;
+    border-top: 1px solid ${props => props.theme === 'dark' ? colors.border.lightDark : colors.border.light};
+    margin: 0.5rem 0;
   `}
 `;
 
 const DropdownShortcut = styled.span`
   margin-left: auto;
   font-size: ${props => props.theme.typography.fontSize.xs[0]};
-  color: ${props => props.theme.colors.text.tertiary};
+  color: ${props => props.theme === 'dark' ? colors.text.tertiary : colors.text.tertiary};
 `;
 
 // Компонент выпадающего меню
@@ -239,19 +296,26 @@ DropdownMenu.propTypes = {
 
 // Стили для основного компонента навигации
 const NavigationContainer = styled.nav`
-  background-color: ${props => props.theme.colors.surface.primary};
-  box-shadow: ${props => props.theme.shadow.md};
+  background: ${props => props.theme === 'dark' ?
+    'linear-gradient(135deg, #0F172A 0%, #1E293B 100%)' :
+    'linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%)'};
+  box-shadow: ${shadow.md};
+  backdrop-filter: blur(10px);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  animation: ${animations.keyframes.slideFadeIn} 0.5s ease-out;
   
   ${props => props.theme.media.medium} {
     max-width: 1280rem;
     margin: 0 auto;
-    padding-left: ${props => props.theme.spacing[6]};
-    padding-right: ${props => props.theme.spacing[6]};
+    padding-left: ${spacing.xxl};
+    padding-right: ${spacing.xxl};
   }
   
   ${props => props.theme.media.large} {
-    padding-left: ${props => props.theme.spacing[8]};
-    padding-right: ${props => props.theme.spacing[8]};
+    padding-left: ${spacing.xxxl};
+    padding-right: ${spacing.xxxl};
   }
 `;
 
@@ -260,6 +324,9 @@ const NavigationInner = styled.div`
   align-items: center;
   justify-content: space-between;
   height: 4rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 ${spacing.lg};
   
   ${props => props.theme.media.medium} {
     height: 4rem;
@@ -270,19 +337,33 @@ const LogoContainer = styled.div`
   display: flex;
   align-items: center;
   flex-shrink: 0;
+  transition: all ${animations.durations.fast} ease;
+  
+  &:hover {
+    transform: scale(1.05);
+  }
 `;
 
 const LogoLink = styled(Link)`
   display: flex;
   align-items: center;
-  gap: ${props => props.theme.spacing[2]};
+  gap: ${spacing.sm};
   cursor: pointer;
+  text-decoration: none;
 `;
 
 const LogoText = styled.span`
   font-size: ${props => props.theme.typography.fontSize.lg[0]};
   font-weight: ${props => props.theme.typography.fontWeight.bold};
-  color: ${props => props.theme.colors.text.primary};
+  background: linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  transition: all ${animations.durations.normal} ease;
+  
+  &:hover {
+    transform: translateY(-1px);
+  }
 `;
 
 const DesktopMenu = styled.div`
@@ -290,10 +371,10 @@ const DesktopMenu = styled.div`
   
   ${props => props.theme.media.medium} {
     display: block;
-    margin-left: ${props => props.theme.spacing[10]};
+    margin-left: ${spacing.xxxl};
     display: flex;
     align-items: baseline;
-    gap: ${props => props.theme.spacing[4]};
+    gap: ${spacing.lg};
   }
 `;
 
@@ -306,67 +387,98 @@ const RightMenu = styled.div`
   ${props => props.theme.media.medium} {
     display: flex;
     max-width: 32rem;
-    margin: 0 ${props => props.theme.spacing[4]};
+    margin: 0 ${spacing.lg};
   }
 `;
 
 const SearchContainer = styled.div`
   position: relative;
   width: 100%;
+  transition: all ${animations.durations.normal} ease;
+  
+  &:focus-within {
+    transform: scale(1.02);
+  }
 `;
 
 const SearchIcon = styled.div`
   position: absolute;
   top: 50%;
-  left: ${props => props.theme.spacing[3]};
+  left: ${spacing.md};
   transform: translateY(-50%);
   pointer-events: none;
-  color: ${props => props.theme.colors.text.tertiary};
+  color: ${props => props.theme === 'dark' ? colors.text.tertiary : colors.text.tertiary};
+  transition: all ${animations.durations.fast} ease;
+  
+  ${SearchContainer}:focus-within & {
+    color: ${colors.primary};
+    transform: translateY(-50%) scale(1.1);
+  }
 `;
 
 const SearchInput = styled.input`
   width: 100%;
-  padding: ${props => props.theme.spacing[2]} ${props => props.theme.spacing[3]} ${props => props.theme.spacing[2]} ${props => props.theme.spacing[8]};
-  border: 1px solid ${props => props.theme.colors.border.medium};
-  border-radius: ${props => props.theme.borderRadius.lg};
-  background-color: ${props => props.theme.colors.surface.primary};
-  color: ${props => props.theme.colors.text.primary};
+  padding: ${spacing.sm} ${spacing.md} ${spacing.sm} ${spacing.xl};
+  border: 1px solid ${props => props.theme === 'dark' ? colors.border.lightDark : colors.border.light};
+  border-radius: ${borderRadius.lg};
+  background: ${props => props.theme === 'dark' ?
+    'linear-gradient(135deg, #1E293B 0%, #334155 100%)' :
+    'linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%)'};
+  color: ${props => props.theme === 'dark' ? colors.text.primary : colors.text.primary};
   font-size: ${props => props.theme.typography.fontSize.base[0]};
+  backdrop-filter: blur(10px);
+  transition: all ${animations.durations.normal} ease;
   
   &::placeholder {
-    color: ${props => props.theme.colors.text.tertiary};
+    color: ${props => props.theme === 'dark' ? colors.text.tertiary : colors.text.tertiary};
   }
   
   &:focus {
     outline: none;
-    border-color: ${props => props.theme.colors.primary};
-    box-shadow: 0 0 0 3px ${props => props.theme.colors.primary}20;
+    border-color: ${colors.primary};
+    box-shadow: 0 0 0 3px ${colors.primary}40;
+    background: ${props => props.theme === 'dark' ?
+      'linear-gradient(135deg, #334155 0%, #475569 100%)' :
+      'linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%)'};
   }
 `;
 
 const UserAvatar = styled.div`
   display: flex;
   align-items: center;
-  gap: ${props => props.theme.spacing[2]};
+  gap: ${spacing.sm};
   cursor: pointer;
+  transition: all ${animations.durations.fast} ease;
+  
+  &:hover {
+    transform: scale(1.05);
+  }
 `;
 
 const AvatarCircle = styled.div`
   width: 2rem;
   height: 2rem;
-  border-radius: ${props => props.theme.borderRadius.full};
-  background-color: ${props => props.theme.colors.primary};
-  color: ${props => props.theme.colors.text.inverse};
+  border-radius: ${borderRadius.full};
+  background: linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 100%);
+  color: ${colors.text.inverse};
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: ${props => props.theme.typography.fontWeight.semibold};
   font-size: ${props => props.theme.typography.fontSize.sm[0]};
+  transition: all ${animations.durations.fast} ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  
+  &:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  }
 `;
 
 const UserName = styled.span`
   display: none;
-  color: ${props => props.theme.colors.text.primary};
+  color: ${props => props.theme === 'dark' ? colors.text.primary : colors.text.primary};
+  font-weight: ${props => props.theme.typography.fontWeight.medium};
   
   ${props => props.theme.medium} {
     display: block;
@@ -376,6 +488,7 @@ const UserName = styled.span`
 const MobileMenu = styled.div`
   display: flex;
   align-items: center;
+  gap: ${spacing.sm};
   
   ${props => props.theme.medium} {
     display: none;
@@ -386,27 +499,45 @@ const MobileButton = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: ${props => props.theme.spacing[2]};
-  border-radius: ${props => props.theme.borderRadius.md};
-  color: ${props => props.theme.colors.text.primary};
-  transition: ${props => props.theme.transitions.normal};
-  background-color: transparent;
-  border: none;
+  padding: ${spacing.sm};
+  border-radius: ${borderRadius.md};
+  color: ${props => props.theme === 'dark' ? colors.text.primary : colors.text.primary};
+  transition: all ${animations.durations.fast} ease;
+  background: ${props => props.theme === 'dark' ?
+    'linear-gradient(135deg, #1E293B 0%, #334155 100%)' :
+    'linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%)'};
+  border: 1px solid ${props => props.theme === 'dark' ? colors.border.lightDark : colors.border.light};
   cursor: pointer;
+  backdrop-filter: blur(10px);
   
   &:hover {
-    color: ${props => props.theme.colors.text.primary};
-    background-color: ${props => props.theme.colors.surface.secondary};
+    color: ${colors.primary};
+    background: ${props => props.theme === 'dark' ?
+      'linear-gradient(135deg, #334155 0%, #475569 100%)' :
+      'linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%)'};
+    transform: scale(1.05);
+    box-shadow: ${shadow.sm};
   }
   
   &:focus {
     outline: none;
-    box-shadow: 0 0 0 3px ${props => props.theme.colors.primary}20;
+    box-shadow: 0 0 0 3px ${colors.primary}40;
   }
 `;
 
 const MobileMenuContent = styled.div`
   display: none;
+  position: fixed;
+  top: 4rem;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: ${props => props.theme === 'dark' ?
+    'linear-gradient(135deg, #0F172A 0%, #1E293B 100%)' :
+    'linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%)'};
+  z-index: 99;
+  overflow-y: auto;
+  animation: slideInRight 0.3s ease-out;
   
   ${props => props.isOpen && `
     display: block;
@@ -418,20 +549,51 @@ const MobileMenuContent = styled.div`
 `;
 
 const MobileMenuItems = styled.div`
-  padding: ${props => props.theme.spacing[2]} ${props => props.theme.spacing[3]};
-  ${props => props.theme.spacing[2]} ${props => props.theme.spacing[3]};
-  background-color: ${props => props.theme.colors.surface.primary};
-  border-top: 1px solid ${props => props.theme.colors.border.medium};
+  padding: ${spacing.lg} ${spacing.md};
+  background: ${props => props.theme === 'dark' ?
+    'linear-gradient(135deg, #0F172A 0%, #1E293B 100%)' :
+    'linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%)'};
+  border-top: 1px solid ${props => props.theme === 'dark' ? colors.border.lightDark : colors.border.light};
   
   ${props => props.theme.spacing[3]} {
-    padding-left: ${props => props.theme.spacing[6]};
-    padding-right: ${props => props.theme.spacing[6]};
+    padding-left: ${spacing.xxl};
+    padding-right: ${spacing.xxl};
   }
 `;
 
 const MobileSearch = styled.div`
-  padding: ${props => props.theme.spacing[4]} ${props => props.theme.spacing[3]};
-  border-top: 1px solid ${props => props.theme.colors.border.medium};
+  padding: ${spacing.xl} ${spacing.md};
+  border-top: 1px solid ${props => props.theme === 'dark' ? colors.border.lightDark : colors.border.light};
+  background: ${props => props.theme === 'dark' ?
+    'linear-gradient(135deg, #0F172A 0%, #1E293B 100%)' :
+    'linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%)'};
+`;
+
+const MobileSearchInput = styled.input`
+  width: 100%;
+  padding: ${spacing.md} ${spacing.md} ${spacing.md} ${spacing.xl};
+  border: 1px solid ${colors.border.light};
+  border-radius: ${borderRadius.lg};
+  background: ${props => props.theme === 'dark' ?
+    'linear-gradient(135deg, #1E293B 0%, #334155 100%)' :
+    'linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%)'};
+  color: ${props => props.theme === 'dark' ? colors.text.primary : colors.text.primary};
+  font-size: ${props => props.theme.typography.fontSize.base[0]};
+  backdrop-filter: blur(10px);
+  transition: all ${animations.durations.normal} ease;
+  
+  &::placeholder {
+    color: ${props => props.theme === 'dark' ? colors.text.tertiary : colors.text.tertiary};
+  }
+  
+  &:focus {
+    outline: none;
+    border-color: ${colors.primary};
+    box-shadow: 0 0 0 3px ${colors.primary}40;
+    background: ${props => props.theme === 'dark' ?
+      'linear-gradient(135deg, #334155 0%, #475569 100%)' :
+      'linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%)'};
+  }
 `;
 
 // Основной компонент навигации
@@ -611,7 +773,7 @@ const Navigation = memo(({
             <SearchIcon>
               <Icon name="search" size={18} />
             </SearchIcon>
-            <SearchInput
+            <MobileSearchInput
               type="text"
               placeholder="Поиск аниме..."
             />

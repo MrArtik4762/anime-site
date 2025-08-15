@@ -1,305 +1,407 @@
-import React, { useState } from 'react';
-import styled from 'styled-components';
+import React, { useState, useEffect, useRef, forwardRef, memo } from 'react';
 import PropTypes from 'prop-types';
+import { cn } from '../../styles/tailwindUtils';
 
-// Основной инпут
-const BaseInput = styled.input`
-  width: 100%;
-  padding: ${props => props.theme.spacing[3]} ${props => props.theme.spacing[4]};
-  font-size: ${props => props.theme.typography.fontSize.base[0]};
-  font-weight: ${props => props.theme.typography.fontWeight.normal};
-  line-height: ${props => props.theme.typography.lineHeight.normal};
-  color: ${props => props.theme.colors.text.primary};
-  background: ${props => props.theme.colors.surface.primary};
-  border: ${props => props.theme.form.input.border} solid ${props => props.theme.colors.border.medium};
-  border-radius: ${props => props.theme.borderRadius.lg};
-  transition: ${props => props.theme.transitions.normal};
-  outline: none;
-  
-  &:focus {
-    border-color: ${props => props.theme.colors.primary};
-    box-shadow: 0 0 0 3px ${props => props.theme.colors.primary}20;
-  }
-  
-  &:disabled {
-    opacity: ${props => props.theme.opacity[50]};
-    cursor: not-allowed;
-  }
-  
-  &:read-only {
-    background: ${props => props.theme.colors.surface.tertiary};
-    cursor: default;
-  }
-  
-  /* Placeholder */
-  &::placeholder {
-    color: ${props => props.theme.colors.text.tertiary};
-  }
-  
-  /* Для мобильных устройств */
-  ${props => props.theme.media.coarse} {
-    font-size: ${props => props.theme.typography.fontSize.lg[0]};
-    padding: ${props => props.theme.spacing[4]} ${props => props.theme.spacing[5]};
-  }
-`;
-
-// Инпут с иконкой слева
-const InputWithLeftIcon = styled(BaseInput)`
-  padding-left: ${props => props.theme.spacing[8]};
-  
-  & + .input-icon-left {
-    position: absolute;
-    left: ${props => props.theme.spacing[4]};
-    top: 50%;
-    transform: translateY(-50%);
-    color: ${props => props.theme.colors.text.tertiary};
-    pointer-events: none;
-    z-index: 1;
-  }
-`;
-
-// Инпут с иконкой справа
-const InputWithRightIcon = styled(BaseInput)`
-  padding-right: ${props => props.theme.spacing[8]};
-  
-  & + .input-icon-right {
-    position: absolute;
-    right: ${props => props.theme.spacing[4]};
-    top: 50%;
-    transform: translateY(-50%);
-    color: ${props => props.theme.colors.text.tertiary};
-    cursor: pointer;
-    z-index: 1;
-    
-    &:hover {
-      color: ${props => props.theme.colors.text.primary};
-    }
-  }
-`;
-
-// Инпут с обеими иконками
-const InputWithIcons = styled(BaseInput)`
-  padding-left: ${props => props.theme.spacing[8]};
-  padding-right: ${props => props.theme.spacing[8]};
-  
-  & + .input-icon-left {
-    position: absolute;
-    left: ${props => props.theme.spacing[4]};
-    top: 50%;
-    transform: translateY(-50%);
-    color: ${props => props.theme.colors.text.tertiary};
-    pointer-events: none;
-    z-index: 1;
-  }
-  
-  & + .input-icon-right {
-    position: absolute;
-    right: ${props => props.theme.spacing[4]};
-    top: 50%;
-    transform: translateY(-50%);
-    color: ${props => props.theme.colors.text.tertiary};
-    cursor: pointer;
-    z-index: 1;
-    
-    &:hover {
-      color: ${props => props.theme.colors.text.primary};
-    }
-  }
-`;
-
-// Контейнер для инпута с иконками
-const InputContainer = styled.div`
-  position: relative;
-  display: inline-block;
-  width: 100%;
-`;
-
-// Состояния инпута
-const ValidInput = styled(BaseInput)`
-  &:focus {
-    border-color: ${props => props.theme.colors.success};
-    box-shadow: 0 0 0 3px ${props => props.theme.colors.success}20;
-  }
-`;
-
-const InvalidInput = styled(BaseInput)`
-  &:focus {
-    border-color: ${props => props.theme.colors.error};
-    box-shadow: 0 0 0 3px ${props => props.theme.colors.error}20;
-  }
-`;
-
-// Поле ввода с меткой
-const LabeledInput = styled.div`
-  margin-bottom: ${props => props.theme.spacing[4]};
-  
-  label {
-    display: block;
-    font-size: ${props => props.theme.typography.fontSize.sm[0]};
-    font-weight: ${props => props.theme.typography.fontWeight.medium};
-    color: ${props => props.theme.colors.text.primary};
-    margin-bottom: ${props => props.theme.spacing[2]};
-    
-    .required {
-      color: ${props => props.theme.colors.error};
-    }
-  }
-  
-  .input-description {
-    font-size: ${props => props.theme.typography.fontSize.xs[0]};
-    color: ${props => props.theme.colors.text.tertiary};
-    margin-top: ${props => props.theme.spacing[1]};
-  }
-  
-  .input-error {
-    font-size: ${props => props.theme.typography.fontSize.xs[0]};
-    color: ${props => props.theme.colors.error};
-    margin-top: ${props => props.theme.spacing[1]};
-  }
-`;
-
-// Компонент Input
-const Input = ({
+// Основной компонент Input
+export const Input = memo(forwardRef(({
+  type = 'text',
   label,
-  required = false,
-  error,
   description,
-  leftIcon,
-  rightIcon,
-  valid = false,
-  invalid = false,
-  className = '',
+  error,
+  value,
+  onChange,
+  onBlur,
+  onFocus,
+  placeholder,
+  disabled = false,
+  required = false,
+  readOnly = false,
+  autoFocus = false,
+  maxLength,
+  minLength,
+  pattern,
+  min,
+  max,
+  step,
+  size = 'medium',
+  icon,
+  suffix,
+  clearable = false,
+  groupAddon,
+  groupButton,
+  className,
+  style,
   ...props
-}) => {
-  const [showPassword, setShowPassword] = useState(false);
-  const [isFocused, setIsFocused] = useState(false);
+}, ref) => {
+  const [focused, setFocused] = useState(false);
+  const [internalValue, setInternalValue] = useState(value || '');
+  const inputRef = useRef(ref);
   
-  // Определяем тип инпута на основе наличия иконок
-  const getInputType = () => {
-    if (props.type === 'password' && rightIcon) {
-      return showPassword ? 'text' : 'password';
-    }
-    return props.type || 'text';
-  };
+  // Синхронизация внутреннего значения с внешним
+  useEffect(() => {
+    setInternalValue(value);
+  }, [value]);
   
-  // Определяем стили в зависимости от пропсов
-  const getInputStyle = () => {
-    if (valid) return ValidInput;
-    if (invalid) return InvalidInput;
-    return BaseInput;
-  };
-  
-  // Определяем стили в зависимости от иконок
-  const getIconStyle = () => {
-    if (leftIcon && rightIcon) return InputWithIcons;
-    if (leftIcon) return InputWithLeftIcon;
-    if (rightIcon) return InputWithRightIcon;
-    return BaseInput;
-  };
-  
-  const InputStyle = getInputStyle();
-  const IconStyle = getIconStyle();
-  const CombinedInput = IconStyle.withComponent(InputStyle);
-  
-  // Обработка клика на правой иконке
-  const handleRightIconClick = (e) => {
-    e.stopPropagation();
-    if (props.type === 'password') {
-      setShowPassword(!showPassword);
-    }
-    if (props.onRightIconClick) {
-      props.onRightIconClick(e);
+  // Обработка изменений
+  const handleChange = (e) => {
+    const newValue = e.target.value;
+    setInternalValue(newValue);
+    
+    if (onChange) {
+      onChange(e);
     }
   };
+  
+  // Обработка потери фокуса
+  const handleBlur = (e) => {
+    setFocused(false);
+    if (onBlur) {
+      onBlur(e);
+    }
+  };
+  
+  // Обработка получения фокуса
+  const handleFocus = (e) => {
+    setFocused(true);
+    if (onFocus) {
+      onFocus(e);
+    }
+  };
+  
+  // Очистка значения
+  const handleClear = () => {
+    setInternalValue('');
+    if (onChange) {
+      const event = {
+        target: {
+          name: props.name,
+          value: ''
+        }
+      };
+      onChange(event);
+    }
+    
+    // Возвращаем фокус на input после очистки
+    setTimeout(() => {
+      if (inputRef.current) {
+        inputRef.current.focus();
+      }
+    }, 0);
+  };
+  
+  // Генерация уникального ID
+  const inputId = props.id || `input-${props.name || Math.random().toString(36).substr(2, 9)}`;
+  
+  // Определяем, показывать ли кнопку очистки
+  const showClearButton = clearable && internalValue && !disabled;
+  
+  // Определяем классы для input
+  const getInputClasses = () => {
+    const baseClasses = 'w-full rounded-lg border transition-all duration-200 ease-out';
+    const sizeClasses = {
+      small: 'px-3 py-2 text-sm',
+      medium: 'px-4 py-2.5 text-base',
+      large: 'px-5 py-3 text-lg',
+    };
+    
+    const stateClasses = cn(
+      {
+        'border-slate-300 bg-white text-slate-900 placeholder:text-slate-500': !error && !focused,
+        'border-blue-500 bg-white text-slate-900 placeholder:text-slate-500': focused,
+        'border-red-500 bg-red-50 text-red-900 placeholder:text-red-500': error,
+        'border-slate-300 bg-slate-100 text-slate-500 cursor-not-allowed': disabled,
+        'border-slate-300 bg-slate-50 text-slate-700 cursor-not-allowed': readOnly,
+      }
+    );
+    
+    const focusClasses = focused && !error ? 'ring-2 ring-blue-500 ring-offset-2' : '';
+    const errorClasses = error ? 'ring-2 ring-red-500 ring-offset-2' : '';
+    
+    return cn(
+      baseClasses,
+      sizeClasses[size],
+      stateClasses,
+      focusClasses,
+      errorClasses,
+      className
+    );
+  };
+  
+  // Определяем классы для wrapper
+  const wrapperClasses = cn(
+    'relative mb-4',
+    {
+      'mb-6': error,
+    }
+  );
+  
+  // Определяем классы для label
+  const labelClasses = cn(
+    'block mb-2 font-medium text-sm text-slate-700',
+    {
+      'text-red-600': error,
+      'text-slate-500': disabled,
+    }
+  );
+  
+  // Определяем классы для description
+  const descriptionClasses = 'block mb-1 text-sm text-slate-500';
+  
+  // Определяем классы для error
+  const errorClasses = 'block mt-1 text-xs text-red-600';
+  
+  // Определяем классы для suffix
+  const suffixClasses = 'absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm pointer-events-none';
+  
+  // Определяем классы для clear button
+  const clearButtonClasses = 'absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 transition-colors duration-200';
+  
+  // Определяем классы для group
+  const groupClasses = 'flex items-stretch';
+  
+  // Определяем классы для group addon
+  const addonClasses = 'flex items-center px-4 bg-slate-100 border border-slate-300 border-r-0 text-slate-600 text-sm rounded-l-lg';
+  
+  // Определяем классы для group input
+  const groupInputClasses = cn(
+    getInputClasses(),
+    'rounded-l-none border-l-0'
+  );
+  
+  // Определяем классы для group button
+  const groupButtonClasses = 'flex items-center px-4 bg-slate-100 border border-slate-300 border-l-0 text-slate-600 text-sm rounded-r-lg hover:bg-slate-200 transition-colors duration-200';
   
   return (
-    <LabeledInput className={className}>
+    <div className={wrapperClasses} style={style}>
       {label && (
-        <label htmlFor={props.id}>
+        <label 
+          htmlFor={inputId} 
+          className={labelClasses}
+        >
           {label}
-          {required && <span className="required"> *</span>}
+          {required && <span className="text-red-500">*</span>}
         </label>
       )}
       
-      <InputContainer>
-        <CombinedInput
-          id={props.id}
-          type={getInputType()}
-          onFocus={(e) => {
-            setIsFocused(true);
-            if (props.onFocus) props.onFocus(e);
-          }}
-          onBlur={(e) => {
-            setIsFocused(false);
-            if (props.onBlur) props.onBlur(e);
-          }}
-          {...props}
-        />
-        
-        {leftIcon && (
-          <span className="input-icon-left">
-            {leftIcon}
-          </span>
-        )}
-        
-        {rightIcon && (
-          <span 
-            className="input-icon-right" 
-            onClick={handleRightIconClick}
+      {description && (
+        <span className={descriptionClasses}>{description}</span>
+      )}
+      
+      {groupAddon ? (
+        <div className={groupClasses}>
+          <div className={addonClasses}>{groupAddon}</div>
+          <input
+            type={type}
+            id={inputId}
+            value={internalValue}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            onFocus={handleFocus}
+            placeholder={placeholder}
+            disabled={disabled}
+            readOnly={readOnly}
+            autoFocus={autoFocus}
+            maxLength={maxLength}
+            minLength={minLength}
+            pattern={pattern}
+            min={min}
+            max={max}
+            step={step}
+            className={groupInputClasses}
+            ref={inputRef}
+            {...props}
+          />
+          {suffix && <div className={suffixClasses}>{suffix}</div>}
+          {showClearButton && (
+            <button 
+              type="button" 
+              className={clearButtonClasses}
+              onClick={handleClear}
+              aria-label="Очистить поле"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+      ) : groupButton ? (
+        <div className={groupClasses}>
+          <input
+            type={type}
+            id={inputId}
+            value={internalValue}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            onFocus={handleFocus}
+            placeholder={placeholder}
+            disabled={disabled}
+            readOnly={readOnly}
+            autoFocus={autoFocus}
+            maxLength={maxLength}
+            minLength={minLength}
+            pattern={pattern}
+            min={min}
+            max={max}
+            step={step}
+            className={getInputClasses()}
+            ref={inputRef}
+            {...props}
+          />
+          <button 
+            type="button" 
+            className={groupButtonClasses}
+            onClick={groupButton.onClick}
+            disabled={disabled}
           >
-            {props.type === 'password' 
-              ? (showPassword ? '👁️' : '👁️‍🗨️') 
-              : rightIcon
-            }
-          </span>
-        )}
-      </InputContainer>
-      
-      {description && !error && (
-        <div className="input-description">
-          {description}
+            {groupButton.children}
+          </button>
         </div>
+      ) : (
+        <>
+          <input
+            type={type}
+            id={inputId}
+            value={internalValue}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            onFocus={handleFocus}
+            placeholder={placeholder}
+            disabled={disabled}
+            readOnly={readOnly}
+            autoFocus={autoFocus}
+            maxLength={maxLength}
+            minLength={minLength}
+            pattern={pattern}
+            min={min}
+            max={max}
+            step={step}
+            className={getInputClasses()}
+            ref={inputRef}
+            {...props}
+          />
+          {suffix && <div className={suffixClasses}>{suffix}</div>}
+          {showClearButton && (
+            <button 
+              type="button" 
+              className={clearButtonClasses}
+              onClick={handleClear}
+              aria-label="Очистить поле"
+            >
+              ✕
+            </button>
+          )}
+        </>
       )}
       
-      {error && (
-        <div className="input-error">
-          {error}
-        </div>
-      )}
-    </LabeledInput>
+      {error && <span className={errorClasses}>{error}</span>}
+    </div>
   );
-};
+}));
 
-// Пропс-types для TypeScript
 Input.propTypes = {
-  id: PropTypes.string,
-  type: PropTypes.oneOf(['text', 'password', 'email', 'number', 'tel', 'url', 'search']),
+  type: PropTypes.oneOf([
+    'text', 'email', 'password', 'number', 'tel', 'url', 
+    'search', 'date', 'time', 'datetime-local', 'month', 'week'
+  ]),
   label: PropTypes.string,
-  required: PropTypes.bool,
-  error: PropTypes.string,
   description: PropTypes.string,
-  leftIcon: PropTypes.node,
-  rightIcon: PropTypes.node,
-  valid: PropTypes.bool,
-  invalid: PropTypes.bool,
-  className: PropTypes.string,
-  onRightIconClick: PropTypes.func,
-  onFocus: PropTypes.func,
+  error: PropTypes.string,
+  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  onChange: PropTypes.func,
   onBlur: PropTypes.func,
+  onFocus: PropTypes.func,
+  placeholder: PropTypes.string,
+  disabled: PropTypes.bool,
+  required: PropTypes.bool,
+  readOnly: PropTypes.bool,
+  autoFocus: PropTypes.bool,
+  maxLength: PropTypes.number,
+  minLength: PropTypes.number,
+  pattern: PropTypes.string,
+  min: PropTypes.number,
+  max: PropTypes.number,
+  step: PropTypes.number,
+  size: PropTypes.oneOf(['small', 'medium', 'large']),
+  icon: PropTypes.string,
+  suffix: PropTypes.node,
+  clearable: PropTypes.bool,
+  groupAddon: PropTypes.node,
+  groupButton: PropTypes.shape({
+    onClick: PropTypes.func,
+    children: PropTypes.node
+  }),
+  className: PropTypes.string,
+  style: PropTypes.object,
 };
 
-// Экспорт всех типов инпутов
-export const InputVariants = {
-  Base: BaseInput,
-  WithLeftIcon: InputWithLeftIcon,
-  WithRightIcon: InputWithRightIcon,
-  WithIcons: InputWithIcons,
-  Valid: ValidInput,
-  Invalid: InvalidInput,
+// Компонент для группы Input
+export const InputGroup = memo(({ children, className, style }) => {
+  const groupClasses = cn('flex items-stretch', className);
+  
+  return (
+    <div className={groupClasses} style={style}>
+      {children}
+    </div>
+  );
+});
+
+InputGroup.propTypes = {
+  children: PropTypes.node.isRequired,
+  className: PropTypes.string,
+  style: PropTypes.object,
 };
 
-// Экспорт контейнера
-export const InputContainerComponent = InputContainer;
+// Хук для управления состоянием input
+export const useInput = (initialValue = '', options = {}) => {
+  const [value, setValue] = useState(initialValue);
+  const [error, setError] = useState('');
+  const [touched, setTouched] = useState(false);
+  
+  const handleChange = (e) => {
+    setValue(e.target.value);
+    
+    // Валидация при изменении
+    if (options.validate) {
+      const validationError = options.validate(e.target.value);
+      setError(validationError);
+    }
+  };
+  
+  const handleBlur = () => {
+    setTouched(true);
+    
+    // Валидация при потере фокуса
+    if (options.validate) {
+      const validationError = options.validate(value);
+      setError(validationError);
+    }
+  };
+  
+  const reset = () => {
+    setValue(initialValue);
+    setError('');
+    setTouched(false);
+  };
+  
+  const isValid = !error && (options.required ? value !== '' : true);
+  
+  return {
+    value,
+    setValue,
+    error,
+    setError,
+    touched,
+    setTouched,
+    handleChange,
+    handleBlur,
+    reset,
+    isValid,
+    inputProps: {
+      value,
+      onChange: handleChange,
+      onBlur: handleBlur,
+      error: touched ? error : undefined
+    }
+  };
+};
 
-// Экспорт основного компонента
 export default Input;

@@ -1,477 +1,528 @@
-import React from 'react';
-import styled from 'styled-components';
+import React, { memo } from 'react';
 import PropTypes from 'prop-types';
+import { styled } from 'styled-components';
 
-// Контейнер для breadcrumb
+// Стилизованный контейнер для навигационной цепочки
 const BreadcrumbContainer = styled.nav`
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  padding: ${props => props.theme.spacing[2]} 0;
-  color: ${props => props.theme.colors.text.tertiary};
+  gap: ${props => props.theme.spacing.xxsmall};
+  font-size: ${props => {
+    if (props.size === 'small') return props.theme.fontSizes.xs;
+    if (props.size === 'large') return props.theme.fontSizes.sm;
+    return props.theme.fontSizes.base;
+  }};
+  color: ${props => props.theme.colors.textSecondary};
+  user-select: none;
   
-  ol {
-    margin: 0;
-    padding: 0;
-    list-style: none;
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-  }
+  ${props => props.size === 'small' && `
+    font-size: ${props.theme.fontSizes.xs};
+  `}
+  
+  ${props => props.size === 'large' && `
+    font-size: ${props.theme.fontSizes.sm};
+  `}
+  
+  ${props => props.align === 'center' && `
+    justify-content: center;
+  `}
+  
+  ${props => props.align === 'right' && `
+    justify-content: flex-end;
+  `}
+  
+  ${props => props.align === 'start' && `
+    justify-content: flex-start;
+  `}
+  
+  ${props => props.vertical && `
+    flex-direction: column;
+    align-items: flex-start;
+  `}
 `;
 
-// Элемент breadcrumb
-const BreadcrumbItem = styled.li`
+// Стилизованный элемент навигационной цепочки
+const BreadcrumbItem = styled.span`
   display: flex;
   align-items: center;
+  color: ${props => {
+    if (props.active) return props.theme.colors.text;
+    if (props.disabled) return props.theme.colors.border;
+    return props.theme.colors.textSecondary;
+  }};
+  cursor: ${props => props.disabled ? 'not-allowed' : (props.clickable ? 'pointer' : 'default')};
+  transition: all ${props => props.theme.transitions.fast} ease;
+  position: relative;
   
-  &:not(:last-child)::after {
-    content: '/';
-    margin: 0 ${props => props.theme.spacing[2]};
-    color: ${props => props.theme.colors.border.medium};
-  }
-  
-  .link {
-    color: ${props => props.theme.colors.text.tertiary};
-    text-decoration: none;
-    font-size: ${props => props.theme.typography.fontSize.sm[0]};
-    transition: ${props => props.theme.transitions.normal};
-    
-    &:hover {
-      color: ${props => props.theme.colors.primary};
-    }
-    
-    &:focus {
-      outline: none;
-      
-      &::after {
-        content: '';
-        position: absolute;
-        top: -2px;
-        left: -2px;
-        right: -2px;
-        bottom: -2px;
-        border: 2px solid ${props => props.theme.colors.primary};
-        border-radius: ${props => props.theme.borderRadius.sm};
-      }
-    }
-    
-    ${props => props.active && `
-      color: ${props.theme.colors.text.primary};
-      font-weight: ${props.theme.typography.fontWeight.medium};
-      cursor: default;
-      
-      &:hover {
-        color: ${props.theme.colors.text.primary};
-      }
+  &:hover {
+    ${props => !props.disabled && props.clickable && `
+      color: ${props.theme.colors.primary};
     `}
   }
-`;
-
-// Компонент Breadcrumb
-const Breadcrumb = ({
-  items,
-  separator = '/',
-  className = '',
-  ...props
-}) => {
-  return (
-    <BreadcrumbContainer className={`${className} breadcrumb`} {...props}>
-      <ol>
-        {items.map((item, index) => (
-          <BreadcrumbItem key={index}>
-            {item.href && !item.active ? (
-              <a
-                href={item.href}
-                className="link"
-                aria-current={item.active ? 'page' : undefined}
-              >
-                {item.label}
-              </a>
-            ) : (
-              <span className={`link ${item.active ? 'active' : ''}`}>
-                {item.label}
-              </span>
-            )}
-          </BreadcrumbItem>
-        ))}
-      </ol>
-    </BreadcrumbContainer>
-  );
-};
-
-// Пропс-types для TypeScript
-Breadcrumb.propTypes = {
-  items: PropTypes.arrayOf(
-    PropTypes.shape({
-      label: PropTypes.string.isRequired,
-      href: PropTypes.string,
-      active: PropTypes.bool,
-    })
-  ).isRequired,
-  separator: PropTypes.string,
-  className: PropTypes.string,
-};
-
-// Компонент BreadcrumbWithHome для breadcrumb с домашней страницей
-const BreadcrumbWithHomeContainer = styled(BreadcrumbContainer)`
-  .home-icon {
-    margin-right: ${props => props.theme.spacing[1]};
+  
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px ${props => props.theme.colors.primary};
   }
   
-  .home-link {
-    color: ${props => props.theme.colors.text.tertiary};
-    text-decoration: none;
-    transition: ${props => props.theme.transitions.normal};
-    
-    &:hover {
-      color: ${props => props.theme.colors.primary};
-    }
-    
-    &:focus {
-      outline: none;
-      
-      &::after {
-        content: '';
-        position: absolute;
-        top: -2px;
-        left: -2px;
-        right: -2px;
-        bottom: -2px;
-        border: 2px solid ${props => props.theme.colors.primary};
-        border-radius: ${props => props.theme.borderRadius.sm};
-      }
-    }
-  }
+  ${props => props.disabled && `
+    opacity: 0.6;
+    cursor: not-allowed;
+  `}
+  
+  ${props => props.active && `
+    font-weight: ${props => props.theme.fontWeights.semibold};
+    color: ${props.theme.colors.text};
+  `}
+  
+  ${props => props.size === 'small' && `
+    font-size: ${props.theme.fontSizes.xs};
+  `}
+  
+  ${props => props.size === 'large' && `
+    font-size: ${props.theme.fontSizes.sm};
+  `}
 `;
 
-// Компонент BreadcrumbWithHome
-const BreadcrumbWithHome = ({
+// Стилизованный разделитель навигационной цепочки
+const BreadcrumbSeparator = styled.span`
+  color: ${props => props.theme.colors.border};
+  margin: 0 ${props => props.theme.spacing.xxsmall};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  ${props => props.size === 'small' && `
+    font-size: ${props.theme.fontSizes.xs};
+    margin: 0 ${props.theme.spacing.xxxsmall};
+  `}
+  
+  ${props => props.size === 'large' && `
+    font-size: ${props.theme.fontSizes.sm};
+    margin: 0 ${props.theme.spacing.xsmall};
+  `}
+  
+  ${props => props.hidden && `
+    visibility: hidden;
+  `}
+  
+  ${props => props.vertical && `
+    margin: ${props => props.theme.spacing.xxsmall} 0;
+  `}
+`;
+
+// Стилизованная иконка навигационной цепочки
+const BreadcrumbIcon = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: ${props => props.theme.spacing.xxsmall};
+  font-size: ${props => {
+    if (props.size === 'small') return props.theme.iconSizes.xs;
+    if (props.size === 'large') return props.theme.iconSizes.sm;
+    return props.theme.iconSizes.base;
+  }};
+  color: ${props => props.theme.colors.textSecondary};
+  
+  ${props => props.size === 'small' && `
+    font-size: ${props.theme.iconSizes.xs};
+    margin-right: ${props.theme.spacing.xxxsmall};
+  `}
+  
+  ${props => props.size === 'large' && `
+    font-size: ${props.theme.iconSizes.sm};
+    margin-right: ${props.theme.spacing.xsmall};
+  `}
+  
+  ${props => props.active && `
+    color: ${props.theme.colors.text};
+  `}
+`;
+
+// Основной компонент Breadcrumb
+export const Breadcrumb = memo(({
   items,
-  homeHref = '/',
-  homeLabel = 'Главная',
   separator = '/',
-  className = '',
+  size = 'medium',
+  align = 'left',
+  vertical = false,
+  maxItems,
+  ellipsis,
+  homeIcon,
+  onItemClick,
+  className,
+  style,
   ...props
 }) => {
-  const homeItem = {
-    label: homeLabel,
-    href: homeHref,
-    active: false,
+  const handleItemClick = (item, index) => {
+    if (item.disabled || !item.clickable) return;
+    if (onItemClick) {
+      onItemClick(item, index);
+    }
+  };
+  
+  const renderItems = () => {
+    if (!items || items.length === 0) return null;
+    
+    const displayedItems = maxItems && items.length > maxItems
+      ? [
+          items[0],
+          { text: ellipsis || '...', disabled: true, clickable: false },
+          ...items.slice(-(maxItems - 2))
+        ]
+      : items;
+    
+    return displayedItems.map((item, index) => (
+      <React.Fragment key={index}>
+        <BreadcrumbItem
+          size={size}
+          active={item.active}
+          disabled={item.disabled}
+          clickable={item.clickable}
+          onClick={() => handleItemClick(item, index)}
+          className={item.className}
+          style={item.style}
+        >
+          {homeIcon && index === 0 && (
+            <BreadcrumbIcon size={size} active={item.active}>
+              {homeIcon}
+            </BreadcrumbIcon>
+          )}
+          
+          {item.icon && (
+            <BreadcrumbIcon size={size} active={item.active}>
+              {item.icon}
+            </BreadcrumbIcon>
+          )}
+          
+          {item.text}
+        </BreadcrumbItem>
+        
+        {index < displayedItems.length - 1 && (
+          <BreadcrumbSeparator
+            size={size}
+            vertical={vertical}
+            hidden={item.hidden}
+          >
+            {separator}
+          </BreadcrumbSeparator>
+        )}
+      </React.Fragment>
+    ));
   };
   
   return (
-    <BreadcrumbWithHomeContainer className={`${className} breadcrumb-with-home`} {...props}>
-      <ol>
-        <BreadcrumbItem>
-          <a href={homeHref} className="home-link">
-            <svg
-              className="home-icon"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-              <polyline points="9 22 9 12 15 12 15 22"></polyline>
-            </svg>
-            {homeLabel}
-          </a>
+    <BreadcrumbContainer
+      size={size}
+      align={align}
+      vertical={vertical}
+      className={className}
+      style={style}
+      {...props}
+    >
+      {renderItems()}
+    </BreadcrumbContainer>
+  );
+});
+
+Breadcrumb.propTypes = {
+  items: PropTypes.arrayOf(
+    PropTypes.shape({
+      text: PropTypes.string.isRequired,
+      icon: PropTypes.node,
+      active: PropTypes.bool,
+      disabled: PropTypes.bool,
+      clickable: PropTypes.bool,
+      className: PropTypes.string,
+      style: PropTypes.object,
+    })
+  ).isRequired,
+  separator: PropTypes.oneOfType([PropTypes.string, PropTypes.node]),
+  size: PropTypes.oneOf(['small', 'medium', 'large']),
+  align: PropTypes.oneOf(['left', 'center', 'right', 'start']),
+  vertical: PropTypes.bool,
+  maxItems: PropTypes.number,
+  ellipsis: PropTypes.string,
+  homeIcon: PropTypes.node,
+  onItemClick: PropTypes.func,
+  className: PropTypes.string,
+  style: PropTypes.object,
+};
+
+// Компонент для иерархических навигационных цепочек
+export const HierarchicalBreadcrumb = memo(({
+  items,
+  size = 'medium',
+  align = 'left',
+  vertical = false,
+  onItemClick,
+  className,
+  style,
+  ...props
+}) => {
+  const renderItems = () => {
+    if (!items || items.length === 0) return null;
+    
+    return items.map((item, index) => (
+      <React.Fragment key={index}>
+        <BreadcrumbItem
+          size={size}
+          active={item.active}
+          disabled={item.disabled}
+          clickable={item.clickable}
+          onClick={() => onItemClick && onItemClick(item, index)}
+          className={item.className}
+          style={item.style}
+        >
+          {item.icon && (
+            <BreadcrumbIcon size={size} active={item.active}>
+              {item.icon}
+            </BreadcrumbIcon>
+          )}
+          
+          {item.text}
         </BreadcrumbItem>
         
-        {items.map((item, index) => (
-          <BreadcrumbItem key={index}>
-            {item.href && !item.active ? (
-              <a
-                href={item.href}
-                className="link"
-                aria-current={item.active ? 'page' : undefined}
-              >
-                {item.label}
-              </a>
-            ) : (
-              <span className={`link ${item.active ? 'active' : ''}`}>
-                {item.label}
-              </span>
-            )}
-          </BreadcrumbItem>
-        ))}
-      </ol>
-    </BreadcrumbWithHomeContainer>
-  );
-};
-
-// Пропп-types для BreadcrumbWithHome
-BreadcrumbWithHome.propTypes = {
-  items: PropTypes.arrayOf(
-    PropTypes.shape({
-      label: PropTypes.string.isRequired,
-      href: PropTypes.string,
-      active: PropTypes.bool,
-    })
-  ).isRequired,
-  homeHref: PropTypes.string,
-  homeLabel: PropTypes.string,
-  separator: PropTypes.string,
-  className: PropTypes.string,
-};
-
-// Компонент BreadcrumbDropdown для breadcrumb с выпадающим меню
-const BreadcrumbDropdownContainer = styled(BreadcrumbContainer)`
-  .dropdown {
-    position: relative;
-    
-    .dropdown-toggle {
-      background: none;
-      border: none;
-      cursor: pointer;
-      padding: ${props => props.theme.spacing[0.5]};
-      border-radius: ${props => props.theme.borderRadius.sm};
-      color: ${props => props.theme.colors.text.tertiary};
-      transition: ${props => props.theme.transitions.normal};
-      display: flex;
-      align-items: center;
-      
-      &:hover {
-        background-color: ${props => props.theme.colors.border.light};
-        color: ${props => props.theme.colors.text.primary};
-      }
-      
-      &:focus {
-        outline: none;
-        
-        &::after {
-          content: '';
-          position: absolute;
-          top: -2px;
-          left: -2px;
-          right: -2px;
-          bottom: -2px;
-          border: 2px solid ${props => props.theme.colors.primary};
-          border-radius: ${props => props.theme.borderRadius.sm};
-        }
-      }
-      
-      svg {
-        width: 16px;
-        height: 16px;
-        margin-left: ${props => props.theme.spacing[1]};
-      }
-    }
-    
-    .dropdown-menu {
-      position: absolute;
-      top: 100%;
-      left: 0;
-      background-color: ${props => props.theme.colors.surface.secondary};
-      border: 1px solid ${props => props.theme.colors.border.medium};
-      border-radius: ${props => props.theme.borderRadius.md};
-      box-shadow: ${props => props.theme.shadow.md};
-      min-width: 200px;
-      z-index: ${props => props.theme.zIndex.dropdown};
-      margin-top: ${props => props.theme.spacing[1]};
-      
-      .dropdown-item {
-        padding: ${props => props.theme.spacing[2]};
-        color: ${props => props.theme.colors.text.primary};
-        text-decoration: none;
-        display: block;
-        transition: ${props => props.theme.transitions.normal};
-        
-        &:hover {
-          background-color: ${props => props.theme.colors.border.light};
-          color: ${props => props.theme.colors.primary};
-        }
-        
-        &:focus {
-          outline: none;
-          
-          &::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            border: 2px solid ${props => props.theme.colors.primary};
-            border-radius: ${props => props.theme.borderRadius.md};
-          }
-        }
-        
-        & + .dropdown-item {
-          border-top: 1px solid ${props => props.theme.colors.border.medium};
-        }
-      }
-    }
-  }
-`;
-
-// Компонент BreadcrumbDropdown
-const BreadcrumbDropdown = ({
-  items,
-  dropdownItems,
-  separator = '/',
-  className = '',
-  ...props
-}) => {
-  return (
-    <BreadcrumbDropdownContainer className={`${className} breadcrumb-dropdown`} {...props}>
-      <ol>
-        {items.map((item, index) => (
-          <BreadcrumbItem key={index}>
-            {item.href && !item.active ? (
-              <a
-                href={item.href}
-                className="link"
-                aria-current={item.active ? 'page' : undefined}
-              >
-                {item.label}
-              </a>
-            ) : (
-              <span className={`link ${item.active ? 'active' : ''}`}>
-                {item.label}
-              </span>
-            )}
-          </BreadcrumbItem>
-        ))}
-        
-        {dropdownItems && (
-          <BreadcrumbItem>
-            <div className="dropdown">
-              <button className="dropdown-toggle">
-                {dropdownItems[0]?.label}
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="6 9 12 15 18 9"></polyline>
-                </svg>
-              </button>
-              
-              <div className="dropdown-menu">
-                {dropdownItems.map((dropdownItem, dropdownIndex) => (
-                  <a
-                    key={dropdownIndex}
-                    href={dropdownItem.href}
-                    className="dropdown-item"
-                  >
-                    {dropdownItem.label}
-                  </a>
-                ))}
-              </div>
-            </div>
-          </BreadcrumbItem>
+        {index < items.length - 1 && (
+          <BreadcrumbSeparator
+            size={size}
+            vertical={vertical}
+          >
+            {item.separator || '›'}
+          </BreadcrumbSeparator>
         )}
-      </ol>
-    </BreadcrumbDropdownContainer>
+      </React.Fragment>
+    ));
+  };
+  
+  return (
+    <BreadcrumbContainer
+      size={size}
+      align={align}
+      vertical={vertical}
+      className={className}
+      style={style}
+      {...props}
+    >
+      {renderItems()}
+    </BreadcrumbContainer>
   );
-};
+});
 
-// Пропп-types для BreadcrumbDropdown
-BreadcrumbDropdown.propTypes = {
+HierarchicalBreadcrumb.propTypes = {
   items: PropTypes.arrayOf(
     PropTypes.shape({
-      label: PropTypes.string.isRequired,
-      href: PropTypes.string,
+      text: PropTypes.string.isRequired,
+      icon: PropTypes.node,
       active: PropTypes.bool,
+      disabled: PropTypes.bool,
+      clickable: PropTypes.bool,
+      separator: PropTypes.oneOfType([PropTypes.string, PropTypes.node]),
+      className: PropTypes.string,
+      style: PropTypes.object,
     })
   ).isRequired,
-  dropdownItems: PropTypes.arrayOf(
-    PropTypes.shape({
-      label: PropTypes.string.isRequired,
-      href: PropTypes.string,
-    })
-  ),
-  separator: PropTypes.string,
+  size: PropTypes.oneOf(['small', 'medium', 'large']),
+  align: PropTypes.oneOf(['left', 'center', 'right', 'start']),
+  vertical: PropTypes.bool,
+  onItemClick: PropTypes.func,
   className: PropTypes.string,
+  style: PropTypes.object,
 };
 
-// Компонент BreadcrumbIcon для breadcrumb с иконками
-const BreadcrumbIconContainer = styled(BreadcrumbContainer)`
-  .icon {
-    margin-right: ${props => props.theme.spacing[1]};
-    width: 16px;
-    height: 16px;
-  }
-`;
-
-// Компонент BreadcrumbIcon
-const BreadcrumbIcon = ({
+// Компонент для хлебных крошек с изображениями
+export const ImageBreadcrumb = memo(({
   items,
-  separator = '/',
-  className = '',
+  size = 'medium',
+  align = 'left',
+  vertical = false,
+  onItemClick,
+  className,
+  style,
   ...props
 }) => {
+  const renderItems = () => {
+    if (!items || items.length === 0) return null;
+    
+    return items.map((item, index) => (
+      <React.Fragment key={index}>
+        <BreadcrumbItem
+          size={size}
+          active={item.active}
+          disabled={item.disabled}
+          clickable={item.clickable}
+          onClick={() => onItemClick && onItemClick(item, index)}
+          className={item.className}
+          style={item.style}
+        >
+          {item.image && (
+            <img
+              src={item.image}
+              alt={item.text}
+              style={{
+                width: size === 'small' ? '16px' : size === 'large' ? '24px' : '20px',
+                height: size === 'small' ? '16px' : size === 'large' ? '24px' : '20px',
+                borderRadius: '50%',
+                marginRight: size === 'small' ? '4px' : size === 'large' ? '8px' : '6px',
+                objectFit: 'cover',
+              }}
+            />
+          )}
+          
+          {item.text}
+        </BreadcrumbItem>
+        
+        {index < items.length - 1 && (
+          <BreadcrumbSeparator
+            size={size}
+            vertical={vertical}
+          >
+            {item.separator || '›'}
+          </BreadcrumbSeparator>
+        )}
+      </React.Fragment>
+    ));
+  };
+  
   return (
-    <BreadcrumbIconContainer className={`${className} breadcrumb-icon`} {...props}>
-      <ol>
-        {items.map((item, index) => (
-          <BreadcrumbItem key={index}>
-            {item.href && !item.active ? (
-              <a
-                href={item.href}
-                className="link"
-                aria-current={item.active ? 'page' : undefined}
-              >
-                {item.icon && (
-                  <svg
-                    className="icon"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    {item.icon}
-                  </svg>
-                )}
-                {item.label}
-              </a>
-            ) : (
-              <span className={`link ${item.active ? 'active' : ''}`}>
-                {item.icon && (
-                  <svg
-                    className="icon"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    {item.icon}
-                  </svg>
-                )}
-                {item.label}
-              </span>
-            )}
-          </BreadcrumbItem>
-        ))}
-      </ol>
-    </BreadcrumbIconContainer>
+    <BreadcrumbContainer
+      size={size}
+      align={align}
+      vertical={vertical}
+      className={className}
+      style={style}
+      {...props}
+    >
+      {renderItems()}
+    </BreadcrumbContainer>
   );
-};
+});
 
-// Пропп-types для BreadcrumbIcon
-BreadcrumbIcon.propTypes = {
+ImageBreadcrumb.propTypes = {
   items: PropTypes.arrayOf(
     PropTypes.shape({
-      label: PropTypes.string.isRequired,
-      href: PropTypes.string,
+      text: PropTypes.string.isRequired,
+      image: PropTypes.string,
       active: PropTypes.bool,
-      icon: PropTypes.node,
+      disabled: PropTypes.bool,
+      clickable: PropTypes.bool,
+      separator: PropTypes.oneOfType([PropTypes.string, PropTypes.node]),
+      className: PropTypes.string,
+      style: PropTypes.object,
     })
   ).isRequired,
-  separator: PropTypes.string,
+  size: PropTypes.oneOf(['small', 'medium', 'large']),
+  align: PropTypes.oneOf(['left', 'center', 'right', 'start']),
+  vertical: PropTypes.bool,
+  onItemClick: PropTypes.func,
   className: PropTypes.string,
+  style: PropTypes.object,
 };
 
-// Экспорт компонентов
-export {
-  Breadcrumb,
-  BreadcrumbWithHome as BreadcrumbWithHomeComponent,
-  BreadcrumbDropdown as BreadcrumbDropdownComponent,
-  BreadcrumbIcon as BreadcrumbIconComponent,
+// Компонент для анимированных хлебных крошек
+export const AnimatedBreadcrumb = memo(({
+  items,
+  separator = '/',
+  size = 'medium',
+  align = 'left',
+  vertical = false,
+  onItemClick,
+  className,
+  style,
+  ...props
+}) => {
+  const [activeIndex, setActiveIndex] = React.useState(-1);
+  
+  const handleItemClick = (item, index) => {
+    if (item.disabled || !item.clickable) return;
+    if (onItemClick) {
+      onItemClick(item, index);
+    }
+  };
+  
+  const handleMouseEnter = (index) => {
+    setActiveIndex(index);
+  };
+  
+  const handleMouseLeave = () => {
+    setActiveIndex(-1);
+  };
+  
+  const renderItems = () => {
+    if (!items || items.length === 0) return null;
+    
+    return items.map((item, index) => (
+      <React.Fragment key={index}>
+        <BreadcrumbItem
+          size={size}
+          active={item.active || index === activeIndex}
+          disabled={item.disabled}
+          clickable={item.clickable}
+          onClick={() => handleItemClick(item, index)}
+          onMouseEnter={() => handleMouseEnter(index)}
+          onMouseLeave={handleMouseLeave}
+          className={item.className}
+          style={item.style}
+        >
+          {item.icon && (
+            <BreadcrumbIcon size={size} active={item.active || index === activeIndex}>
+              {item.icon}
+            </BreadcrumbIcon>
+          )}
+          
+          {item.text}
+        </BreadcrumbItem>
+        
+        {index < items.length - 1 && (
+          <BreadcrumbSeparator
+            size={size}
+            vertical={vertical}
+            style={{
+              opacity: index === activeIndex ? 1 : 0.6,
+              transform: index === activeIndex ? 'scale(1.1)' : 'scale(1)',
+            }}
+          >
+            {separator}
+          </BreadcrumbSeparator>
+        )}
+      </React.Fragment>
+    ));
+  };
+  
+  return (
+    <BreadcrumbContainer
+      size={size}
+      align={align}
+      vertical={vertical}
+      className={className}
+      style={style}
+      {...props}
+    >
+      {renderItems()}
+    </BreadcrumbContainer>
+  );
+});
+
+AnimatedBreadcrumb.propTypes = {
+  items: PropTypes.arrayOf(
+    PropTypes.shape({
+      text: PropTypes.string.isRequired,
+      icon: PropTypes.node,
+      active: PropTypes.bool,
+      disabled: PropTypes.bool,
+      clickable: PropTypes.bool,
+      className: PropTypes.string,
+      style: PropTypes.object,
+    })
+  ).isRequired,
+  separator: PropTypes.oneOfType([PropTypes.string, PropTypes.node]),
+  size: PropTypes.oneOf(['small', 'medium', 'large']),
+  align: PropTypes.oneOf(['left', 'center', 'right', 'start']),
+  vertical: PropTypes.bool,
+  onItemClick: PropTypes.func,
+  className: PropTypes.string,
+  style: PropTypes.object,
 };
+
+export default Breadcrumb;

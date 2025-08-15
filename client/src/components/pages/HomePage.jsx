@@ -18,6 +18,10 @@ import LazyLoad from '../common/LazyLoad';
 import TextContrastChecker from '../common/TextContrastChecker';
 import { Card, CardHeader, CardTitle, CardBody } from '../common/Card';
 import { colors, spacing, breakpoints } from '../../styles/designTokens';
+import HeroCarousel from '../HeroCarousel';
+import PopularSection from '../sections/PopularSection';
+import NewEpisodesSection from '../sections/NewEpisodesSection';
+import NewAnimeSection from '../sections/NewAnimeSection';
 
 // Стили для главной страницы с использованием дизайн-токенов
 const HomePageContainer = styled.div`
@@ -602,150 +606,25 @@ const HomePage = memo(({ featuredAnime }) => {
   
   return (
     <HomePageContainer theme={theme}>
-      <HomePageHeader>
-        <HomePageHero backgroundImage="/images/anime/hero-bg.jpg">
-          <HomePageHeroOverlay />
-          <HomePageHeroContent>
-            <HomePageHeroTitle fontSize={fontSize}>
-              Добро пожаловать в мир аниме
-            </HomePageHeroTitle>
-            <HomePageHeroSubtitle fontSize={fontSize}>
-              Откройте для себя тысячи аниме-сериалов и фильмов от лучших студий мира. 
-              Новые релизы, популярные хиты и эксклюзивное контент ждут вас.
-            </HomePageHeroSubtitle>
-            <HomePageHeroActions>
-              <Button 
-                variant="primary" 
-                size="large" 
-                icon="🔍"
-                onClick={() => navigate('/catalog')}
-              >
-                Искать аниме
-              </Button>
-              <Button 
-                variant="outline" 
-                size="large" 
-                icon="📋"
-                onClick={() => navigate('/catalog')}
-              >
-                Смотреть каталог
-              </Button>
-            </HomePageHeroActions>
-          </HomePageHeroContent>
-        </HomePageHero>
-      </HomePageHeader>
+      <HeroCarousel />
       
       <HomePageMain>
-        {/* Тренды */}
-        <HomePageSection>
-          <HomePageSectionHeader>
-            <div>
-              <HomePageSectionTitle fontSize={fontSize}>🔥 Тренды</HomePageSectionTitle>
-              <HomePageSectionSubtitle fontSize={fontSize}>
-                Самые популярные аниме этого сезона
-              </HomePageSectionSubtitle>
-            </div>
-            <HomePageSectionActions>
-              <Button 
-                variant="outline" 
-                icon="→"
-                onClick={() => navigate('/catalog?trending=true')}
-              >
-                Все тренды
-              </Button>
-            </HomePageSectionActions>
-          </HomePageSectionHeader>
-          
-          <HomePageAnimeGrid>
-            {trendingAnime.map((anime) => (
-              <LazyLoad key={anime.id} once>
-                <AnimeCard
-                  anime={anime}
-                  onToggleFavorite={handleToggleFavorite}
-                  onAnimeClick={handleAnimeClick}
-                  size={isMobile ? 'small' : isTablet ? 'medium' : 'large'}
-                  showRating={true}
-                  showStatus={true}
-                  showEpisodeCount={true}
-                />
-              </LazyLoad>
-            ))}
-          </HomePageAnimeGrid>
-        </HomePageSection>
-        
         {/* Популярное */}
-        <HomePageSection>
-          <HomePageSectionHeader>
-            <div>
-              <HomePageSectionTitle fontSize={fontSize}>⭐ Популярное</HomePageSectionTitle>
-              <HomePageSectionSubtitle fontSize={fontSize}>
-                Любимые аниме миллионов зрителей
-              </HomePageSectionSubtitle>
-            </div>
-            <HomePageSectionActions>
-              <Button 
-                variant="outline" 
-                icon="→"
-                onClick={() => navigate('/catalog?popular=true')}
-              >
-                Все популярное
-              </Button>
-            </HomePageSectionActions>
-          </HomePageSectionHeader>
-          
-          <HomePageAnimeGrid>
-            {popularAnime.map((anime) => (
-              <LazyLoad key={anime.id} once>
-                <AnimeCard
-                  anime={anime}
-                  onToggleFavorite={handleToggleFavorite}
-                  onAnimeClick={handleAnimeClick}
-                  size={isMobile ? 'small' : isTablet ? 'medium' : 'large'}
-                  showRating={true}
-                  showStatus={true}
-                  showEpisodeCount={true}
-                />
-              </LazyLoad>
-            ))}
-          </HomePageAnimeGrid>
-        </HomePageSection>
+        <PopularSection
+          limit={12}
+          onAnimeClick={handleAnimeClick}
+        />
         
-        {/* Новинки */}
-        <HomePageSection>
-          <HomePageSectionHeader>
-            <div>
-              <HomePageSectionTitle fontSize={fontSize}>✨ Новинки</HomePageSectionTitle>
-              <HomePageSectionSubtitle fontSize={fontSize}>
-                Свежие релизы и недавно вышедшие аниме
-              </HomePageSectionSubtitle>
-            </div>
-            <HomePageSectionActions>
-              <Button 
-                variant="outline" 
-                icon="→"
-                onClick={() => navigate('/catalog?new=true')}
-              >
-                Все новинки
-              </Button>
-            </HomePageSectionActions>
-          </HomePageSectionHeader>
-          
-          <HomePageAnimeGrid>
-            {newReleases.map((anime) => (
-              <LazyLoad key={anime.id} once>
-                <AnimeCard
-                  anime={anime}
-                  onToggleFavorite={handleToggleFavorite}
-                  onAnimeClick={handleAnimeClick}
-                  size={isMobile ? 'small' : isTablet ? 'medium' : 'large'}
-                  showRating={true}
-                  showStatus={true}
-                  showEpisodeCount={true}
-                />
-              </LazyLoad>
-            ))}
-          </HomePageAnimeGrid>
-        </HomePageSection>
+        {/* Новые эпизоды */}
+        <NewEpisodesSection
+          limit={8}
+        />
+        
+        {/* Новые аниме */}
+        <NewAnimeSection
+          limit={12}
+          onAnimeClick={handleAnimeClick}
+        />
         
         {/* Жанры */}
         <HomePageSection>
@@ -762,9 +641,9 @@ const HomePage = memo(({ featuredAnime }) => {
             textColor={theme.colors.text}
             backgroundColor={theme.colors.background}
           >
-            <div style={{ 
-              display: 'flex', 
-              flexWrap: 'wrap', 
+            <div style={{
+              display: 'flex',
+              flexWrap: 'wrap',
               gap: spacing.sm,
               justifyContent: 'center'
             }}>

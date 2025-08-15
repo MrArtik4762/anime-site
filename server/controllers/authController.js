@@ -3,7 +3,7 @@ const { generateToken, generateRefreshToken } = require('../middleware/auth');
 const { accountLockout, resetAttempts } = require('../middleware/accountLockout');
 const { require2FA } = require('../middleware/2fa');
 const { setAuthCookies } = require('../middleware/cookieAuth');
-const { HTTP_STATUS, ERROR_MESSAGES } = require('../../shared/constants/constants');
+const { HTTP_STATUS, ERROR_MESSAGES, LIMITS } = require('../../shared/constants/constants');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const speakeasy = require('speakeasy');
@@ -21,7 +21,11 @@ class AuthController {
         return res.status(HTTP_STATUS.BAD_REQUEST).json({
           success: false,
           error: {
-            message: 'Пользователь с таким email или именем уже существует'
+            message: existingUser.email === email.toLowerCase()
+              ? 'Пользователь с таким email уже существует'
+              : 'Пользователь с таким именем уже существует',
+            code: 'USER_ALREADY_EXISTS',
+            field: existingUser.email === email.toLowerCase() ? 'email' : 'username'
           }
         });
       }
@@ -32,13 +36,64 @@ class AuthController {
         return res.status(HTTP_STATUS.BAD_REQUEST).json({
           success: false,
           error: {
-            message: 'Имя пользователя занято'
+            message: 'Имя пользователя занято',
+            code: 'USERNAME_TAKEN',
+            field: 'username'
           }
         });
       }
 
+      // Валидация email через regex
+      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      if (!emailRegex.test(email)) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
+          success: false,
+          error: {
+            message: 'Пожалуйста, введите корректный email',
+            code: 'INVALID_EMAIL',
+            field: 'email'
+          }
+        });
+      }
+      
+      // Валидация пароля (синхронизировано с клиентом и константами)
+      if (password.length < LIMITS.PASSWORD_MIN_LENGTH) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
+          success: false,
+          error: {
+            message: `Пароль должен содержать минимум ${LIMITS.PASSWORD_MIN_LENGTH} символов`,
+            code: 'PASSWORD_TOO_SHORT',
+            field: 'password',
+            minLength: LIMITS.PASSWORD_MIN_LENGTH
+          }
+        });
+      }
+      
+      // Дополнительная валидация пароля (синхронизировано с REGEX.PASSWORD)
+      const hasUpperCase = /[A-Z]/.test(password);
+      const hasLowerCase = /[a-z]/.test(password);
+      const hasNumbers = /\d/.test(password);
+      const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+      
+      if (!hasUpperCase || !hasLowerCase || !hasNumbers || !hasSpecialChar) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
+          success: false,
+          error: {
+            message: 'Пароль должен содержать хотя бы одну заглавную букву, одну строчную букву, одну цифру и один специальный символ',
+            code: 'PASSWORD_WEAK',
+            field: 'password',
+            requirements: {
+              uppercase: hasUpperCase,
+              lowercase: hasLowerCase,
+              numbers: hasNumbers,
+              specialChars: hasSpecialChar
+            }
+          }
+        });
+      }
+      
       // Хешируем пароль
-      const saltRounds = 12;
+      const saltRounds = 10;
       const password_hash = await bcrypt.hash(password, saltRounds);
 
       // Создаем нового пользователя
@@ -66,8 +121,9 @@ class AuthController {
       const user = await User.create(userData);
 
       // Генерируем JWT токены
-      const accessToken = generateToken(user.id);
-      const refreshToken = generateRefreshToken(user.id);
+      const { signJwt } = require('../utils/jwt');
+      const accessToken = signJwt({ id: user.id }, process.env.JWT_SECRET, '15m');
+      const refreshToken = signJwt({ id: user.id, type: 'refresh' }, process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET, '30d');
 
       // Сохраняем refresh токен
       await user.update({ refresh_token: refreshToken });
@@ -132,20 +188,13 @@ class AuthController {
 
       // Находим пользователя по email или username
       const user = await User.findByEmailOrUsername(email, ['id', 'username', 'email', 'password_hash', 'role', 'avatar', 'is_email_verified', 'preferences', 'refresh_token', 'last_login', 'is_2fa_enabled', 'secret_2fa', 'backup_codes_2fa']);
-      console.log('🔐 LOGIN DEBUG - User found:', !!user);
-      if (user) {
-        console.log('🔐 LOGIN DEBUG - User details:', {
-          id: user.id,
-          username: user.username,
-          email: user.email,
-          is_2fa_enabled: user.is_2fa_enabled
-        });
-      }
+      
       if (!user) {
         return res.status(HTTP_STATUS.UNAUTHORIZED).json({
           success: false,
           error: {
-            message: 'Неверные учетные данные'
+            message: 'Пользователь с таким email или именем не найден',
+            code: 'USER_NOT_FOUND'
           }
         });
       }
@@ -155,7 +204,8 @@ class AuthController {
         return res.status(HTTP_STATUS.FORBIDDEN).json({
           success: false,
           error: {
-            message: 'Аккаунт заблокирован или неактивен'
+            message: 'Аккаунт заблокирован или неактивен',
+            code: 'ACCOUNT_INACTIVE'
           }
         });
       }
@@ -166,7 +216,8 @@ class AuthController {
         return res.status(HTTP_STATUS.UNAUTHORIZED).json({
           success: false,
           error: {
-            message: 'Неверные учетные данные'
+            message: 'Неверный пароль',
+            code: 'INVALID_PASSWORD'
           }
         });
       }
@@ -185,8 +236,9 @@ class AuthController {
       }
 
       // Генерируем новые токены
-      const accessToken = generateToken(user.id);
-      const refreshToken = generateRefreshToken(user.id);
+      const { signJwt } = require('../utils/jwt');
+      const accessToken = signJwt({ id: user.id }, process.env.JWT_SECRET, '15m');
+      const refreshToken = signJwt({ id: user.id, type: 'refresh' }, process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET, '30d');
 
       // Обновляем refresh токен и время последнего входа
       await user.update({
@@ -194,28 +246,33 @@ class AuthController {
         last_login: new Date()
       });
 
-      // Устанавливаем токены в cookies
-      setAuthCookies(req, res, () => {
-        res.json({
-          success: true,
-          data: {
-            user: {
-              id: user.id,
-              username: user.username,
-              email: user.email,
-              role: user.role,
-              avatar: user.avatar,
-              isEmailVerified: user.is_email_verified,
-              preferences: JSON.parse(user.preferences || '{}'),
-              is2faEnabled: user.is_2fa_enabled
-            },
-            tokens: {
-              accessToken,
-              refreshToken
-            }
+      // Устанавливаем refreshToken в cookie
+      res.cookie('refreshToken', refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'Lax',
+        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 дней
+        path: '/'
+      });
+
+      res.json({
+        success: true,
+        data: {
+          user: {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            role: user.role,
+            avatar: user.avatar,
+            isEmailVerified: user.is_email_verified,
+            preferences: JSON.parse(user.preferences || '{}'),
+            is2faEnabled: user.is_2fa_enabled
           },
-          message: 'Успешный вход в систему'
-        });
+          tokens: {
+            accessToken
+          }
+        },
+        message: 'Успешный вход в систему'
       });
 
     } catch (error) {
@@ -232,13 +289,15 @@ class AuthController {
   // Обновление токена
   async refreshToken(req, res) {
     try {
-      const { refreshToken } = req.body;
+      // Извлекаем refreshToken из cookie
+      const refreshToken = req.cookies.refreshToken;
 
       if (!refreshToken) {
         return res.status(HTTP_STATUS.UNAUTHORIZED).json({
           success: false,
           error: {
-            message: 'Refresh токен не предоставлен'
+            message: 'Refresh токен не предоставлен',
+            code: 'NO_REFRESH_TOKEN'
           }
         });
       }
@@ -249,36 +308,47 @@ class AuthController {
         return res.status(HTTP_STATUS.UNAUTHORIZED).json({
           success: false,
           error: {
-            message: 'Недействительный refresh токен'
+            message: 'Недействительный refresh токен',
+            code: 'INVALID_REFRESH_TOKEN'
           }
         });
       }
 
       // Проверяем активность пользователя
-      if (!user.is_active) {
+      if (!user.isUserActive()) {
         return res.status(HTTP_STATUS.FORBIDDEN).json({
           success: false,
           error: {
-            message: 'Аккаунт заблокирован или неактивен'
+            message: 'Аккаунт заблокирован или неактивен',
+            code: 'ACCOUNT_INACTIVE'
           }
         });
       }
 
       // Генерируем новые токены
-      const newAccessToken = generateToken(user.id);
-      const newRefreshToken = generateRefreshToken(user.id);
+      const { signJwt } = require('../utils/jwt');
+      const newAccessToken = signJwt({ id: user.id }, process.env.JWT_SECRET, '15m');
+      const newRefreshToken = signJwt({ id: user.id, type: 'refresh' }, process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET, '30d');
 
       // Обновляем refresh токен
       await User.findByIdAndUpdate(user.id, {
         refresh_token: newRefreshToken
       });
 
+      // Устанавливаем новый refreshToken в cookie
+      res.cookie('refreshToken', newRefreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'Lax',
+        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 дней
+        path: '/'
+      });
+
       res.json({
         success: true,
         data: {
           tokens: {
-            accessToken: newAccessToken,
-            refreshToken: newRefreshToken
+            accessToken: newAccessToken
           }
         }
       });
@@ -305,9 +375,20 @@ class AuthController {
         });
       }
 
+      // Удаляем cookie refreshToken с пустым значением
+      res.clearCookie('refreshToken', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'Lax',
+        path: '/'
+      });
+
       res.json({
         success: true,
-        message: 'Успешный выход из системы'
+        message: 'Успешный выход из системы',
+        data: {
+          clearedCookies: ['refreshToken']
+        }
       });
 
     } catch (error) {
@@ -315,7 +396,8 @@ class AuthController {
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
         success: false,
         error: {
-          message: ERROR_MESSAGES.SERVER_ERROR
+          message: ERROR_MESSAGES.SERVER_ERROR,
+          code: 'LOGOUT_ERROR'
         }
       });
     }
@@ -324,13 +406,14 @@ class AuthController {
   // Получение текущего пользователя
   async getMe(req, res) {
     try {
-      const user = await User.findById(req.user.id, ['id', 'username', 'email', 'role', 'avatar', 'bio', 'preferences', 'is_email_verified', 'last_login']);
+      const user = await User.findById(req.user.id, ['id', 'username', 'email', 'role', 'avatar', 'bio', 'preferences', 'is_email_verified', 'last_login', 'is_2fa_enabled']);
 
       if (!user) {
         return res.status(HTTP_STATUS.NOT_FOUND).json({
           success: false,
           error: {
-            message: ERROR_MESSAGES.USER_NOT_FOUND
+            message: ERROR_MESSAGES.USER_NOT_FOUND,
+            code: 'USER_NOT_FOUND'
           }
         });
       }
@@ -350,7 +433,8 @@ class AuthController {
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
         success: false,
         error: {
-          message: ERROR_MESSAGES.SERVER_ERROR
+          message: ERROR_MESSAGES.SERVER_ERROR,
+          code: 'GET_ME_ERROR'
         }
       });
     }
@@ -361,6 +445,18 @@ class AuthController {
     try {
       const { email } = req.body;
 
+      // Валидация email
+      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      if (!emailRegex.test(email)) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
+          success: false,
+          error: {
+            message: 'Пожалуйста, введите корректный email',
+            code: 'INVALID_EMAIL'
+          }
+        });
+      }
+
       const user = await User.findByEmail(email);
       if (!user) {
         // Не раскрываем, существует ли пользователь
@@ -370,11 +466,22 @@ class AuthController {
         });
       }
 
+      // Проверяем активность пользователя
+      if (!user.isUserActive()) {
+        return res.status(HTTP_STATUS.FORBIDDEN).json({
+          success: false,
+          error: {
+            message: 'Аккаунт заблокирован или неактивен',
+            code: 'ACCOUNT_INACTIVE'
+          }
+        });
+      }
+
       // Создаем токен сброса пароля
-      const resetToken = await User.createPasswordResetToken(user.id);
-      await User.findByIdAndUpdate(user.id, {
-        password_reset_token: resetToken.token,
-        password_reset_expires: resetToken.expires
+      const resetToken = user.createPasswordResetToken();
+      await user.update({
+        password_reset_token: resetToken,
+        password_reset_expires: new Date(Date.now() + 10 * 60 * 1000) // 10 минут
       });
 
       // Отправляем email с инструкциями (заглушка)
@@ -390,7 +497,8 @@ class AuthController {
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
         success: false,
         error: {
-          message: ERROR_MESSAGES.SERVER_ERROR
+          message: ERROR_MESSAGES.SERVER_ERROR,
+          code: 'FORGOT_PASSWORD_ERROR'
         }
       });
     }
@@ -401,6 +509,51 @@ class AuthController {
     try {
       const { token, password } = req.body;
 
+      // Валидация токена
+      if (!token) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
+          success: false,
+          error: {
+            message: 'Токен сброса пароля обязателен',
+            code: 'RESET_TOKEN_REQUIRED'
+          }
+        });
+      }
+
+      // Валидация пароля (синхронизировано с клиентом и константами)
+      if (password.length < LIMITS.PASSWORD_MIN_LENGTH) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
+          success: false,
+          error: {
+            message: `Пароль должен содержать минимум ${LIMITS.PASSWORD_MIN_LENGTH} символов`,
+            code: 'PASSWORD_TOO_SHORT',
+            minLength: LIMITS.PASSWORD_MIN_LENGTH
+          }
+        });
+      }
+      
+      // Дополнительная валидация пароля (синхронизировано с REGEX.PASSWORD)
+      const hasUpperCase = /[A-Z]/.test(password);
+      const hasLowerCase = /[a-z]/.test(password);
+      const hasNumbers = /\d/.test(password);
+      const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+      
+      if (!hasUpperCase || !hasLowerCase || !hasNumbers || !hasSpecialChar) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
+          success: false,
+          error: {
+            message: 'Пароль должен содержать хотя бы одну заглавную букву, одну строчную букву, одну цифру и один специальный символ',
+            code: 'PASSWORD_WEAK',
+            requirements: {
+              uppercase: hasUpperCase,
+              lowercase: hasLowerCase,
+              numbers: hasNumbers,
+              specialChars: hasSpecialChar
+            }
+          }
+        });
+      }
+
       // Хешируем токен для поиска
       const hashedToken = crypto
         .createHash('sha256')
@@ -410,14 +563,26 @@ class AuthController {
       // Находим пользователя с действующим токеном
       const user = await User.findOne({
         password_reset_token: hashedToken,
-        password_reset_expires: { $gt: Date.now() }
+        password_reset_expires: new Date(Date.now() - 1)
       });
 
       if (!user) {
         return res.status(HTTP_STATUS.BAD_REQUEST).json({
           success: false,
           error: {
-            message: 'Недействительный или истекший токен'
+            message: 'Недействительный или истекший токен',
+            code: 'INVALID_OR_EXPIRED_TOKEN'
+          }
+        });
+      }
+
+      // Проверяем активность пользователя
+      if (!user.isUserActive()) {
+        return res.status(HTTP_STATUS.FORBIDDEN).json({
+          success: false,
+          error: {
+            message: 'Аккаунт заблокирован или неактивен',
+            code: 'ACCOUNT_INACTIVE'
           }
         });
       }
@@ -426,26 +591,35 @@ class AuthController {
       const saltRounds = 12;
       const password_hash = await bcrypt.hash(password, saltRounds);
       
-      await User.findByIdAndUpdate(user.id, {
+      await user.update({
         password_hash: password_hash,
         password_reset_token: null,
         password_reset_expires: null
       });
 
-      // Генерируем новые токены
-      const accessToken = generateToken(user.id);
-      const refreshToken = generateRefreshToken(user.id);
+      // Генерируем новые токены с использованием новой JWT утилиты
+      const { signJwt } = require('../utils/jwt');
+      const accessToken = signJwt({ id: user.id }, process.env.JWT_SECRET, '15m');
+      const refreshToken = signJwt({ id: user.id, type: 'refresh' }, process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET, '30d');
 
-      await User.findByIdAndUpdate(user.id, {
+      await user.update({
         refresh_token: refreshToken
+      });
+
+      // Устанавливаем refreshToken в cookie
+      res.cookie('refreshToken', refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'Lax',
+        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 дней
+        path: '/'
       });
 
       res.json({
         success: true,
         data: {
           tokens: {
-            accessToken,
-            refreshToken
+            accessToken
           }
         },
         message: 'Пароль успешно изменен'
@@ -456,7 +630,8 @@ class AuthController {
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
         success: false,
         error: {
-          message: ERROR_MESSAGES.SERVER_ERROR
+          message: ERROR_MESSAGES.SERVER_ERROR,
+          code: 'RESET_PASSWORD_ERROR'
         }
       });
     }
@@ -476,20 +651,43 @@ class AuthController {
       // Находим пользователя с действующим токеном
       const user = await User.findOne({
         email_verification_token: hashedToken,
-        email_verification_expires: { $gt: Date.now() }
+        email_verification_expires: new Date(Date.now() - 1)
       });
 
       if (!user) {
         return res.status(HTTP_STATUS.BAD_REQUEST).json({
           success: false,
           error: {
-            message: 'Недействительный или истекший токен верификации'
+            message: 'Недействительный или истекший токен верификации',
+            code: 'INVALID_OR_EXPIRED_VERIFICATION_TOKEN'
+          }
+        });
+      }
+
+      // Проверяем активность пользователя
+      if (!user.isUserActive()) {
+        return res.status(HTTP_STATUS.FORBIDDEN).json({
+          success: false,
+          error: {
+            message: 'Аккаунт заблокирован или неактивен',
+            code: 'ACCOUNT_INACTIVE'
+          }
+        });
+      }
+
+      // Проверяем, подтвержден ли уже email
+      if (user.is_email_verified) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
+          success: false,
+          error: {
+            message: 'Email уже подтвержден',
+            code: 'EMAIL_ALREADY_VERIFIED'
           }
         });
       }
 
       // Подтверждаем email
-      await User.findByIdAndUpdate(user.id, {
+      await user.update({
         is_email_verified: true,
         email_verification_token: null,
         email_verification_expires: null
@@ -505,7 +703,8 @@ class AuthController {
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
         success: false,
         error: {
-          message: ERROR_MESSAGES.SERVER_ERROR
+          message: ERROR_MESSAGES.SERVER_ERROR,
+          code: 'VERIFY_EMAIL_ERROR'
         }
       });
     }
@@ -520,7 +719,20 @@ class AuthController {
         return res.status(HTTP_STATUS.BAD_REQUEST).json({
           success: false,
           error: {
-            message: 'Email обязателен'
+            message: 'Email обязателен',
+            code: 'EMAIL_REQUIRED'
+          }
+        });
+      }
+
+      // Валидация email
+      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      if (!emailRegex.test(email)) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
+          success: false,
+          error: {
+            message: 'Пожалуйста, введите корректный email',
+            code: 'INVALID_EMAIL'
           }
         });
       }
@@ -554,7 +766,8 @@ class AuthController {
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
         success: false,
         error: {
-          message: ERROR_MESSAGES.SERVER_ERROR
+          message: ERROR_MESSAGES.SERVER_ERROR,
+          code: '2FA_GENERATION_ERROR'
         }
       });
     }
@@ -569,7 +782,8 @@ class AuthController {
         return res.status(HTTP_STATUS.BAD_REQUEST).json({
           success: false,
           error: {
-            message: 'Токен и секрет обязательны'
+            message: 'Токен и секрет обязательны',
+            code: '2FA_TOKEN_SECRET_REQUIRED'
           }
         });
       }
@@ -592,6 +806,17 @@ class AuthController {
         });
       }
 
+      // Проверяем, включена ли уже 2FA
+      if (req.user.is_2fa_enabled) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
+          success: false,
+          error: {
+            message: 'Двухфакторная аутентификация уже включена',
+            code: '2FA_ALREADY_ENABLED'
+          }
+        });
+      }
+
       // Включаем 2FA для пользователя
       await req.user.update({
         is_2fa_enabled: true,
@@ -609,7 +834,8 @@ class AuthController {
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
         success: false,
         error: {
-          message: ERROR_MESSAGES.SERVER_ERROR
+          message: ERROR_MESSAGES.SERVER_ERROR,
+          code: '2FA_ENABLE_ERROR'
         }
       });
     }
@@ -624,7 +850,19 @@ class AuthController {
         return res.status(HTTP_STATUS.BAD_REQUEST).json({
           success: false,
           error: {
-            message: 'Пароль обязателен'
+            message: 'Пароль обязателен',
+            code: 'PASSWORD_REQUIRED'
+          }
+        });
+      }
+
+      // Проверяем, включена ли 2FA
+      if (!req.user.is_2fa_enabled) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
+          success: false,
+          error: {
+            message: 'Двухфакторная аутентификация не включена',
+            code: '2FA_NOT_ENABLED'
           }
         });
       }
@@ -635,7 +873,8 @@ class AuthController {
         return res.status(HTTP_STATUS.UNAUTHORIZED).json({
           success: false,
           error: {
-            message: 'Неверный пароль'
+            message: 'Неверный пароль',
+            code: 'INVALID_PASSWORD'
           }
         });
       }
@@ -657,7 +896,8 @@ class AuthController {
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
         success: false,
         error: {
-          message: ERROR_MESSAGES.SERVER_ERROR
+          message: ERROR_MESSAGES.SERVER_ERROR,
+          code: '2FA_DISABLE_ERROR'
         }
       });
     }
@@ -672,7 +912,19 @@ class AuthController {
         return res.status(HTTP_STATUS.BAD_REQUEST).json({
           success: false,
           error: {
-            message: 'Токен обязателен'
+            message: 'Токен обязателен',
+            code: 'TOKEN_REQUIRED'
+          }
+        });
+      }
+
+      // Проверяем, включена ли 2FA
+      if (!req.user.is_2fa_enabled || !req.user.secret_2fa) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
+          success: false,
+          error: {
+            message: 'Двухфакторная аутентификация не включена',
+            code: '2FA_NOT_ENABLED'
           }
         });
       }
@@ -717,7 +969,8 @@ class AuthController {
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
         success: false,
         error: {
-          message: ERROR_MESSAGES.SERVER_ERROR
+          message: ERROR_MESSAGES.SERVER_ERROR,
+          code: '2FA_VERIFICATION_ERROR'
         }
       });
     }

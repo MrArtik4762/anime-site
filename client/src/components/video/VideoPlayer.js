@@ -1,12 +1,13 @@
-import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from 'react';
+import { useState, useEffect, useCallback, useMemo, lazy, Suspense, useRef } from 'react';
 import styled from 'styled-components';
 import { LoadingSpinner } from '../../styles/GlobalStyles';
+import { saveProgress, getProgress } from '../../services/watchService';
 
 // Ленивая загрузка плееров для оптимизации
 const HTML5Player = lazy(() => import('./HTML5Player'));
 const VideoJSPlayer = lazy(() => import('./VideoJSPlayer'));
 const PlyrPlayer = lazy(() => import('./PlyrPlayer'));
-const HLSPlayer = lazy(() => import('./HLSPlayer'));
+const HLSPlayer = lazy(() => import('./HlsPlayer'));
 const DashPlayer = lazy(() => import('./DashPlayer'));
 
 const PlayerContainer = styled.div`
@@ -162,6 +163,14 @@ const VideoPlayer = ({
   // Дополнительные настройки
   className,
   style,
+
+  // Настройки отслеживания прогресса
+  animeId,
+  episode,
+  userId,
+  enableProgressTracking = false,
+  progressUpdateInterval = 15000, // 15 секунд
+  restorePosition = true,
   ...otherProps
 }) => {
   const [currentPlayer, setCurrentPlayer] = useState(null);

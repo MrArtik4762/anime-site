@@ -1,4 +1,4 @@
-# Мониторинг и логирование Python сервиса
+# Мониторинг и логирование Anime Site
 
 ## Архитектура мониторинга
 
@@ -6,7 +6,7 @@
 graph TB
     subgraph "Application Layer"
         NS[Node.js Service<br/>:5000]
-        PS[Python Service<br/>:8000]
+        CS[Client React<br/>:3000]
     end
     
     subgraph "Metrics Collection"
@@ -30,9 +30,7 @@ graph TB
     end
     
     NS --> PM
-    PS --> PM
     NS --> JE
-    PS --> JE
     
     PM --> GR
     PM --> AL
@@ -41,7 +39,46 @@ graph TB
     UP --> SL
     
     NS --> FL
-    PS --> FL
+    FL --> ELK
+```
+
+```mermaid
+graph TB
+    subgraph "Application Layer"
+        NS[Node.js Service<br/>:5000]
+        CS[Client React<br/>:3000]
+    end
+    
+    subgraph "Metrics Collection"
+        PM[Prometheus<br/>:9090]
+        JE[Jaeger<br/>:16686]
+    end
+    
+    subgraph "Visualization"
+        GR[Grafana<br/>:3001]
+        AL[AlertManager<br/>:9093]
+    end
+    
+    subgraph "Log Aggregation"
+        ELK[ELK Stack<br/>Optional]
+        FL[Fluentd<br/>Optional]
+    end
+    
+    subgraph "External Monitoring"
+        UP[Uptime Robot]
+        SL[Slack/Email<br/>Notifications]
+    end
+    
+    NS --> PM
+    NS --> JE
+    
+    PM --> GR
+    PM --> AL
+    
+    AL --> SL
+    UP --> SL
+    
+    NS --> FL
     FL --> ELK
 ```
 
@@ -49,137 +86,142 @@ graph TB
 
 ### Системные метрики
 
-```python
-from prometheus_client import Counter, Histogram, Gauge, Info
+В проекте используется библиотека `prom-client` для сбора метрик. Все метрики имеют префикс `anime_site_`.
 
-# Информация о сервисе
-SERVICE_INFO = Info('anilibria_service_info', 'AniLibria Python Service Information')
-SERVICE_INFO.info({
-    'version': '1.0.0',
-    'python_version': '3.11',
-    'anilibria_py_version': '1.2.0'
-})
+```javascript
+const client = require('prom-client');
 
-# Счетчики запросов
-HTTP_REQUESTS_TOTAL = Counter(
-    'anilibria_http_requests_total',
-    'Total HTTP requests',
-    ['method', 'endpoint', 'status_code']
-)
+// Настройка сбора метрик по умолчанию
+const register = new client.Registry();
 
-# Время ответа HTTP запросов
-HTTP_REQUEST_DURATION = Histogram(
-    'anilibria_http_request_duration_seconds',
-    'HTTP request duration in seconds',
-    ['method', 'endpoint'],
-    buckets=[0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0]
-)
+// Добавляем метрики по умолчанию
+client.collectDefaultMetrics({
+  register,
+  prefix: 'anime_site_',
+  gcDurationBuckets: [0.001, 0.01, 0.1, 1, 2, 5]
+});
 
-# Активные соединения
-ACTIVE_CONNECTIONS = Gauge(
-    'anilibria_active_connections',
-    'Number of active connections',
-    ['connection_type']
-)
+// HTTP запросы
+const HTTP_REQUESTS_TOTAL = new client.Counter({
+  name: 'anime_site_http_requests_total',
+  help: 'Total HTTP requests',
+  labelNames: ['method', 'endpoint', 'status_code']
+});
 
-# WebSocket соединения
-WEBSOCKET_CONNECTIONS = Gauge(
-    'anilibria_websocket_connections_active',
-    'Active WebSocket connections'
-)
+// Время ответа HTTP запросов
+const HTTP_REQUEST_DURATION = new client.Histogram({
+  name: 'anime_site_http_request_duration_seconds',
+  help: 'HTTP request duration in seconds',
+  labelNames: ['method', 'endpoint'],
+  buckets: [0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0]
+});
 
-WEBSOCKET_MESSAGES = Counter(
-    'anilibria_websocket_messages_total',
-    'Total WebSocket messages',
-    ['direction', 'message_type']
-)
+// Активные соединения
+const ACTIVE_CONNECTIONS = new client.Gauge({
+  name: 'anime_site_active_connections',
+  help: 'Number of active connections',
+  labelNames: ['connection_type']
+});
+
+// WebSocket соединения
+const WEBSOCKET_CONNECTIONS = new client.Gauge({
+  name: 'anime_site_websocket_connections_active',
+  help: 'Active WebSocket connections'
+});
+
+// WebSocket сообщения
+const WEBSOCKET_MESSAGES = new client.Counter({
+  name: 'anime_site_websocket_messages_total',
+  help: 'Total WebSocket messages',
+  labelNames: ['direction', 'message_type']
+});
 
 # Кеш метрики
 CACHE_OPERATIONS = Counter(
-    'anilibria_cache_operations_total',
+    'anime_site_cache_operations_total',
     'Total cache operations',
     ['operation', 'cache_level', 'result']
 )
 
 CACHE_HIT_RATE = Gauge(
-    'anilibria_cache_hit_rate',
+    'anime_site_cache_hit_rate',
     'Cache hit rate',
     ['cache_level']
 )
 
 CACHE_SIZE = Gauge(
-    'anilibria_cache_size_bytes',
+    'anime_site_cache_size_bytes',
     'Cache size in bytes',
     ['cache_level']
 )
 
 # База данных метрики
 DATABASE_OPERATIONS = Counter(
-    'anilibria_database_operations_total',
+    'anime_site_database_operations_total',
     'Total database operations',
     ['operation', 'collection', 'result']
 )
 
 DATABASE_OPERATION_DURATION = Histogram(
-    'anilibria_database_operation_duration_seconds',
+    'anime_site_database_operation_duration_seconds',
     'Database operation duration in seconds',
     ['operation', 'collection'],
     buckets=[0.01, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5]
 )
 
 DATABASE_CONNECTION_POOL = Gauge(
-    'anilibria_database_connection_pool',
+    'anime_site_database_connection_pool',
     'Database connection pool status',
     ['status']
 )
 
 # AniLibria API метрики
 ANILIBRIA_API_REQUESTS = Counter(
-    'anilibria_api_requests_total',
+    'anime_site_anilibria_api_requests_total',
     'Total requests to AniLibria API',
     ['endpoint', 'status_code']
 )
 
 ANILIBRIA_API_DURATION = Histogram(
-    'anilibria_api_request_duration_seconds',
+    'anime_site_anilibria_api_request_duration_seconds',
     'AniLibria API request duration in seconds',
     ['endpoint'],
     buckets=[0.5, 1.0, 2.5, 5.0, 10.0, 30.0]
 )
 
 ANILIBRIA_API_RATE_LIMIT = Gauge(
-    'anilibria_api_rate_limit_remaining',
+    'anime_site_anilibria_api_rate_limit_remaining',
     'Remaining AniLibria API rate limit'
 )
 
 # Бизнес метрики
 TITLES_SYNCED = Counter(
-    'anilibria_titles_synced_total',
+    'anime_site_titles_synced_total',
     'Total titles synchronized',
     ['source']
 )
 
 EPISODES_PROCESSED = Counter(
-    'anilibria_episodes_processed_total',
+    'anime_site_episodes_processed_total',
     'Total episodes processed',
     ['action']
 )
 
 NOTIFICATIONS_SENT = Counter(
-    'anilibria_notifications_sent_total',
+    'anime_site_notifications_sent_total',
     'Total notifications sent',
     ['type', 'channel']
 )
 
 # Ошибки и исключения
 ERRORS_TOTAL = Counter(
-    'anilibria_errors_total',
+    'anime_site_errors_total',
     'Total errors',
     ['error_type', 'component']
 )
 
 CIRCUIT_BREAKER_STATE = Gauge(
-    'anilibria_circuit_breaker_state',
+    'anime_site_circuit_breaker_state',
     'Circuit breaker state (0=closed, 1=open, 2=half-open)',
     ['service']
 )
@@ -187,331 +229,378 @@ CIRCUIT_BREAKER_STATE = Gauge(
 
 ### Middleware для сбора метрик
 
-```python
-import time
-from fastapi import Request, Response
-from starlette.middleware.base import BaseHTTPMiddleware
-
-class MetricsMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
-        start_time = time.time()
+```javascript
+const metricsMiddleware = (req, res, next) => {
+    const start = Date.now();
+    
+    // Увеличиваем счетчик активных соединений
+    ACTIVE_CONNECTIONS.labels(connection_type='http').inc();
+    
+    // Обработка завершения запроса
+    res.on('finish', () => {
+        const duration = (Date.now() - start) / 1000;
         
-        # Увеличиваем счетчик активных соединений
-        ACTIVE_CONNECTIONS.labels(connection_type='http').inc()
+        // Записываем метрики
+        HTTP_REQUESTS_TOTAL.labels(
+            method=req.method,
+            endpoint=req.path,
+            status_code=res.statusCode
+        ).inc();
         
-        try:
-            response = await call_next(request)
-            
-            # Записываем метрики
-            duration = time.time() - start_time
-            
-            HTTP_REQUESTS_TOTAL.labels(
-                method=request.method,
-                endpoint=request.url.path,
-                status_code=response.status_code
-            ).inc()
-            
-            HTTP_REQUEST_DURATION.labels(
-                method=request.method,
-                endpoint=request.url.path
-            ).observe(duration)
-            
-            return response
-            
-        except Exception as e:
-            ERRORS_TOTAL.labels(
-                error_type=type(e).__name__,
-                component='http_middleware'
-            ).inc()
-            raise
-        finally:
-            ACTIVE_CONNECTIONS.labels(connection_type='http').dec()
+        HTTP_REQUEST_DURATION.labels(
+            method=req.method,
+            endpoint=req.path
+        ).observe(duration);
+        
+        // Уменьшаем счетчик активных соединений
+        ACTIVE_CONNECTIONS.labels(connection_type='http').dec();
+    });
+    
+    // Обработка ошибок
+    res.on('error', (error) => {
+        ERRORS_TOTAL.labels(
+            error_type=error.constructor.name,
+            component='http_middleware'
+        ).inc();
+        
+        // Уменьшаем счетчик активных соединений в случае ошибки
+        ACTIVE_CONNECTIONS.labels(connection_type='http').dec();
+    });
+    
+    next();
+};
 ```
 
 ## Структурированное логирование
 
 ### Конфигурация логирования
 
-```python
-import structlog
-import logging
-from pythonjsonlogger import jsonlogger
+```javascript
+const winston = require('winston');
+const { combine, timestamp, printf, colorize, json } = winston.format;
 
-# Настройка структурированного логирования
-structlog.configure(
-    processors=[
-        structlog.stdlib.filter_by_level,
-        structlog.stdlib.add_logger_name,
-        structlog.stdlib.add_log_level,
-        structlog.stdlib.PositionalArgumentsFormatter(),
-        structlog.processors.TimeStamper(fmt="iso"),
-        structlog.processors.StackInfoRenderer(),
-        structlog.processors.format_exc_info,
-        structlog.processors.UnicodeDecoder(),
-        structlog.processors.JSONRenderer()
+// Формат для разработки (цветной)
+const developmentFormat = combine(
+    colorize(),
+    timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+    printf(({ timestamp, level, message, ...meta }) => {
+        return `${timestamp} [${level}]: ${message} ${Object.keys(meta).length ? JSON.stringify(meta, null, 2) : ''}`;
+    })
+);
+
+// Формат для продакшена (JSON)
+const productionFormat = combine(
+    timestamp(),
+    json()
+);
+
+// Создание логгера
+const logger = winston.createLogger({
+    level: process.env.LOG_LEVEL || 'info',
+    format: process.env.NODE_ENV === 'production' ? productionFormat : developmentFormat,
+    defaultMeta: { service: 'anime-site-service' },
+    transports: [
+        new winston.transports.Console(),
+        // Можно добавить другие транспорты: файлы, distant API, Sentry и т.д.
     ],
-    context_class=dict,
-    logger_factory=structlog.stdlib.LoggerFactory(),
-    wrapper_class=structlog.stdlib.BoundLogger,
-    cache_logger_on_first_use=True,
-)
+});
 
-# Настройка стандартного логгера
-def setup_logging(log_level: str = "INFO"):
-    logging.basicConfig(
-        level=getattr(logging, log_level.upper()),
-        format='%(message)s'
-    )
+// Middleware для добавления request_id и других контекстных данных
+const loggingMiddleware = (req, res, next) => {
+    const start = Date.now();
     
-    # JSON formatter для продакшена
-    if os.getenv('ENVIRONMENT') == 'production':
-        handler = logging.StreamHandler()
-        formatter = jsonlogger.JsonFormatter(
-            '%(asctime)s %(name)s %(levelname)s %(message)s'
-        )
-        handler.setFormatter(formatter)
-        
-        root_logger = logging.getLogger()
-        root_logger.handlers.clear()
-        root_logger.addHandler(handler)
-
-# Создание логгера
-logger = structlog.get_logger(__name__)
+    // Добавляем request_id к логам
+    req.logger = logger.child({
+        request_id: req.headers['x-request-id'] || req.id,
+        method: req.method,
+        path: req.path,
+        ip: req.ip,
+        user_id: req.user?.id || 'anonymous'
+    });
+    
+    // Логируем начало запроса
+    req.logger.info('Request started', {
+        user_agent: req.get('User-Agent'),
+        content_type: req.get('Content-Type')
+    });
+    
+    // Обработка завершения запроса
+    res.on('finish', () => {
+        const duration = Date.now() - start;
+        req.logger.info('Request completed', {
+            status_code: res.statusCode,
+            duration_ms: duration
+        });
+    });
+    
+    next();
+};
 ```
 
 ### Контекстное логирование
 
-```python
-from contextvars import ContextVar
-import uuid
+```javascript
+const { v4: uuidv4 } = require('uuid');
 
-# Контекстные переменные для трассировки
-request_id_var: ContextVar[str] = ContextVar('request_id', default='')
-user_id_var: ContextVar[str] = ContextVar('user_id', default='')
-
-class LoggingMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
-        # Генерируем уникальный ID запроса
-        request_id = str(uuid.uuid4())
-        request_id_var.set(request_id)
+// Middleware для добавления контекстного логирования
+const contextLoggingMiddleware = (req, res, next) => {
+    // Генерируем уникальный ID запроса
+    const request_id = req.headers['x-request-id'] || uuidv4();
+    
+    // Добавляем request_id в заголовки ответа
+    res.setHeader('X-Request-ID', request_id);
+    
+    // Получаем user_id из JWT токена если есть
+    const user_id = req.user?.id || 'anonymous';
+    
+    // Добавляем контекст к логгеру
+    const requestLogger = req.logger.child({
+        request_id,
+        user_id
+    });
+    
+    // Логируем начало запроса
+    requestLogger.info('Request started', {
+        method: req.method,
+        path: req.path,
+        user_agent: req.get('User-Agent'),
+        ip: req.ip
+    });
+    
+    const start = Date.now();
+    
+    // Обработка завершения запроса
+    res.on('finish', () => {
+        const duration = Date.now() - start;
         
-        # Извлекаем user_id из JWT токена если есть
-        user_id = self.extract_user_id(request)
-        if user_id:
-            user_id_var.set(user_id)
+        requestLogger.info('Request completed', {
+            status_code: res.statusCode,
+            duration_ms: duration
+        });
+    });
+    
+    // Обработка ошибок
+    res.on('error', (error) => {
+        const duration = Date.now() - start;
         
-        # Добавляем заголовок с request_id
-        request.state.request_id = request_id
-        
-        logger.info(
-            "Request started",
-            request_id=request_id,
-            method=request.method,
-            path=request.url.path,
-            user_id=user_id,
-            user_agent=request.headers.get('user-agent'),
-            ip=request.client.host
-        )
-        
-        start_time = time.time()
-        
-        try:
-            response = await call_next(request)
-            
-            duration = time.time() - start_time
-            
-            logger.info(
-                "Request completed",
-                request_id=request_id,
-                status_code=response.status_code,
-                duration=duration,
-                user_id=user_id
-            )
-            
-            # Добавляем request_id в заголовки ответа
-            response.headers["X-Request-ID"] = request_id
-            
-            return response
-            
-        except Exception as e:
-            duration = time.time() - start_time
-            
-            logger.error(
-                "Request failed",
-                request_id=request_id,
-                error=str(e),
-                error_type=type(e).__name__,
-                duration=duration,
-                user_id=user_id,
-                exc_info=True
-            )
-            raise
+        requestLogger.error('Request failed', {
+            error: error.message,
+            error_type: error.constructor.name,
+            duration_ms: duration,
+            stack: error.stack
+        });
+    });
+    
+    // Добавляем request_id и logger в объект запроса
+    req.request_id = request_id;
+    req.requestLogger = requestLogger;
+    
+    next();
+};
 ```
 
 ### Логирование бизнес-событий
 
-```python
-class AnilibriaService:
-    def __init__(self):
-        self.logger = structlog.get_logger(__name__)
+```javascript
+class AnilibriaService {
+    constructor(logger) {
+        this.logger = logger.child({ service: 'anilibria' });
+    }
     
-    async def sync_title(self, title_id: int):
-        self.logger.info(
-            "Title sync started",
-            title_id=title_id,
-            action="sync_title"
-        )
+    async syncTitle(titleId) {
+        const startTime = Date.now();
         
-        try:
-            # Получение данных из API
-            self.logger.debug(
-                "Fetching title from AniLibria API",
-                title_id=title_id
-            )
+        this.logger.info('Title sync started', {
+            title_id: titleId,
+            action: 'sync_title'
+        });
+        
+        try {
+            // Получение данных из API
+            this.logger.debug('Fetching title from AniLibria API', {
+                title_id: titleId
+            });
             
-            title_data = await self.anilibria_client.get_title(title_id)
+            const titleData = await this.anilibriaClient.getTitle(titleId);
             
-            # Сохранение в базу данных
-            self.logger.debug(
-                "Saving title to database",
-                title_id=title_id,
-                episodes_count=len(title_data.get('player', {}).get('list', {}))
-            )
+            // Сохранение в базу данных
+            this.logger.debug('Saving title to database', {
+                title_id: titleId,
+                episodes_count: titleData.player?.list?.length || 0
+            });
             
-            await self.save_title(title_data)
+            await this.saveTitle(titleData);
             
-            # Обновление кеша
-            await self.update_cache(title_id, title_data)
+            // Обновление кеша
+            await this.updateCache(titleId, titleData);
             
-            self.logger.info(
-                "Title sync completed successfully",
-                title_id=title_id,
-                action="sync_title",
-                episodes_count=len(title_data.get('player', {}).get('list', {}))
-            )
+            const duration = Date.now() - startTime;
             
-            # Метрика
-            TITLES_SYNCED.labels(source='anilibria_api').inc()
+            this.logger.info('Title sync completed successfully', {
+                title_id: titleId,
+                action: 'sync_title',
+                episodes_count: titleData.player?.list?.length || 0,
+                duration_ms: duration
+            });
             
-            return title_data
+            // Метрика
+            TITLES_SYNCED.labels(source='anilibria_api').inc();
             
-        except Exception as e:
-            self.logger.error(
-                "Title sync failed",
-                title_id=title_id,
-                action="sync_title",
-                error=str(e),
-                error_type=type(e).__name__,
-                exc_info=True
-            )
+            return titleData;
             
-            ERRORS_TOTAL.labels(
-                error_type=type(e).__name__,
-                component='title_sync'
-            ).inc()
+        } catch (error) {
+            const duration = Date.now() - startTime;
             
-            raise
+            this.logger.error('Title sync failed', {
+                title_id: titleId,
+                action: 'sync_title',
+                error: error.message,
+                error_type: error.constructor.name,
+                duration_ms: duration,
+                stack: error.stack
+            });
+            
+            ERRORS_TOTAL.labels({
+                error_type: error.constructor.name,
+                component: 'title_sync'
+            }).inc();
+            
+            throw error;
+        }
+    }
+}
 ```
 
 ## Distributed Tracing с Jaeger
 
 ### Настройка OpenTelemetry
 
-```python
-from opentelemetry import trace
-from opentelemetry.exporter.jaeger.thrift import JaegerExporter
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
-from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
-from opentelemetry.instrumentation.pymongo import PymongoInstrumentor
-from opentelemetry.instrumentation.redis import RedisInstrumentor
+```javascript
+const { NodeTracerProvider } = require('@opentelemetry/sdk-trace-node');
+const { JaegerExporter } = require('@opentelemetry/exporter-jaeger');
+const { Resource } = require('@opentelemetry/resources');
+const { SemanticResourceAttributes } = require('@opentelemetry/semantic-conventions');
 
-def setup_tracing(service_name: str = "anilibria-python-service"):
-    # Настройка провайдера трассировки
-    trace.set_tracer_provider(TracerProvider())
-    tracer = trace.get_tracer(__name__)
-    
-    # Настройка экспортера Jaeger
-    jaeger_exporter = JaegerExporter(
-        agent_host_name=os.getenv("JAEGER_AGENT_HOST", "jaeger"),
-        agent_port=int(os.getenv("JAEGER_AGENT_PORT", "6831")),
-    )
-    
-    # Настройка процессора спанов
-    span_processor = BatchSpanProcessor(jaeger_exporter)
-    trace.get_tracer_provider().add_span_processor(span_processor)
-    
-    return tracer
+// Настройка провайдера трассировки
+const provider = new NodeTracerProvider({
+    resource: new Resource({
+        [SemanticResourceAttributes.SERVICE_NAME]: 'anime-site-service'
+    })
+});
 
-# Инструментация библиотек
-def instrument_libraries(app):
-    FastAPIInstrumentor.instrument_app(app)
-    HTTPXClientInstrumentor().instrument()
-    PymongoInstrumentor().instrument()
-    RedisInstrumentor().instrument()
+// Настройка экспортера Jaeger
+const jaegerExporter = new JaegerExporter({
+    endpoint: process.env.JAEGER_AGENT_HOST || 'http://jaeger:14268/api/traces'
+});
+
+// Настройка процессора спанов
+provider.addSpanProcessor(new BatchSpanProcessor(jaegerExporter));
+
+// Регистрация провайдера
+provider.register();
+
+// Экспорт трейсера
+const tracer = provider.getTracer('anime-site-service');
 ```
 
 ### Использование трассировки в коде
 
-```python
-from opentelemetry import trace
+```javascript
+const { trace } = require('@opentelemetry/api');
 
-tracer = trace.get_tracer(__name__)
-
-class AnilibriaService:
-    async def get_title_with_tracing(self, title_id: int):
-        with tracer.start_as_current_span("get_title") as span:
-            span.set_attribute("title_id", title_id)
-            span.set_attribute("service.name", "anilibria-python")
+class AnilibriaService {
+    async getTitleWithTracing(titleId) {
+        const tracer = trace.getTracer('anime-site-service');
+        
+        return tracer.startActiveSpan('get_title', async (span) => {
+            span.setAttribute('title_id', titleId);
+            span.setAttribute('service.name', 'anime-site-nodejs');
             
-            # Проверка кеша
-            with tracer.start_as_current_span("cache_lookup") as cache_span:
-                cache_span.set_attribute("cache.level", "memory")
-                cached_title = await self.get_from_memory_cache(title_id)
-                
-                if cached_title:
-                    cache_span.set_attribute("cache.hit", True)
-                    span.set_attribute("cache.source", "memory")
-                    return cached_title
-                
-                cache_span.set_attribute("cache.hit", False)
-            
-            # Проверка Redis
-            with tracer.start_as_current_span("redis_lookup") as redis_span:
-                redis_span.set_attribute("cache.level", "redis")
-                redis_title = await self.get_from_redis_cache(title_id)
-                
-                if redis_title:
-                    redis_span.set_attribute("cache.hit", True)
-                    span.set_attribute("cache.source", "redis")
-                    return redis_title
-                
-                redis_span.set_attribute("cache.hit", False)
-            
-            # Запрос к API
-            with tracer.start_as_current_span("anilibria_api_call") as api_span:
-                api_span.set_attribute("external.service", "anilibria.tv")
-                api_span.set_attribute("http.method", "GET")
-                api_span.set_attribute("http.url", f"/title?id={title_id}")
-                
-                try:
-                    title = await self.anilibria_client.get_title(title_id)
-                    api_span.set_attribute("http.status_code", 200)
-                    span.set_attribute("title.episodes_count", 
-                                     len(title.get('player', {}).get('list', {})))
+            try {
+                // Проверка кеша
+                const cachedTitle = await tracer.startActiveSpan('cache_lookup', (cacheSpan) => {
+                    cacheSpan.setAttribute('cache.level', 'memory');
                     
-                    # Сохранение в кеш
-                    with tracer.start_as_current_span("cache_store"):
-                        await self.store_in_cache(title_id, title)
+                    return this.getFromMemoryCache(titleId).then((result) => {
+                        if (result) {
+                            cacheSpan.setAttribute('cache.hit', true);
+                            span.setAttribute('cache.source', 'memory');
+                            return result;
+                        }
+                        
+                        cacheSpan.setAttribute('cache.hit', false);
+                        return null;
+                    });
+                });
+                
+                if (cachedTitle) {
+                    span.end();
+                    return cachedTitle;
+                }
+                
+                // Проверка Redis
+                const redisTitle = await tracer.startActiveSpan('redis_lookup', (redisSpan) => {
+                    redisSpan.setAttribute('cache.level', 'redis');
                     
-                    return title
+                    return this.getFromRedisCache(titleId).then((result) => {
+                        if (result) {
+                            redisSpan.setAttribute('cache.hit', true);
+                            span.setAttribute('cache.source', 'redis');
+                            return result;
+                        }
+                        
+                        redisSpan.setAttribute('cache.hit', false);
+                        return null;
+                    });
+                });
+                
+                if (redisTitle) {
+                    span.end();
+                    return redisTitle;
+                }
+                
+                // Запрос к API
+                const title = await tracer.startActiveSpan('anilibria_api_call', async (apiSpan) => {
+                    apiSpan.setAttribute('external.service', 'anilibria.tv');
+                    apiSpan.setAttribute('http.method', 'GET');
+                    apiSpan.setAttribute('http.url', `/title?id=${titleId}`);
                     
-                except Exception as e:
-                    api_span.set_attribute("error", True)
-                    api_span.set_attribute("error.message", str(e))
-                    api_span.set_attribute("http.status_code", 500)
-                    raise
+                    try {
+                        const result = await this.anilibriaClient.getTitle(titleId);
+                        apiSpan.setAttribute('http.status_code', 200);
+                        span.setAttribute('title.episodes_count', result.player?.list?.length || 0);
+                        
+                        // Сохранение в кеш
+                        await tracer.startActiveSpan('cache_store', async (cacheSpan) => {
+                            await this.storeInCache(titleId, result);
+                            cacheSpan.end();
+                        });
+                        
+                        apiSpan.end();
+                        return result;
+                        
+                    } catch (error) {
+                        apiSpan.setAttribute('error', true);
+                        apiSpan.setAttribute('error.message', error.message);
+                        apiSpan.setAttribute('http.status_code', 500);
+                        apiSpan.end();
+                        throw error;
+                    }
+                });
+                
+                span.end();
+                return title;
+                
+            } catch (error) {
+                span.recordException(error);
+                span.setAttribute('error', true);
+                span.setAttribute('error.message', error.message);
+                span.end();
+                throw error;
+            }
+        });
+    }
+}
 ```
 
 ## Grafana Dashboard
@@ -521,14 +610,14 @@ class AnilibriaService:
 ```json
 {
   "dashboard": {
-    "title": "AniLibria Python Service",
+    "title": "Anime Site Node.js Service",
     "panels": [
       {
         "title": "Request Rate",
         "type": "graph",
         "targets": [
           {
-            "expr": "rate(anilibria_http_requests_total[5m])",
+            "expr": "rate(anime_site_http_requests_total[5m])",
             "legendFormat": "{{method}} {{endpoint}}"
           }
         ]
@@ -538,11 +627,11 @@ class AnilibriaService:
         "type": "graph",
         "targets": [
           {
-            "expr": "histogram_quantile(0.95, rate(anilibria_http_request_duration_seconds_bucket[5m]))",
+            "expr": "histogram_quantile(0.95, rate(anime_site_http_request_duration_seconds_bucket[5m]))",
             "legendFormat": "95th percentile"
           },
           {
-            "expr": "histogram_quantile(0.50, rate(anilibria_http_request_duration_seconds_bucket[5m]))",
+            "expr": "histogram_quantile(0.50, rate(anime_site_http_request_duration_seconds_bucket[5m]))",
             "legendFormat": "50th percentile"
           }
         ]
@@ -552,7 +641,7 @@ class AnilibriaService:
         "type": "graph",
         "targets": [
           {
-            "expr": "rate(anilibria_http_requests_total{status_code=~\"4..|5..\"}[5m])",
+            "expr": "rate(anime_site_http_requests_total{status_code=~\"4..|5..\"}[5m])",
             "legendFormat": "Error rate"
           }
         ]
@@ -562,7 +651,7 @@ class AnilibriaService:
         "type": "singlestat",
         "targets": [
           {
-            "expr": "anilibria_cache_hit_rate",
+            "expr": "anime_site_cache_hit_rate",
             "legendFormat": "{{cache_level}}"
           }
         ]
@@ -572,7 +661,7 @@ class AnilibriaService:
         "type": "graph",
         "targets": [
           {
-            "expr": "anilibria_websocket_connections_active",
+            "expr": "anime_site_websocket_connections_active",
             "legendFormat": "Active connections"
           }
         ]
@@ -582,7 +671,7 @@ class AnilibriaService:
         "type": "graph",
         "targets": [
           {
-            "expr": "rate(anilibria_database_operations_total[5m])",
+            "expr": "rate(anime_site_database_operations_total[5m])",
             "legendFormat": "{{operation}} {{collection}}"
           }
         ]
@@ -592,8 +681,28 @@ class AnilibriaService:
         "type": "graph",
         "targets": [
           {
-            "expr": "rate(anilibria_api_requests_total[5m])",
+            "expr": "rate(anime_site_anilibria_api_requests_total[5m])",
             "legendFormat": "{{endpoint}} - {{status_code}}"
+          }
+        ]
+      },
+      {
+        "title": "Node.js Memory Usage",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "process_resident_memory_bytes{job=\"anime-site-nodejs\"}",
+            "legendFormat": "Memory Usage"
+          }
+        ]
+      },
+      {
+        "title": "Node.js Event Loop Latency",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "nodejs_eventloop_lag_seconds{job=\"anime-site-nodejs\"}",
+            "legendFormat": "Event Loop Lag"
           }
         ]
       }
@@ -609,28 +718,28 @@ class AnilibriaService:
 ```yaml
 # alerts.yml
 groups:
-  - name: anilibria-python-service
+  - name: anime-site-nodejs-service
     rules:
       - alert: HighErrorRate
-        expr: rate(anilibria_http_requests_total{status_code=~"5.."}[5m]) > 0.1
+        expr: rate(anime_site_http_requests_total{status_code=~"5.."}[5m]) > 0.1
         for: 5m
         labels:
           severity: critical
         annotations:
-          summary: "High error rate in AniLibria Python service"
+          summary: "High error rate in Anime Site Node.js service"
           description: "Error rate is {{ $value }} errors per second"
       
       - alert: HighResponseTime
-        expr: histogram_quantile(0.95, rate(anilibria_http_request_duration_seconds_bucket[5m])) > 5
+        expr: histogram_quantile(0.95, rate(anime_site_http_request_duration_seconds_bucket[5m])) > 5
         for: 5m
         labels:
           severity: warning
         annotations:
-          summary: "High response time in AniLibria Python service"
+          summary: "High response time in Anime Site Node.js service"
           description: "95th percentile response time is {{ $value }} seconds"
       
       - alert: LowCacheHitRate
-        expr: anilibria_cache_hit_rate < 0.7
+        expr: anime_site_cache_hit_rate < 0.7
         for: 10m
         labels:
           severity: warning
@@ -639,16 +748,16 @@ groups:
           description: "Cache hit rate is {{ $value }}"
       
       - alert: ServiceDown
-        expr: up{job="anilibria-python-service"} == 0
+        expr: up{job="anime-site-nodejs"} == 0
         for: 1m
         labels:
           severity: critical
         annotations:
-          summary: "AniLibria Python service is down"
+          summary: "Anime Site Node.js service is down"
           description: "Service has been down for more than 1 minute"
       
       - alert: DatabaseConnectionIssues
-        expr: anilibria_database_connection_pool{status="available"} < 5
+        expr: anime_site_database_connection_pool{status="available"} < 5
         for: 5m
         labels:
           severity: warning
@@ -657,13 +766,31 @@ groups:
           description: "Available connections: {{ $value }}"
       
       - alert: AnilibriaAPIDown
-        expr: rate(anilibria_api_requests_total{status_code=~"5.."}[5m]) > 0.5
+        expr: rate(anime_site_anilibria_api_requests_total{status_code=~"5.."}[5m]) > 0.5
         for: 5m
         labels:
           severity: critical
         annotations:
           summary: "AniLibria API is experiencing issues"
           description: "High error rate from AniLibria API"
+      
+      - alert: HighMemoryUsage
+        expr: process_resident_memory_bytes{job="anime-site-nodejs"} > 500000000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage in Anime Site Node.js service"
+          description: "Memory usage is {{ $value }} bytes"
+      
+      - alert: HighEventLoopLatency
+        expr: nodejs_eventloop_lag_seconds{job="anime-site-nodejs"} > 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High event loop latency in Anime Site Node.js service"
+          description: "Event loop lag is {{ $value }} seconds"
 ```
 
 ### AlertManager конфигурация
@@ -690,7 +817,7 @@ receivers:
         text: '{{ range .Alerts }}{{ .Annotations.summary }}{{ end }}'
     
     email_configs:
-      - to: 'admin@anime-site.com'
+      - to: 'admin@example.com'
         subject: 'AniLibria Service Alert'
         body: |
           {{ range .Alerts }}
@@ -703,112 +830,238 @@ receivers:
 
 ### Комплексный health check endpoint
 
-```python
-from fastapi import APIRouter, HTTPException
-from datetime import datetime
-import asyncio
+```javascript
+const express = require('express');
+const router = express.Router();
 
-router = APIRouter()
-
-@router.get("/health")
-async def health_check():
-    health_status = {
-        "status": "healthy",
-        "timestamp": datetime.utcnow().isoformat(),
-        "version": "1.0.0",
-        "checks": {}
+/**
+ * Комплексный health check endpoint
+ * GET /health
+ */
+router.get('/health', async (req, res) => {
+    const healthStatus = {
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        version: '1.0.0',
+        checks: {}
+    };
+    
+    // Проверка базы данных
+    try {
+        const dbResponseTime = await checkDatabase();
+        healthStatus.checks.database = {
+            status: 'healthy',
+            response_time_ms: dbResponseTime
+        };
+    } catch (error) {
+        healthStatus.checks.database = {
+            status: 'unhealthy',
+            error: error.message
+        };
+        healthStatus.status = 'unhealthy';
     }
     
-    # Проверка базы данных
-    try:
-        await check_database()
-        health_status["checks"]["database"] = {
-            "status": "healthy",
-            "response_time": await measure_db_response_time()
-        }
-    except Exception as e:
-        health_status["checks"]["database"] = {
-            "status": "unhealthy",
-            "error": str(e)
-        }
-        health_status["status"] = "unhealthy"
+    // Проверка Redis
+    try {
+        const redisResponseTime = await checkRedis();
+        healthStatus.checks.redis = {
+            status: 'healthy',
+            response_time_ms: redisResponseTime
+        };
+    } catch (error) {
+        healthStatus.checks.redis = {
+            status: 'unhealthy',
+            error: error.message
+        };
+        healthStatus.status = 'unhealthy';
+    }
     
-    # Проверка Redis
-    try:
-        await check_redis()
-        health_status["checks"]["redis"] = {
-            "status": "healthy",
-            "response_time": await measure_redis_response_time()
-        }
-    except Exception as e:
-        health_status["checks"]["redis"] = {
-            "status": "unhealthy",
-            "error": str(e)
-        }
-        health_status["status"] = "unhealthy"
+    // Проверка AniLibria API
+    try {
+        const apiStatus = await checkAnilibriaApi();
+        healthStatus.checks.anilibria_api = apiStatus;
+    } catch (error) {
+        healthStatus.checks.anilibria_api = {
+            status: 'unhealthy',
+            error: error.message
+        };
+        // API недоступность не критична
+    }
     
-    # Проверка AniLibria API
-    try:
-        api_status = await check_anilibria_api()
-        health_status["checks"]["anilibria_api"] = api_status
-    except Exception as e:
-        health_status["checks"]["anilibria_api"] = {
-            "status": "unhealthy",
-            "error": str(e)
-        }
-        # API недоступность не критична
+    // Проверка внутренних сервисов
+    try {
+        const nodejsStatus = await checkNodejsService();
+        healthStatus.checks.nodejs_service = nodejsStatus;
+    } catch (error) {
+        healthStatus.checks.nodejs_service = {
+            status: 'unhealthy',
+            error: error.message
+        };
+    }
     
-    # Проверка внутренних сервисов
-    try:
-        nodejs_status = await check_nodejs_service()
-        health_status["checks"]["nodejs_service"] = nodejs_status
-    except Exception as e:
-        health_status["checks"]["nodejs_service"] = {
-            "status": "unhealthy",
-            "error": str(e)
-        }
+    // Проверка памяти Node.js
+    try {
+        const memoryStatus = await checkNodejsMemory();
+        healthStatus.checks.memory = memoryStatus;
+    } catch (error) {
+        healthStatus.checks.memory = {
+            status: 'unhealthy',
+            error: error.message
+        };
+    }
     
-    if health_status["status"] == "unhealthy":
-        raise HTTPException(status_code=503, detail=health_status)
+    if (healthStatus.status === 'unhealthy') {
+        return res.status(503).json(healthStatus);
+    }
     
-    return health_status
+    res.json(healthStatus);
+});
 
-async def check_database():
-    # Простой запрос к базе данных
-    await db.command("ping")
+/**
+ * Readiness check - сервис готов к работе
+ * GET /ready
+ */
+router.get('/ready', async (req, res) => {
+    const readinessStatus = {
+        status: 'ready',
+        timestamp: new Date().toISOString(),
+        checks: {}
+    };
+    
+    // Проверка только критических сервисов
+    try {
+        await checkDatabase();
+        readinessStatus.checks.database = { status: 'ready' };
+    } catch (error) {
+        readinessStatus.checks.database = { status: 'not_ready' };
+        readinessStatus.status = 'not_ready';
+    }
+    
+    try {
+        await checkRedis();
+        readinessStatus.checks.redis = { status: 'ready' };
+    } catch (error) {
+        readinessStatus.checks.redis = { status: 'not_ready' };
+        readinessStatus.status = 'not_ready';
+    }
+    
+    if (readinessStatus.status === 'not_ready') {
+        return res.status(503).json(readinessStatus);
+    }
+    
+    res.json(readinessStatus);
+});
 
-async def check_redis():
-    # Проверка Redis соединения
-    await redis.ping()
+/**
+ * Liveness check - сервис жив
+ * GET /live
+ */
+router.get('/live', (req, res) => {
+    res.json({
+        status: 'alive',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime()
+    });
+});
 
-async def check_anilibria_api():
-    # Проверка доступности AniLibria API
-    start_time = time.time()
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                "https://api.anilibria.tv/v3/title/random",
-                timeout=5.0
-            )
-            response_time = time.time() - start_time
-            
-            if response.status_code == 200:
-                return {
-                    "status": "healthy",
-                    "response_time": response_time
-                }
-            else:
-                return {
-                    "status": "degraded",
-                    "response_time": response_time,
-                    "status_code": response.status_code
-                }
-    except Exception as e:
+// Вспомогательные функции
+async function checkDatabase() {
+    const startTime = Date.now();
+    try {
+        // Простой запрос к базе данных
+        await db.command('ping');
+        return Date.now() - startTime;
+    } catch (error) {
+        throw new Error(`Database check failed: ${error.message}`);
+    }
+}
+
+async function checkRedis() {
+    const startTime = Date.now();
+    try {
+        // Проверка Redis соединения
+        await redis.ping();
+        return Date.now() - startTime;
+    } catch (error) {
+        throw new Error(`Redis check failed: ${error.message}`);
+    }
+}
+
+async function checkAnilibriaApi() {
+    const startTime = Date.now();
+    try {
+        const response = await fetch('https://api.anilibria.tv/v3/title/random', {
+            timeout: 5000
+        });
+        
+        const responseTime = Date.now() - startTime;
+        
+        if (response.ok) {
+            return {
+                status: 'healthy',
+                response_time_ms: responseTime
+            };
+        } else {
+            return {
+                status: 'degraded',
+                response_time_ms: responseTime,
+                status_code: response.status
+            };
+        }
+    } catch (error) {
         return {
-            "status": "unhealthy",
-            "error": str(e),
-            "response_time": time.time() - start_time
-        }
+            status: 'unhealthy',
+            error: error.message,
+            response_time_ms: Date.now() - startTime
+        };
+    }
+}
+
+async function checkNodejsService() {
+    try {
+        // Проверка event loop
+        const eventLoopLag = process.hrtime();
+        
+        // Проверка памяти
+        const memoryUsage = process.memoryUsage();
+        
+        return {
+            status: 'healthy',
+            event_loop_lag_ms: eventLoopLag[1] / 1000000,
+            memory_usage_bytes: memoryUsage.heapUsed,
+            uptime_seconds: process.uptime()
+        };
+    } catch (error) {
+        return {
+            status: 'unhealthy',
+            error: error.message
+        };
+    }
+}
+
+async function checkNodejsMemory() {
+    try {
+        const memoryUsage = process.memoryUsage();
+        const heapLimit = require('v8').getHeapStatistics().heap_size_limit;
+        const heapUsage = memoryUsage.heapUsed;
+        const heapUsagePercent = (heapUsage / heapLimit) * 100;
+        
+        return {
+            status: heapUsagePercent < 90 ? 'healthy' : 'warning',
+            heap_usage_bytes: heapUsage,
+            heap_limit_bytes: heapLimit,
+            heap_usage_percent: heapUsagePercent
+        };
+    } catch (error) {
+        return {
+            status: 'unhealthy',
+            error: error.message
+        };
+    }
+}
+
+module.exports = router;
 ```
 
 Эта система мониторинга обеспечивает полную наблюдаемость Python сервиса с детальными метриками, структурированным логированием, distributed tracing и автоматическими алертами.
+Эта система мониторинга обеспечивает полную наблюдаемость Node.js сервиса с детальными метриками, структурированным логированием, distributed tracing и автоматическими алертами.

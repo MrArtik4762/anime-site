@@ -466,7 +466,75 @@ const querySchemas = {
     order: Joi.string()
       .valid('asc', 'desc')
       .default('desc')
-  }).concat(paginationSchema)
+  }).concat(paginationSchema),
+
+  // РЎС…РµРјР° РІР°Р»РёРґР°С†РёРё РґР»СЏ С‚СЂРµРєРёРЅРіР°
+  stream: Joi.object({
+    url: Joi.string()
+      .uri()
+      .required()
+      .messages({
+        'string.uri': 'URL РґРѕР»Р¶РµРЅ Р±С‹С‚СЊ РІР°Р»РёРґРЅС‹Рј URI',
+        'any.required': 'URL РѕР±СЏР·Р°С‚РµР»РµРЅ РґР»СЏ С‚СЂРµРєРёРЅРіР°'
+      })
+  }),
+
+  // РЎС…РµРјС‹ РІР°Р»РёРґР°С†РёРё РґР»СЏ РѕС‚СЃР»РµР¶РёРІР°РЅРёСЏ РїСЂРѕРіСЂРµСЃСЃР° РїСЂРѕСЃРјРѕС‚СЂР°
+  watchProgressSchemas: {
+    saveProgress: Joi.object({
+      animeId: Joi.string()
+        .pattern(/^[0-9a-fA-F]{24}$/)
+        .required()
+        .messages({
+          'string.pattern.base': 'РќРµРІРµСЂРЅС‹Р№ С„РѕСЂРјР°С‚ ID Р°РЅРёРјРµ',
+          'any.required': 'ID Р°РЅРёРјРµ РѕР±СЏР·Р°С‚РµР»РµРЅ'
+        }),
+      
+      episode: Joi.number()
+        .integer()
+        .min(1)
+        .required()
+        .messages({
+          'number.integer': 'РќРѕРјРµСЂ СЌРїРёР·РѕРґР° РґРѕР»Р¶РµРЅ Р±С‹С‚СЊ С†РµР»С‹Рј С‡РёСЃР»РѕРј',
+          'number.min': 'РќРѕРјРµСЂ СЌРїРёР·РѕРґР° РґРѕР»Р¶РµРЅ Р±С‹С‚СЊ Р±РѕР»СЊС€Рµ 0',
+          'any.required': 'РќРѕРјРµСЂ СЌРїРёР·РѕРґР° РѕР±СЏР·Р°С‚РµР»РµРЅ'
+        }),
+      
+      position: Joi.number()
+        .min(0)
+        .required()
+        .messages({
+          'number.min': 'РџРѕР·РёС†РёСЏ РІРёРґРµРѕ РЅРµ РјРѕР¶РµС‚ Р±С‹С‚СЊ РѕС‚СЂРёС†Р°С‚РµР»СЊРЅРѕР№',
+          'any.required': 'РџРѕР·РёС†РёСЏ РІРёРґРµРѕ РѕР±СЏР·Р°С‚РµР»СЊРЅР°'
+        }),
+      
+      duration: Joi.number()
+        .min(1)
+        .required()
+        .messages({
+          'number.min': 'Р”Р»РёС‚РµР»СЊРЅРѕСЃС‚СЄ РІРёРґРµРѕ РґРѕР»Р¶РЅР° Р±С‹С‚СЊ Р±РѕР»СЊС€Рµ 0',
+          'any.required': 'Р”Р»РёС‚РµР»СЊРЅРѕСЃС‚СЄ РІРёРґРµРѕ РѕР±СЏР·Р°С‚РµР»СЊРЅР°'
+        })
+    }),
+
+    getProgress: Joi.object({
+      animeId: Joi.string()
+        .pattern(/^[0-9a-fA-F]{24}$/)
+        .required()
+        .messages({
+          'string.pattern.base': 'РќРµРІРµСЂРЅС‹Р№ С„РѕСЂРјР°С‚ ID Р°РЅРёРјРµ',
+          'any.required': 'ID Р°РЅРёРјРµ РѕР±СЏР·Р°С‚РµР»РµРЅ'
+        }),
+      
+      episode: Joi.number()
+        .integer()
+        .min(1)
+        .messages({
+          'number.integer': 'РќРѕРјРµСЂ СЌРїРёР·РѕРґР° РґРѕР»Р¶РµРЅ Р±С‹С‚СЊ С†РµР»С‹Рј С‡РёСЃР»РѕРј',
+          'number.min': 'РќРѕРјРµСЂ СЌРїРёР·РѕРґР° РґРѕР»Р¶РµРЅ Р±С‹С‚СЊ Р±РѕР»СЊС€Рµ 0'
+        })
+    })
+  }
 };
 
 module.exports = {

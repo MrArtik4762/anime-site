@@ -1,519 +1,514 @@
-import React from 'react';
-import styled from 'styled-components';
+import React, { memo } from 'react';
 import PropTypes from 'prop-types';
+import { styled } from 'styled-components';
 
-// Контейнер для тега
+// Стилизованный контейнер для тега
 const TagContainer = styled.span`
   display: inline-flex;
   align-items: center;
-  padding: ${props => props.padding || `${props.theme.spacing[1]} ${props.theme.spacing[2]}`};
-  border-radius: ${props => props.shape === 'pill' ? props.theme.borderRadius.full : props.theme.borderRadius.md};
-  font-size: ${props => props.theme.typography.fontSize.xs[0]};
-  font-weight: ${props => props.theme.typography.fontWeight.medium};
-  line-height: 1;
-  white-space: nowrap;
-  text-transform: ${props => props.uppercase ? 'uppercase' : 'none'};
-  letter-spacing: ${props => props.uppercase ? '0.5px' : 'normal'};
+  gap: ${props => props.theme.spacing.xxsmall};
+  padding: ${props => {
+    if (props.size === 'small') return `2px ${props.theme.spacing.xxsmall}`;
+    if (props.size === 'large') return `4px ${props.theme.spacing.xsmall}`;
+    return `3px ${props.theme.spacing.xsmall}`;
+  }};
+  background-color: ${props => {
+    if (props.variant === 'primary') return props.theme.colors.primary;
+    if (props.variant === 'secondary') return props.theme.colors.secondary;
+    if (props.variant === 'success') return props.theme.colors.success;
+    if (props.variant === 'warning') return props.theme.colors.warning;
+    if (props.variant === 'error') return props.theme.colors.error;
+    if (props.variant === 'info') return props.theme.colors.info;
+    if (props.variant === 'dark') return props.theme.colors.dark;
+    return props.theme.colors.border;
+  }};
+  color: ${props => {
+    if (props.variant === 'primary' || props.variant === 'secondary' || 
+        props.variant === 'dark' || props.variant === 'info') {
+      return props.theme.colors.text;
+    }
+    return props.theme.colors.textSecondary;
+  }};
+  border-radius: ${props => {
+    if (props.rounded === 'full') return '999px';
+    if (props.rounded === 'small') return props.theme.border.radius.sm;
+    return props.theme.border.radius.md;
+  }};
+  font-size: ${props => {
+    if (props.size === 'small') return props.theme.fontSizes.xs;
+    if (props.size === 'large') return props.theme.fontSizes.sm;
+    return props.theme.fontSizes.xs;
+  }};
+  font-weight: ${props => {
+    if (props.bold) return props.theme.fontWeights.semibold;
+    return props.theme.fontWeights.normal;
+  }};
+  line-height: 1.2;
+  text-transform: ${props => {
+    if (props.uppercase) return 'uppercase';
+    if (props.lowercase) return 'lowercase';
+    return 'none';
+  }};
+  letter-spacing: ${props => {
+    if (props.uppercase) return '0.5px';
+    return 'normal';
+  }};
+  border: ${props => props.outlined ? `1px solid ${props.theme.colors.border}` : 'none'};
   cursor: ${props => props.clickable ? 'pointer' : 'default'};
-  transition: ${props => props.theme.transitions.normal};
+  transition: all ${props => props.theme.transitions.fast} ease;
   user-select: none;
   
-  // Цвета
-  ${props => {
-    if (props.color) {
-      return `
-        background-color: ${props.theme.colors[props.color] + '20'};
-        color: ${props.theme.colors[props.color]};
-        border: 1px solid ${props.theme.colors[props.color] + '40'};
-      `;
-    }
-    
-    switch (props.variant) {
-      case 'primary':
-        return `
-          background-color: ${props.theme.colors.primary + '10'};
-          color: ${props.theme.colors.primary};
-          border: 1px solid ${props.theme.colors.primary + '30'};
-        `;
-      case 'secondary':
-        return `
-          background-color: ${props.theme.colors.border.light};
-          color: ${props.theme.colors.text.primary};
-          border: 1px solid ${props.theme.colors.border.medium};
-        `;
-      case 'success':
-        return `
-          background-color: ${props.theme.colors.success + '10'};
-          color: ${props.theme.colors.success};
-          border: 1px solid ${props.theme.colors.success + '30'};
-        `;
-      case 'danger':
-        return `
-          background-color: ${props.theme.colors.danger + '10'};
-          color: ${props.theme.colors.danger};
-          border: 1px solid ${props.theme.colors.danger + '30'};
-        `;
-      case 'warning':
-        return `
-          background-color: ${props.theme.colors.warning + '10'};
-          color: ${props.theme.colors.warning};
-          border: 1px solid ${props.theme.colors.warning + '30'};
-        `;
-      case 'info':
-        return `
-          background-color: ${props.theme.colors.info + '10'};
-          color: ${props.theme.colors.info};
-          border: 1px solid ${props.theme.colors.info + '30'};
-        `;
-      default:
-        return `
-          background-color: ${props.theme.colors.border.light};
-          color: ${props.theme.colors.text.primary};
-          border: 1px solid ${props.theme.colors.border.medium};
-        `;
-    }
-  }}
-  
-  // Размеры
-  ${props => {
-    switch (props.size) {
-      case 'small':
-        return `
-          padding: ${props.theme.spacing[0.5]} ${props.theme.spacing[1.5]};
-          font-size: ${props.theme.typography.fontSize.xxs[0]};
-        `;
-      case 'large':
-        return `
-          padding: ${props.theme.spacing[1.5]} ${props.theme.spacing[3]};
-          font-size: ${props.theme.typography.fontSize.sm[0]};
-        `;
-      default:
-        return '';
-    }
-  }}
-  
-  // Состояния
-  ${props => {
-    if (props.disabled) {
-      return `
-        opacity: ${props.theme.opacity[50]};
-        cursor: not-allowed;
-      `;
-    }
-    
-    if (props.clickable) {
-      return `
-        &:hover {
-          opacity: ${props.theme.opacity[80]};
-          transform: translateY(-1px);
-        }
-        
-        &:active {
-          transform: translateY(0);
-        }
-      `;
-    }
-    
-    return '';
-  }}
-  
-  // Границы
-  ${props => {
-    if (props.outlined) {
-      return `
-        background-color: transparent;
-      `;
-    }
-    
-    return '';
-  }}
-  
-  // Растягивание
-  ${props => {
-    if (props.stretch) {
-      return `
-        width: 100%;
-        justify-content: center;
-      `;
-    }
-    
-    return '';
-  }}
-`;
-
-// Иконка в теге
-const TagIcon = styled.span`
-  margin-right: ${props => props.theme.spacing[1]};
-  
-  ${props => props.iconPosition === 'right' && `
-    margin-right: 0;
-    margin-left: ${props => props.theme.spacing[1]};
-  `}
-`;
-
-// Кнопка удаления тега
-const RemoveButton = styled.button`
-  background: none;
-  border: none;
-  cursor: pointer;
-  margin-left: ${props => props.theme.spacing[1]};
-  padding: 0;
-  color: ${props => {
-    if (props.color) {
-      return props.theme.colors[props.color];
-    }
-    
-    switch (props.variant) {
-      case 'primary':
-        return props.theme.colors.primary;
-      case 'secondary':
-        return props.theme.colors.text.tertiary;
-      case 'success':
-        return props.theme.colors.success;
-      case 'danger':
-        return props.theme.colors.danger;
-      case 'warning':
-        return props.theme.colors.warning;
-      case 'info':
-        return props.theme.colors.info;
-      default:
-        return props.theme.colors.text.tertiary;
-    }
-  }};
-  transition: ${props => props.theme.transitions.normal};
-  
   &:hover {
-    opacity: ${props => props.theme.opacity[70]};
+    ${props => props.clickable && `
+      transform: translateY(-1px);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    `}
   }
   
   &:focus {
     outline: none;
-    
-    &::after {
-      content: '';
-      position: absolute;
-      top: -2px;
-      left: -2px;
-      right: -2px;
-      bottom: -2px;
-      border: 1px solid ${props => props.theme.colors.primary};
-      border-radius: ${props => props.theme.borderRadius.full};
-    }
+    box-shadow: 0 0 0 2px ${props => props.theme.colors.primary};
   }
+  
+  ${props => props.size === 'small' && `
+    padding: 2px ${props.theme.spacing.xxsmall};
+    font-size: ${props.theme.fontSizes.xs};
+  `}
+  
+  ${props => props.size === 'large' && `
+    padding: 4px ${props.theme.spacing.xsmall};
+    font-size: ${props.theme.fontSizes.sm};
+  `}
+  
+  ${props => props.disabled && `
+    opacity: 0.6;
+    cursor: not-allowed;
+  `}
+  
+  ${props => props.variant === 'gradient' && `
+    background: linear-gradient(135deg, ${props.theme.colors.primary} 0%, ${props.theme.colors.secondary} 100%);
+    color: ${props.theme.colors.text};
+  `}
+  
+  ${props => props.variant === 'outline' && `
+    background-color: transparent;
+    border: 1px solid ${props.theme.colors.border};
+    color: ${props.theme.colors.textSecondary};
+  `}
+  
+  ${props => props.variant === 'ghost' && `
+    background-color: transparent;
+    border: 1px solid transparent;
+    color: ${props.theme.colors.textSecondary};
+  `}
+  
+  ${props => props.variant === 'elevated' && `
+    background-color: ${props.theme.colors.surface};
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    color: ${props.theme.colors.text};
+  `}
+  
+  ${props => props.variant === 'filled' && `
+    background-color: ${props.theme.colors.text};
+    color: ${props.theme.colors.surface};
+  `}
 `;
 
-// Компонент Tag
-const Tag = ({
-  children,
-  variant = 'secondary',
-  color,
+// Стилизованный иконка тега
+const TagIcon = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: ${props => {
+    if (props.size === 'small') return props.theme.iconSizes.xs;
+    if (props.size === 'large') return props.theme.iconSizes.sm;
+    return props.theme.iconSizes.xs;
+  }};
+  color: ${props => {
+    if (props.variant === 'primary' || props.variant === 'secondary' || 
+        props.variant === 'dark' || props.variant === 'info' || 
+        props.variant === 'gradient' || props.variant === 'filled') {
+      return props.theme.colors.text;
+    }
+    return props.theme.colors.textSecondary;
+  }};
+`;
+
+// Стилизованный текст тега
+const TagText = styled.span`
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: ${props => props.maxWidth ? `${props.maxWidth}px` : 'none'};
+`;
+
+// Стилизованная кнопка удаления тега
+const TagRemoveButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: ${props => {
+    if (props.size === 'small') return '16px';
+    if (props.size === 'large') return '20px';
+    return '18px';
+  }};
+  height: ${props => {
+    if (props.size === 'small') return '16px';
+    if (props.size === 'large') return '20px';
+    return '18px';
+  }};
+  border: none;
+  background: none;
+  color: ${props => {
+    if (props.variant === 'primary' || props.variant === 'secondary' || 
+        props.variant === 'dark' || props.variant === 'info' || 
+        props.variant === 'gradient' || props.variant === 'filled') {
+      return 'rgba(255, 255, 255, 0.7)';
+    }
+    return 'rgba(0, 0, 0, 0.5)';
+  }};
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all ${props => props.theme.transitions.fast} ease;
+  font-size: ${props => {
+    if (props.size === 'small') return '10px';
+    if (props.size === 'large') return '12px';
+    return '11px';
+  }};
+  line-height: 1;
+  padding: 0;
+  margin: 0;
+  flex-shrink: 0;
+  
+  &:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+    color: ${props => {
+      if (props.variant === 'primary' || props.variant === 'secondary' || 
+          props.variant === 'dark' || props.variant === 'info' || 
+          props.variant === 'gradient' || props.variant === 'filled') {
+        return 'rgba(255, 255, 255, 1)';
+      }
+      return 'rgba(0, 0, 0, 0.8)';
+    }};
+  }
+  
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px ${props => props.theme.colors.primary};
+  }
+  
+  ${props => props.disabled && `
+    opacity: 0.5;
+    cursor: not-allowed;
+    &:hover {
+      background-color: transparent;
+    }
+  `}
+`;
+
+// Основной компонент Tag
+export const Tag = memo(({
+  icon,
+  text,
   size = 'medium',
-  shape = 'default',
-  outlined = false,
+  variant = 'primary',
+  rounded = 'medium',
+  bold = false,
   uppercase = false,
-  disabled = false,
+  lowercase = false,
+  outlined = false,
   clickable = false,
+  disabled = false,
   removable = false,
   onRemove,
-  icon,
-  iconPosition = 'left',
-  stretch = false,
-  className = '',
+  className,
+  style,
+  maxWidth,
   ...props
 }) => {
+  const handleRemove = (e) => {
+    e.stopPropagation();
+    if (disabled) return;
+    if (onRemove) {
+      onRemove();
+    }
+  };
+  
   return (
     <TagContainer
-      variant={variant}
-      color={color}
       size={size}
-      shape={shape}
-      outlined={outlined}
+      variant={variant}
+      rounded={rounded}
+      bold={bold}
       uppercase={uppercase}
-      disabled={disabled}
+      lowercase={lowercase}
+      outlined={outlined}
       clickable={clickable}
-      removable={removable}
-      stretch={stretch}
-      className={`${className} tag ${variant}${color ? ` ${color}` : ''}${size ? ` ${size}` : ''}${shape ? ` ${shape}` : ''}${outlined ? ' outlined' : ''}${uppercase ? ' uppercase' : ''}${disabled ? ' disabled' : ''}${clickable ? ' clickable' : ''}${removable ? ' removable' : ''}${stretch ? ' stretch' : ''}`}
+      disabled={disabled}
+      className={className}
+      style={style}
+      maxWidth={maxWidth}
       {...props}
     >
-      {icon && iconPosition === 'left' && (
-        <TagIcon iconPosition={iconPosition}>
+      {icon && (
+        <TagIcon size={size} variant={variant}>
           {icon}
         </TagIcon>
       )}
-      
-      {children}
-      
-      {icon && iconPosition === 'right' && (
-        <TagIcon iconPosition={iconPosition}>
-          {icon}
-        </TagIcon>
-      )}
-      
-      {removable && (
-        <RemoveButton
+      <TagText maxWidth={maxWidth}>
+        {text}
+      </TagText>
+      {removable && !disabled && (
+        <TagRemoveButton
+          size={size}
           variant={variant}
-          color={color}
-          onClick={onRemove}
+          onClick={handleRemove}
           aria-label="Удалить тег"
+          disabled={disabled}
         >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-        </RemoveButton>
+          ×
+        </TagRemoveButton>
       )}
     </TagContainer>
   );
-};
+});
 
-// Пропс-types для TypeScript
 Tag.propTypes = {
-  children: PropTypes.node.isRequired,
-  variant: PropTypes.oneOf(['primary', 'secondary', 'success', 'danger', 'warning', 'info']),
-  color: PropTypes.string,
+  icon: PropTypes.node,
+  text: PropTypes.string.isRequired,
   size: PropTypes.oneOf(['small', 'medium', 'large']),
-  shape: PropTypes.oneOf(['default', 'pill']),
-  outlined: PropTypes.bool,
+  variant: PropTypes.oneOf(['primary', 'secondary', 'success', 'warning', 'error', 'info', 'dark', 'gradient', 'outline', 'ghost', 'elevated', 'filled']),
+  rounded: PropTypes.oneOf(['small', 'medium', 'full']),
+  bold: PropTypes.bool,
   uppercase: PropTypes.bool,
-  disabled: PropTypes.bool,
+  lowercase: PropTypes.bool,
+  outlined: PropTypes.bool,
   clickable: PropTypes.bool,
+  disabled: PropTypes.bool,
   removable: PropTypes.bool,
   onRemove: PropTypes.func,
-  icon: PropTypes.node,
-  iconPosition: PropTypes.oneOf(['left', 'right']),
-  stretch: PropTypes.bool,
   className: PropTypes.string,
+  style: PropTypes.object,
+  maxWidth: PropTypes.number,
 };
 
-// Компонент TagList для списка тегов
-const TagListContainer = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: ${props => props.gap || props.theme.spacing[2]};
-  
-  .tag {
-    margin: 0;
-  }
-`;
-
-// Компонент TagList
-const TagList = ({
+// Компонент для группы тегов
+export const TagGroup = memo(({
   tags,
-  gap,
-  className = '',
+  size = 'medium',
+  variant = 'primary',
+  spacing = 'small',
+  maxTags,
+  showMore,
+  onTagClick,
+  onTagRemove,
+  className,
+  style,
   ...props
 }) => {
+  const [expanded, setExpanded] = React.useState(false);
+  const displayedTags = expanded || !maxTags ? tags : tags.slice(0, maxTags);
+  const remainingCount = tags.length - maxTags;
+  
+  const handleTagClick = (tag, index) => {
+    if (onTagClick) {
+      onTagClick(tag, index);
+    }
+  };
+  
+  const handleTagRemove = (tag, index) => {
+    if (onTagRemove) {
+      onTagRemove(tag, index);
+    }
+  };
+  
+  const handleShowMore = () => {
+    setExpanded(!expanded);
+  };
+  
   return (
-    <TagListContainer
-      gap={gap}
-      className={`${className} tag-list`}
-      {...props}
-    >
-      {tags.map((tag, index) => (
-        <Tag
-          key={index}
-          {...tag}
-        />
+    <div className={className} style={style} {...props}>
+      {displayedTags.map((tag, index) => (
+        <React.Fragment key={index}>
+          <Tag
+            size={size}
+            variant={variant}
+            text={tag.text}
+            icon={tag.icon}
+            removable={tag.removable}
+            clickable={tag.clickable}
+            disabled={tag.disabled}
+            onRemove={() => handleTagRemove(tag, index)}
+            onClick={() => handleTagClick(tag, index)}
+            style={{ marginRight: spacing === 'small' ? '4px' : spacing === 'medium' ? '8px' : '12px' }}
+          />
+          {index < displayedTags.length - 1 && (
+            <span style={{ marginRight: spacing === 'small' ? '4px' : spacing === 'medium' ? '8px' : '12px' }}>
+              {spacing === 'small' ? '•' : spacing === 'medium' ? '•' : '•'}
+            </span>
+          )}
+        </React.Fragment>
       ))}
-    </TagListContainer>
+      
+      {maxTags && tags.length > maxTags && (
+        <Tag
+          size={size}
+          variant="outline"
+          clickable
+          text={expanded ? 'Скрыть' : `+${remainingCount}`}
+          onClick={handleShowMore}
+        />
+      )}
+    </div>
   );
-};
+});
 
-// Пропп-types для TagList
-TagList.propTypes = {
+TagGroup.propTypes = {
   tags: PropTypes.arrayOf(
     PropTypes.shape({
-      children: PropTypes.node.isRequired,
-      variant: PropTypes.oneOf(['primary', 'secondary', 'success', 'danger', 'warning', 'info']),
-      color: PropTypes.string,
-      size: PropTypes.oneOf(['small', 'medium', 'large']),
-      shape: PropTypes.oneOf(['default', 'pill']),
-      outlined: PropTypes.bool,
-      uppercase: PropTypes.bool,
-      disabled: PropTypes.bool,
-      clickable: PropTypes.bool,
-      removable: PropTypes.bool,
-      onRemove: PropTypes.func,
+      text: PropTypes.string.isRequired,
       icon: PropTypes.node,
-      iconPosition: PropTypes.oneOf(['left', 'right']),
-      stretch: PropTypes.bool,
+      removable: PropTypes.bool,
+      clickable: PropTypes.bool,
+      disabled: PropTypes.bool,
     })
   ).isRequired,
-  gap: PropTypes.string,
+  size: PropTypes.oneOf(['small', 'medium', 'large']),
+  variant: PropTypes.oneOf(['primary', 'secondary', 'success', 'warning', 'error', 'info', 'dark', 'gradient', 'outline', 'ghost', 'elevated', 'filled']),
+  spacing: PropTypes.oneOf(['small', 'medium', 'large']),
+  maxTags: PropTypes.number,
+  showMore: PropTypes.bool,
+  onTagClick: PropTypes.func,
+  onTagRemove: PropTypes.func,
   className: PropTypes.string,
+  style: PropTypes.object,
 };
 
-// Компонент TagCloud для облака тегов
-const TagCloudContainer = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: ${props => props.gap || props.theme.spacing[2]};
-  align-items: center;
-  justify-content: center;
-  
-  .tag {
-    transition: ${props => props.theme.transitions.normal};
-    
-    &:hover {
-      transform: scale(1.05);
-      z-index: 1;
-    }
-  }
-`;
-
-// Компонент TagCloud
-const TagCloud = ({
+// Компонент для облачка тегов
+export const TagCloud = memo(({
   tags,
-  gap,
-  className = '',
+  size = 'medium',
+  variant = 'primary',
+  minSize = 12,
+  maxSize = 24,
+  weightFactor = 1,
+  shuffle = false,
+  onTagClick,
+  className,
+  style,
   ...props
 }) => {
+  const calculateFontSize = (count, min, max, factor) => {
+    const minCount = Math.min(...tags.map(tag => tag.count));
+    const maxCount = Math.max(...tags.map(tag => tag.count));
+    const normalizedCount = (count - minCount) / (maxCount - minCount || 1);
+    return min + normalizedCount * (max - min) * factor;
+  };
+  
+  const processedTags = tags.map((tag, index) => ({
+    ...tag,
+    fontSize: calculateFontSize(tag.count, minSize, maxSize, weightFactor),
+    order: shuffle ? Math.random() : index,
+  })).sort((a, b) => a.order - b.order);
+  
   return (
-    <TagCloudContainer
-      gap={gap}
-      className={`${className} tag-cloud`}
-      {...props}
-    >
-      {tags.map((tag, index) => (
+    <div className={className} style={style} {...props}>
+      {processedTags.map((tag, index) => (
         <Tag
           key={index}
-          {...tag}
+          size={size}
+          variant={variant}
+          text={tag.text}
+          icon={tag.icon}
+          clickable={tag.clickable}
+          disabled={tag.disabled}
+          onClick={() => onTagClick && onTagClick(tag, index)}
+          style={{
+            fontSize: `${tag.fontSize}px`,
+            margin: '2px',
+            display: 'inline-block',
+          }}
         />
       ))}
-    </TagCloudContainer>
+    </div>
   );
-};
+});
 
-// Пропп-types для TagCloud
 TagCloud.propTypes = {
   tags: PropTypes.arrayOf(
     PropTypes.shape({
-      children: PropTypes.node.isRequired,
-      variant: PropTypes.oneOf(['primary', 'secondary', 'success', 'danger', 'warning', 'info']),
-      color: PropTypes.string,
-      size: PropTypes.oneOf(['small', 'medium', 'large']),
-      shape: PropTypes.oneOf(['default', 'pill']),
-      outlined: PropTypes.bool,
-      uppercase: PropTypes.bool,
-      disabled: PropTypes.bool,
-      clickable: PropTypes.bool,
-      removable: PropTypes.bool,
-      onRemove: PropTypes.func,
+      text: PropTypes.string.isRequired,
+      count: PropTypes.number.isRequired,
       icon: PropTypes.node,
-      iconPosition: PropTypes.oneOf(['left', 'right']),
-      stretch: PropTypes.bool,
+      clickable: PropTypes.bool,
+      disabled: PropTypes.bool,
     })
   ).isRequired,
-  gap: PropTypes.string,
+  size: PropTypes.oneOf(['small', 'medium', 'large']),
+  variant: PropTypes.oneOf(['primary', 'secondary', 'success', 'warning', 'error', 'info', 'dark', 'gradient', 'outline', 'ghost', 'elevated', 'filled']),
+  minSize: PropTypes.number,
+  maxSize: PropTypes.number,
+  weightFactor: PropTypes.number,
+  shuffle: PropTypes.bool,
+  onTagClick: PropTypes.func,
   className: PropTypes.string,
+  style: PropTypes.object,
 };
 
-// Компонент TagInput для ввода тегов
-const TagInputContainer = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: ${props => props.theme.spacing[1]};
-  padding: ${props => props.theme.spacing[2]};
-  border: 1px solid ${props => props.theme.colors.border.medium};
-  border-radius: ${props => props.theme.borderRadius.md};
-  min-height: ${props => props.theme.spacing[7]};
-  align-items: center;
-  
-  &:focus-within {
-    border-color: ${props => props.theme.colors.primary};
-    outline: none;
-    
-    &::after {
-      content: '';
-      position: absolute;
-      top: -2px;
-      left: -2px;
-      right: -2px;
-      bottom: -2px;
-      border: 2px solid ${props => props.theme.colors.primary};
-      border-radius: ${props => props.theme.borderRadius.md};
-    }
-  }
-  
-  .tag {
-    margin: 0;
-  }
-  
-  .input {
-    border: none;
-    outline: none;
-    flex: 1;
-    min-width: 100px;
-    background: transparent;
-    font-size: ${props => props.theme.typography.fontSize.base[0]};
-    color: ${props => props.theme.colors.text.primary};
-    
-    &::placeholder {
-      color: ${props => props.theme.colors.text.tertiary};
-    }
-  }
-`;
-
-// Компонент TagInput
-const TagInput = ({
-  value,
-  onChange,
+// Компонент для фильтрованных тегов
+export const FilterTag = memo(({
+  text,
+  active = false,
+  size = 'medium',
+  variant = 'primary',
+  removable = false,
+  onToggle,
   onRemove,
-  onAdd,
-  tags,
-  placeholder = 'Добавить тег...',
-  className = '',
+  className,
+  style,
   ...props
 }) => {
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter' || e.key === ',') {
-      e.preventDefault();
-      const tagValue = value.trim();
-      if (tagValue) {
-        onAdd(tagValue);
-        onChange('');
-      }
+  const handleToggle = () => {
+    if (onToggle) {
+      onToggle(!active);
     }
   };
   
-  const handleRemove = (index) => {
-    onRemove(index);
+  const handleRemove = (e) => {
+    e.stopPropagation();
+    if (onRemove) {
+      onRemove();
+    }
   };
   
   return (
-    <TagInputContainer className={`${className} tag-input`} {...props}>
-      {tags.map((tag, index) => (
-        <Tag
-          key={index}
-          removable
-          onRemove={() => handleRemove(index)}
-        >
-          {tag}
-        </Tag>
-      ))}
-      <input
-        type="text"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onKeyDown={handleKeyDown}
-        placeholder={placeholder}
-        className="input"
-      />
-    </TagInputContainer>
+    <Tag
+      size={size}
+      variant={active ? variant : 'outline'}
+      text={text}
+      rounded="full"
+      clickable
+      disabled={active && removable}
+      removable={removable}
+      onRemove={handleRemove}
+      onClick={handleToggle}
+      className={className}
+      style={style}
+      {...props}
+    />
   );
-};
+});
 
-// Пропп-types для TagInput
-TagInput.propTypes = {
-  value: PropTypes.string.isRequired,
-  onChange: PropTypes.func.isRequired,
-  onRemove: PropTypes.func.isRequired,
-  onAdd: PropTypes.func.isRequired,
-  tags: PropTypes.arrayOf(PropTypes.string).isRequired,
-  placeholder: PropTypes.string,
+FilterTag.propTypes = {
+  text: PropTypes.string.isRequired,
+  active: PropTypes.bool,
+  size: PropTypes.oneOf(['small', 'medium', 'large']),
+  variant: PropTypes.oneOf(['primary', 'secondary', 'success', 'warning', 'error', 'info', 'dark', 'gradient']),
+  removable: PropTypes.bool,
+  onToggle: PropTypes.func,
+  onRemove: PropTypes.func,
   className: PropTypes.string,
+  style: PropTypes.object,
 };
 
-// Экспорт компонентов
-export { Tag, TagList as TagListComponent, TagCloud as TagCloudComponent, TagInput };
+export default Tag;

@@ -1,513 +1,522 @@
-import React from 'react';
-import styled from 'styled-components';
+import React, { memo } from 'react';
 import PropTypes from 'prop-types';
+import { styled } from 'styled-components';
 
-// Анимация скелетона
-const shimmer = `
-  0% {
-    background-position: -468px 0;
-  }
-  100% {
-    background-position: 468px 0;
-  }
-`;
-
-// Базовый компонент скелетона
-const SkeletonBase = styled.div`
+// Стилизованный скелетон
+const SkeletonElement = styled.div`
   background: linear-gradient(
-    to right,
-    ${props => props.theme.colors.border.light} 8%,
-    ${props => props.theme.colors.border.lighter} 18%,
-    ${props => props.theme.colors.border.light} 33%
+    90deg,
+    ${props => props.theme.colors.border} 25%,
+    ${props => props.theme.colors.surface} 37%,
+    ${props => props.theme.colors.border} 63%
   );
-  background-size: 800px 104px;
-  animation: ${shimmer} 1.5s linear infinite;
-  border-radius: ${props => props.theme.borderRadius.md};
+  background-size: 400% 100%;
+  animation: ${props => props.theme.animations.skeleton} 1.4s ease infinite;
+  border-radius: ${props => {
+    if (props.rounded === 'full') return '999px';
+    if (props.rounded === 'small') return props.theme.border.radius.sm;
+    if (props.rounded === 'medium') return props.theme.border.radius.md;
+    if (props.rounded === 'large') return props.theme.border.radius.lg;
+    return props.theme.border.radius.md;
+  }};
+  width: ${props => {
+    if (props.width === 'auto') return 'auto';
+    if (props.width === 'full') return '100%';
+    if (typeof props.width === 'number') return `${props.width}px`;
+    return props.width;
+  }};
+  height: ${props => {
+    if (props.height === 'auto') return 'auto';
+    if (props.height === 'full') return '100%';
+    if (typeof props.height === 'number') return `${props.height}px`;
+    return props.height;
+  }};
+  margin: ${props => props.margin || 0};
+  padding: ${props => props.padding || 0};
+  display: ${props => props.display || 'block'};
+  flex-shrink: 0;
   
-  ${props => props.rounded && `
-    border-radius: ${props.theme.borderRadius.full};
+  ${props => props.variant === 'text' && `
+    height: ${props.theme.fontSizes[props.size || 'base']};
+    width: ${props.width || '100%'};
+    margin-bottom: ${props.theme.spacing.xsmall};
   `}
   
-  ${props => props.circle && `
+  ${props => props.variant === 'circle' && `
     border-radius: 50%;
+    width: ${props.size === 'small' ? '24px' : props.size === 'large' ? '48px' : '32px'};
+    height: ${props.size === 'small' ? '24px' : props.size === 'large' ? '48px' : '32px'};
   `}
-`;
-
-// Скелетон для текста
-const SkeletonText = styled(SkeletonBase)`
-  height: ${props => props.height || props.theme.typography.fontSize.base[0]};
-  margin-bottom: ${props => props.gap || props.theme.spacing[2]};
-  width: ${props => props.width || '100%'};
   
-  &:last-child {
-    margin-bottom: 0;
-  }
-  
-  ${props => props.lines > 1 && `
-    &:not(:last-child) {
-      margin-bottom: ${props => props.gap || props.theme.spacing[2]};
-    }
+  ${props => props.variant === 'rect' && `
+    border-radius: ${props.theme.border.radius.sm};
   `}
-`;
-
-// Скелетон для изображения
-const SkeletonImage = styled(SkeletonBase)`
-  width: ${props => props.width || '100%'};
-  height: ${props => props.height || '200px'};
   
-  ${props => props.circle && `
-    width: ${props => props.size || '100px'};
-    height: ${props => props.size || '100px'};
+  ${props => props.variant === 'button' && `
+    height: ${props.theme.sizes.buttonHeight};
+    width: ${props.width || '120px'};
+    border-radius: ${props.theme.border.radius.md};
   `}
-`;
-
-// Скелетон для аватара
-const SkeletonAvatar = styled(SkeletonBase)`
-  width: ${props => props.size || '40px'};
-  height: ${props => props.size || '40px'};
-  border-radius: 50%;
-`;
-
-// Скелетон для заголовка
-const SkeletonTitle = styled(SkeletonBase)`
-  height: ${props => props.theme.typography.fontSize.lg[0]};
-  width: ${props => props.width || '60%'};
-  margin-bottom: ${props => props.theme.spacing[3]};
-`;
-
-// Скелетон для кнопки
-const SkeletonButton = styled(SkeletonBase)`
-  height: ${props => props.size === 'small' ? '32px' : props.size === 'medium' ? '40px' : '48px'};
-  width: ${props => props.width || '120px'};
-  border-radius: ${props => props.theme.borderRadius.md};
   
-  ${props => props.variant === 'pill' && `
-    border-radius: ${props.theme.borderRadius.full};
+  ${props => props.variant === 'card' && `
+    border-radius: ${props.theme.border.radius.lg};
+    overflow: hidden;
   `}
-`;
-
-// Скелетон для карточки
-const SkeletonCard = styled.div`
-  background-color: ${props => props.theme.colors.surface.primary};
-  border-radius: ${props => props.theme.borderRadius.lg};
-  overflow: hidden;
-  box-shadow: ${props => props.theme.shadow.sm};
   
-  .skeleton-image {
+  ${props => props.variant === 'image' && `
+    border-radius: ${props.theme.border.radius.md};
+    background-color: ${props.theme.colors.border};
+  `}
+  
+  ${props => props.variant === 'avatar' && `
+    border-radius: 50%;
+    width: ${props.size === 'small' ? '32px' : props.size === 'large' ? '64px' : '48px'};
+    height: ${props.size === 'small' ? '32px' : props.size === 'large' ? '64px' : '48px'};
+  `}
+  
+  ${props => props.variant === 'title' && `
+    height: ${props.theme.fontSizes.lg};
+    width: ${props.width || '60%'};
+    margin-bottom: ${props.theme.spacing.small};
+  `}
+  
+  ${props => props.variant === 'subtitle' && `
+    height: ${props.theme.fontSizes.base};
+    width: ${props.width || '40%'};
+    margin-bottom: ${props.theme.spacing.xsmall};
+  `}
+  
+  ${props => props.variant === 'paragraph' && `
+    height: ${props.theme.fontSizes.sm};
+    margin-bottom: ${props.theme.spacing.xsmall};
+    width: ${props.width || '100%'};
+  `}
+  
+  ${props => props.variant === 'list' && `
+    height: ${props.theme.fontSizes.sm};
+    margin-bottom: ${props.theme.spacing.xxsmall};
+    width: ${props.width || '100%'};
+  }}
+  
+  ${props => props.variant === 'chart' && `
+    height: ${props.height || '200px'};
+    width: ${props.width || '100%'};
+    border-radius: ${props.theme.border.radius.md};
+  }}
+  
+  ${props => props.variant === 'table' && `
     width: 100%;
-    height: ${props => props.imageHeight || '200px'};
-    background: linear-gradient(
-      to right,
-      ${props => props.theme.colors.border.light} 8%,
-      ${props => props.theme.colors.border.lighter} 18%,
-      ${props => props.theme.colors.border.light} 33%
-    );
-    background-size: 800px 104px;
-    animation: ${shimmer} 1.5s linear infinite;
-  }
+    border-radius: ${props.theme.border.radius.md};
+  }}
   
-  .skeleton-content {
-    padding: ${props => props.theme.spacing[4]};
-    
-    .skeleton-title {
-      height: ${props => props.theme.typography.fontSize.lg[0]};
-      width: ${props => props.titleWidth || '60%'};
-      margin-bottom: ${props => props.theme.spacing[3]};
-      background: linear-gradient(
-        to right,
-        ${props => props.theme.colors.border.light} 8%,
-        ${props => props.theme.colors.border.lighter} 18%,
-        ${props => props.theme.colors.border.light} 33%
-      );
-      background-size: 800px 104px;
-      animation: ${shimmer} 1.5s linear infinite;
-      border-radius: ${props => props.theme.borderRadius.md};
-    }
-    
-    .skeleton-text {
-      height: ${props => props.theme.typography.fontSize.base[0]};
-      margin-bottom: ${props => props.theme.spacing[2]};
-      background: linear-gradient(
-        to right,
-        ${props => props.theme.colors.border.light} 8%,
-        ${props => props.theme.colors.border.lighter} 18%,
-        ${props => props.theme.colors.border.light} 33%
-      );
-      background-size: 800px 104px;
-      animation: ${shimmer} 1.5s linear infinite;
-      border-radius: ${props => props.theme.borderRadius.md};
-    }
-    
-    .skeleton-footer {
-      display: flex;
-      justify-content: space-between;
-      margin-top: ${props => props.theme.spacing[4]};
-      
-      .skeleton-button {
-        height: ${props => props.theme.typography.fontSize.base[0]};
-        width: ${props => props.buttonWidth || '100px'};
-        background: linear-gradient(
-          to right,
-          ${props => props.theme.colors.border.light} 8%,
-          ${props => props.theme.colors.border.lighter} 18%,
-          ${props => props.theme.colors.border.light} 33%
-        );
-        background-size: 800px 104px;
-        animation: ${shimmer} 1.5s linear infinite;
-        border-radius: ${props => props.theme.borderRadius.md};
-      }
-    }
-  }
+  ${props => props.variant === 'form' && `
+    height: ${props.theme.sizes.inputHeight};
+    width: ${props.width || '100%'};
+    border-radius: ${props.theme.border.radius.md};
+  }}
+  
+  ${props => props.variant === 'tabs' && `
+    height: ${props.theme.sizes.tabHeight};
+    width: ${props.width || 'auto'};
+    border-radius: ${props.theme.border.radius.md};
+  }}
+  
+  ${props => props.variant === 'badge' && `
+    height: ${props.theme.sizes.badgeHeight};
+    width: ${props.width || '60px'};
+    border-radius: ${props.theme.border.radius.sm};
+  }}
+  
+  ${props => props.variant === 'rating' && `
+    display: flex;
+    gap: ${props.theme.spacing.xxsmall};
+    align-items: center;
+  }}
+  
+  ${props => props.variant === 'tag' && `
+    height: ${props.theme.sizes.tagHeight};
+    width: ${props.width || 'auto'};
+    border-radius: ${props.theme.border.radius.sm};
+  }}
+  
+  ${props => props.variant === 'breadcrumb' && `
+    display: flex;
+    align-items: center;
+    gap: ${props.theme.spacing.xxsmall};
+  }}
+  
+  ${props => props.variant === 'progress' && `
+    height: ${props.theme.sizes.progressHeight};
+    width: ${props.width || '100%'};
+    border-radius: ${props.theme.border.radius.sm};
+  }}
+  
+  ${props => props.variant === 'divider' && `
+    height: ${props.theme.sizes.dividerHeight};
+    width: ${props.width || '100%'};
+    border-radius: ${props.theme.border.radius.sm};
+  }}
+  
+  ${props => props.variant === 'avatar-group' && `
+    display: flex;
+    align-items: center;
+    gap: ${props.theme.spacing.xxsmall};
+  }}
 `;
 
-// Компонент Skeleton
-const Skeleton = ({
-  type = 'text',
-  height,
+// Основной компонент Skeleton
+export const Skeleton = memo(({
+  variant = 'text',
+  size = 'medium',
   width,
-  size,
-  gap,
-  lines,
-  rounded,
-  circle,
-  variant,
-  className = '',
-  ...props
-}) => {
-  switch (type) {
-    case 'text':
-      return (
-        <SkeletonText
-          height={height}
-          width={width}
-          gap={gap}
-          lines={lines}
-          rounded={rounded}
-          circle={circle}
-          className={`${className} skeleton-text`}
-          {...props}
-        />
-      );
-    
-    case 'image':
-      return (
-        <SkeletonImage
-          height={height}
-          width={width}
-          size={size}
-          circle={circle}
-          className={`${className} skeleton-image`}
-          {...props}
-        />
-      );
-    
-    case 'avatar':
-      return (
-        <SkeletonAvatar
-          size={size}
-          className={`${className} skeleton-avatar`}
-          {...props}
-        />
-      );
-    
-    case 'title':
-      return (
-        <SkeletonTitle
-          height={height}
-          width={width}
-          rounded={rounded}
-          className={`${className} skeleton-title`}
-          {...props}
-        />
-      );
-    
-    case 'button':
-      return (
-        <SkeletonButton
-          height={height}
-          width={width}
-          size={size}
-          variant={variant}
-          rounded={rounded}
-          className={`${className} skeleton-button`}
-          {...props}
-        />
-      );
-    
-    case 'card':
-      return (
-        <SkeletonCard
-          height={height}
-          width={width}
-          size={size}
-          gap={gap}
-          rounded={rounded}
-          circle={circle}
-          variant={variant}
-          className={`${className} skeleton-card`}
-          {...props}
-        />
-      );
-    
-    default:
-      return (
-        <SkeletonBase
-          height={height}
-          width={width}
-          size={size}
-          gap={gap}
-          rounded={rounded}
-          circle={circle}
-          variant={variant}
-          className={`${className} skeleton`}
-          {...props}
-        />
-      );
-  }
-};
-
-// Пропс-types для TypeScript
-Skeleton.propTypes = {
-  type: PropTypes.oneOf(['text', 'image', 'avatar', 'title', 'button', 'card']),
-  height: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-  width: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-  size: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-  gap: PropTypes.string,
-  lines: PropTypes.number,
-  rounded: PropTypes.bool,
-  circle: PropTypes.bool,
-  variant: PropTypes.oneOf(['default', 'pill']),
-  className: PropTypes.string,
-};
-
-// Компонент SkeletonList для списка скелетонов
-const SkeletonListContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${props => props.gap || props.theme.spacing[4]};
-`;
-
-// Компонент SkeletonList
-const SkeletonList = ({
-  count = 3,
-  type = 'card',
-  gap,
-  className = '',
+  height,
+  rounded = 'medium',
+  margin,
+  padding,
+  display,
+  className,
+  style,
   ...props
 }) => {
   return (
-    <SkeletonListContainer
-      gap={gap}
-      className={`${className} skeleton-list`}
+    <SkeletonElement
+      variant={variant}
+      size={size}
+      width={width}
+      height={height}
+      rounded={rounded}
+      margin={margin}
+      padding={padding}
+      display={display}
+      className={className}
+      style={style}
       {...props}
-    >
-      {Array.from({ length: count }).map((_, index) => (
-        <Skeleton key={index} type={type} {...props} />
-      ))}
-    </SkeletonListContainer>
+    />
   );
+});
+
+Skeleton.propTypes = {
+  variant: PropTypes.oneOf([
+    'text',
+    'circle',
+    'rect',
+    'button',
+    'card',
+    'image',
+    'avatar',
+    'title',
+    'subtitle',
+    'paragraph',
+    'list',
+    'chart',
+    'table',
+    'form',
+    'tabs',
+    'badge',
+    'rating',
+    'tag',
+    'breadcrumb',
+    'progress',
+    'divider',
+    'avatar-group',
+  ]),
+  size: PropTypes.oneOf(['small', 'medium', 'large']),
+  width: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  height: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  rounded: PropTypes.oneOf(['small', 'medium', 'large', 'full']),
+  margin: PropTypes.string,
+  padding: PropTypes.string,
+  display: PropTypes.string,
+  className: PropTypes.string,
+  style: PropTypes.object,
 };
 
-// Пропп-types для SkeletonList
+// Компонент для группы скелетонов
+export const SkeletonGroup = memo(({
+  count,
+  variant = 'text',
+  size = 'medium',
+  width,
+  height,
+  rounded = 'medium',
+  margin,
+  padding,
+  display,
+  className,
+  style,
+  spacing = 'small',
+  direction = 'column',
+  ...props
+}) => {
+  const skeletons = Array.from({ length: count }, (_, i) => (
+    <Skeleton
+      key={i}
+      variant={variant}
+      size={size}
+      width={width}
+      height={height}
+      rounded={rounded}
+      margin={margin}
+      padding={padding}
+      display={display}
+      className={className}
+      style={{
+        ...style,
+        marginBottom: direction === 'column' && i < count - 1 ? 
+          (spacing === 'small' ? '8px' : spacing === 'medium' ? '16px' : '24px') : '0',
+        marginRight: direction === 'row' && i < count - 1 ? 
+          (spacing === 'small' ? '8px' : spacing === 'medium' ? '16px' : '24px') : '0',
+      }}
+      {...props}
+    />
+  ));
+  
+  return (
+    <div style={{ display: 'flex', flexDirection: direction, ...style }}>
+      {skeletons}
+    </div>
+  );
+});
+
+SkeletonGroup.propTypes = {
+  count: PropTypes.number.isRequired,
+  variant: PropTypes.oneOf([
+    'text',
+    'circle',
+    'rect',
+    'button',
+    'card',
+    'image',
+    'avatar',
+    'title',
+    'subtitle',
+    'paragraph',
+    'list',
+    'chart',
+    'table',
+    'form',
+    'tabs',
+    'badge',
+    'rating',
+    'tag',
+    'breadcrumb',
+    'progress',
+    'divider',
+    'avatar-group',
+  ]),
+  size: PropTypes.oneOf(['small', 'medium', 'large']),
+  width: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  height: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  rounded: PropTypes.oneOf(['small', 'medium', 'large', 'full']),
+  margin: PropTypes.string,
+  padding: PropTypes.string,
+  display: PropTypes.string,
+  className: PropTypes.string,
+  style: PropTypes.object,
+  spacing: PropTypes.oneOf(['small', 'medium', 'large']),
+  direction: PropTypes.oneOf(['row', 'column']),
+};
+
+// Компонент для скелетона карточки
+export const SkeletonCard = memo(({
+  width = '300px',
+  height = '200px',
+  rounded = 'medium',
+  className,
+  style,
+  ...props
+}) => {
+  return (
+    <div className={className} style={{ width, height, borderRadius: rounded, ...style }}>
+      <Skeleton variant="image" height="160px" rounded={rounded} />
+      <div style={{ padding: '16px' }}>
+        <Skeleton variant="title" width="70%" />
+        <Skeleton variant="subtitle" width="50%" />
+        <SkeletonGroup count={3} variant="text" margin="8px 0" />
+        <SkeletonGroup count={2} variant="button" margin="8px 8px 0 0" direction="row" />
+      </div>
+    </div>
+  );
+});
+
+SkeletonCard.propTypes = {
+  width: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  height: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  rounded: PropTypes.oneOf(['small', 'medium', 'large', 'full']),
+  className: PropTypes.string,
+  style: PropTypes.object,
+};
+
+// Компонент для скелетона профиля
+export const SkeletonProfile = memo(({
+  avatarSize = 'large',
+  className,
+  style,
+  ...props
+}) => {
+  return (
+    <div className={className} style={{ display: 'flex', alignItems: 'center', gap: '16px', ...style }}>
+      <Skeleton variant="avatar" size={avatarSize} />
+      <div style={{ flex: 1 }}>
+        <Skeleton variant="title" width="40%" />
+        <Skeleton variant="subtitle" width="60%" />
+        <Skeleton variant="text" width="80%" margin="8px 0" />
+        <SkeletonGroup count={2} variant="text" margin="4px 0" />
+      </div>
+    </div>
+  );
+});
+
+SkeletonProfile.propTypes = {
+  avatarSize: PropTypes.oneOf(['small', 'medium', 'large']),
+  className: PropTypes.string,
+  style: PropTypes.object,
+};
+
+// Компонент для скелетона списка
+export const SkeletonList = memo(({
+  count = 3,
+  avatar = true,
+  lines = 2,
+  className,
+  style,
+  ...props
+}) => {
+  return (
+    <div className={className} style={{ ...style }}>
+      {Array.from({ length: count }, (_, i) => (
+        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
+          {avatar && <Skeleton variant="avatar" size="medium" />}
+          <div style={{ flex: 1 }}>
+            <Skeleton variant="title" width="60%" />
+            {lines > 1 && (
+              <Skeleton variant="text" width="80%" margin="8px 0" />
+            )}
+            {lines > 2 && (
+              <Skeleton variant="text" width="70%" margin="8px 0" />
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+});
+
 SkeletonList.propTypes = {
   count: PropTypes.number,
-  type: PropTypes.oneOf(['text', 'image', 'avatar', 'title', 'button', 'card']),
-  gap: PropTypes.string,
+  avatar: PropTypes.bool,
+  lines: PropTypes.number,
   className: PropTypes.string,
+  style: PropTypes.object,
 };
 
-// Компонент SkeletonTable для таблиц скелетонов
-const SkeletonTableContainer = styled.div`
-  width: 100%;
-  overflow: hidden;
-  
-  .skeleton-table-header {
-    display: grid;
-    grid-template-columns: ${props => props.columns};
-    gap: ${props => props.theme.spacing[3]};
-    margin-bottom: ${props => props.theme.spacing[3]};
-    
-    .skeleton-cell {
-      height: ${props => props.theme.typography.fontSize.base[0]};
-      background: linear-gradient(
-        to right,
-        ${props => props.theme.colors.border.light} 8%,
-        ${props => props.theme.colors.border.lighter} 18%,
-        ${props => props.theme.colors.border.light} 33%
-      );
-      background-size: 800px 104px;
-      animation: ${shimmer} 1.5s linear infinite;
-      border-radius: ${props => props.theme.borderRadius.md};
-    }
-  }
-  
-  .skeleton-table-row {
-    display: grid;
-    grid-template-columns: ${props => props.columns};
-    gap: ${props => props.theme.spacing[3]};
-    margin-bottom: ${props => props.theme.spacing[3]};
-    
-    .skeleton-cell {
-      height: ${props => props.theme.typography.fontSize.base[0]};
-      background: linear-gradient(
-        to right,
-        ${props => props.theme.colors.border.light} 8%,
-        ${props => props.theme.colors.border.lighter} 18%,
-        ${props => props.theme.colors.border.light} 33%
-      );
-      background-size: 800px 104px;
-      animation: ${shimmer} 1.5s linear infinite;
-      border-radius: ${props => props.theme.borderRadius.md};
-    }
-  }
-`;
-
-// Компонент SkeletonTable
-const SkeletonTable = ({
+// Компонент для скелетона таблицы
+export const SkeletonTable = memo(({
+  columns = 4,
   rows = 5,
-  columns = '1fr 2fr 1fr 1fr',
-  gap,
-  className = '',
+  header = true,
+  className,
+  style,
   ...props
 }) => {
   return (
-    <SkeletonTableContainer
-      columns={columns}
-      gap={gap}
-      className={`${className} skeleton-table`}
-      {...props}
-    >
-      <div className="skeleton-table-header">
-        {Array.from({ length: columns.split(' ').length }).map((_, index) => (
-          <div key={`header-${index}`} className="skeleton-cell" />
-        ))}
-      </div>
-      
-      {Array.from({ length: rows }).map((_, rowIndex) => (
-        <div key={`row-${rowIndex}`} className="skeleton-table-row">
-          {Array.from({ length: columns.split(' ').length }).map((_, cellIndex) => (
-            <div key={`cell-${rowIndex}-${cellIndex}`} className="skeleton-cell" />
+    <div className={className} style={{ width: '100%', ...style }}>
+      {header && (
+        <div style={{ display: 'flex', marginBottom: '8px' }}>
+          {Array.from({ length: columns }, (_, i) => (
+            <Skeleton
+              key={`header-${i}`}
+              variant="text"
+              width="100%"
+              height="20px"
+              margin="0 8px"
+            />
+          ))}
+        </div>
+      )}
+      {Array.from({ length: rows }, (_, rowIndex) => (
+        <div key={rowIndex} style={{ display: 'flex', marginBottom: '8px' }}>
+          {Array.from({ length: columns }, (_, colIndex) => (
+            <Skeleton
+              key={`cell-${rowIndex}-${colIndex}`}
+              variant="text"
+              width="100%"
+              height="16px"
+              margin="0 8px"
+            />
           ))}
         </div>
       ))}
-    </SkeletonTableContainer>
+    </div>
   );
-};
+});
 
-// Пропп-types для SkeletonTable
 SkeletonTable.propTypes = {
+  columns: PropTypes.number,
   rows: PropTypes.number,
-  columns: PropTypes.string,
-  gap: PropTypes.string,
+  header: PropTypes.bool,
   className: PropTypes.string,
+  style: PropTypes.object,
 };
 
-// Компонент SkeletonForm для форм скелетонов
-const SkeletonFormContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${props => props.gap || props.theme.spacing[4]};
-  
-  .skeleton-form-row {
-    display: flex;
-    flex-direction: column;
-    gap: ${props => props.theme.spacing[2]};
-    
-    .skeleton-label {
-      height: ${props => props.theme.typography.fontSize.sm[0]};
-      width: ${props => props.labelWidth || '30%'};
-      background: linear-gradient(
-        to right,
-        ${props => props.theme.colors.border.light} 8%,
-        ${props => props.theme.colors.border.lighter} 18%,
-        ${props => props.theme.colors.border.light} 33%
-      );
-      background-size: 800px 104px;
-      animation: ${shimmer} 1.5s linear infinite;
-      border-radius: ${props => props.theme.borderRadius.md};
-    }
-    
-    .skeleton-input {
-      height: ${props => props.theme.spacing[6]};
-      background: linear-gradient(
-        to right,
-        ${props => props.theme.colors.border.light} 8%,
-        ${props => props.theme.colors.border.lighter} 18%,
-        ${props => props.theme.colors.border.light} 33%
-      );
-      background-size: 800px 104px;
-      animation: ${shimmer} 1.5s linear infinite;
-      border-radius: ${props => props.theme.borderRadius.md};
-    }
-  }
-  
-  .skeleton-form-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: ${props => props.theme.spacing[2]};
-    margin-top: ${props => props.theme.spacing[4]};
-    
-    .skeleton-button {
-      height: ${props => props.theme.spacing[7]};
-      width: ${props => props.buttonWidth || '120px'};
-      background: linear-gradient(
-        to right,
-        ${props => props.theme.colors.border.light} 8%,
-        ${props => props.theme.colors.border.lighter} 18%,
-        ${props => props.theme.colors.border.light} 33%
-      );
-      background-size: 800px 104px;
-      animation: ${shimmer} 1.5s linear infinite;
-      border-radius: ${props => props.theme.borderRadius.md};
-    }
-  }
-`;
-
-// Компонент SkeletonForm
-const SkeletonForm = ({
-  rows = 3,
-  gap,
-  labelWidth,
-  buttonWidth,
-  className = '',
+// Компонент для скелетона формы
+export const SkeletonForm = memo(({
+  fields = 3,
+  className,
+  style,
   ...props
 }) => {
   return (
-    <SkeletonFormContainer
-      gap={gap}
-      labelWidth={labelWidth}
-      buttonWidth={buttonWidth}
-      className={`${className} skeleton-form`}
-      {...props}
-    >
-      {Array.from({ length: rows }).map((_, index) => (
-        <div key={`row-${index}`} className="skeleton-form-row">
-          <div className="skeleton-label" />
-          <div className="skeleton-input" />
+    <div className={className} style={{ ...style }}>
+      {Array.from({ length: fields }, (_, i) => (
+        <div key={i} style={{ marginBottom: '16px' }}>
+          <Skeleton variant="text" width="30%" height="16px" margin="0 0 8px 0" />
+          <Skeleton variant="form" width="100%" />
         </div>
       ))}
-      
-      <div className="skeleton-form-actions">
-        <div className="skeleton-button" />
-        <div className="skeleton-button" />
-      </div>
-    </SkeletonFormContainer>
+    </div>
   );
-};
+});
 
-// Пропп-types для SkeletonForm
 SkeletonForm.propTypes = {
-  rows: PropTypes.number,
-  gap: PropTypes.string,
-  labelWidth: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-  buttonWidth: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  fields: PropTypes.number,
   className: PropTypes.string,
+  style: PropTypes.object,
 };
 
-// Экспорт компонентов
-export {
-  Skeleton,
-  SkeletonList as SkeletonListComponent,
-  SkeletonTable as SkeletonTableComponent,
-  SkeletonForm as SkeletonFormComponent,
+// Компонент для скелетона галереи
+export const SkeletonGallery = memo(({
+  columns = 3,
+  rows = 2,
+  className,
+  style,
+  ...props
+}) => {
+  return (
+    <div className={className} style={{ 
+      display: 'grid', 
+      gridTemplateColumns: `repeat(${columns}, 1fr)`, 
+      gap: '16px',
+      ...style 
+    }}>
+      {Array.from({ length: columns * rows }, (_, i) => (
+        <div key={i}>
+          <Skeleton variant="image" height="200px" />
+          <div style={{ padding: '12px' }}>
+            <Skeleton variant="title" width="80%" />
+            <Skeleton variant="text" width="60%" margin="8px 0" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+});
+
+SkeletonGallery.propTypes = {
+  columns: PropTypes.number,
+  rows: PropTypes.number,
+  className: PropTypes.string,
+  style: PropTypes.object,
 };
+
+export default Skeleton;

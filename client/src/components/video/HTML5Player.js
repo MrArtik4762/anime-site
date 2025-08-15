@@ -190,6 +190,7 @@ const HTML5Player = ({
   muted = false,
   loop = false,
   preload = 'metadata',
+  setVideoElementRef,
 }) => {
   const videoRef = useRef(null);
   const containerRef = useRef(null);
