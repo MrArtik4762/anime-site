@@ -1,0 +1,648 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: helper <helper@example.com>
+Date: Fri, 15 Aug 2025 20:47:00 +0000
+Subject: [PATCH] Anime site fixes for August 2025
+
+---
+ server/services/anilibriaV1.js                    | 123 +
+ server/routes/catalog.js                          | 89 +
+ server/routes/auth.js                             | 156 +
+ server/middleware/error.js                        | 67 +
+ client/src/services/api.ts                        | 234 +
+ client/src/pages/Catalog.jsx                      | 156 +
+ client/src/pages/Login.jsx                        | 189 +
+ client/src/pages/Register.jsx                     | 145 +
+ shared/source-map.json                            | 25 +
+ server/routes/sourceMap.js                        | 45 +
+ client/src/components/title/SourceMapping.jsx     | 78 +
+ client/src/styles/fixes.css                       | 34 +
+ server/index.js                                   | 45 +
+ client/src/index.css                              | 12 +
+ client/package.json                               | 8 +
+ server/package.json                               | 8 +
+ server/.env.example                               | 5 +
+ client/.env.example                               | 5 +
+ 18 files changed, 1460 insertions(+)
+ create mode 100644 server/services/anilibriaV1.js
+ create mode 100644 server/routes/catalog.js
+ create mode 100644 server/routes/auth.js
+ create mode 100644 server/middleware/error.js
+ create mode 100644 client/src/services/api.ts
+ create mode 100644 client/src/pages/Catalog.jsx
+ create mode 100644 client/src/pages/Login.jsx
+ create mode 100644 client/src/pages/Register.jsx
+ create mode 100644 shared/source-map.json
+ create mode 100644 server/routes/sourceMap.js
+ create mode 100644 client/src/components/title/SourceMapping.jsx
+ create mode 100644 client/src/styles/fixes.css
+--- /dev/null
++++ b/server/services/anilibriaV1.js
+@@ -0,0 +1,123 @@
++// Единый клиент AniLibria v1 с мягким fallback на v3 при недоступности.
++// Все параметры приведены к единому виду, чтобы фронту было всё равно,
++// v1 это или v3.
++const axios = require('axios');
++const LRU = require('lru-cache');
++
++const V1 = process.env.ANILIBRIA_V1_BASE || 'https://anilibria.top/api/v1';
++const V3 = process.env.ANILIBRIA_V3_BASE || 'https://api.anilibria.tv/v3';
++
++const cache = new LRU({
++  ttl: 1000 * 60 * 2, // 2 минуты
++  max: 1000,
++});
++
++function cacheKey(url, params) {
++  return `${url}?${Object.entries(params || {})
++    .sort(([a],[b]) => a.localeCompare(b))
++    .map(([k,v]) => `${k}=${encodeURIComponent(v)}`).join('&')}`;
++}
++
++async function getJson(url, params = {}, { useV3 = false } = {}) {
++  const base = useV3 ? V3 : V1;
++  const key = cacheKey(base + url, params);
++  const cached = cache.get(key);
++  if (cached) return cached;
++  try {
++    const { data } = await axios.get(base + url, { params, timeout: 15000 });
++    cache.set(key, data);
++    return data;
++  } catch (e) {
++    if (!useV3) {
++      // мягкий fallback
++      return getJson(url.replace(/^\/title/, '/title'), params, { useV3: true });
++    }
++    throw e;
++  }
++}
++
++// ====== Нормализация ======
++function normalizeTitleV1(t) {
++  return {
++    id: t?.id ?? t?.data?.id,
++    code: t?.code || t?.data?.code,
++    names: {
++      ru: t?.names?.ru || t?.data?.names?.ru || t?.names?.ru_title,
++      en: t?.names?.en || t?.data?.names?.en,
++      alt: t?.names?.alternative ?? [],
++    },
++    description: t?.description || t?.data?.description,
++    genres: t?.genres || t?.data?.genres || [],
++    season: t?.season?.string || t?.data?.season?.string,
++    year: t?.season?.year || t?.data?.season?.year,
++    posters: t?.posters || t?.data?.posters || {},
++    type: t?.type || t?.data?.type,
++    status: t?.status || t?.data?.status,
++    episodes: t?.player?.episodes?.last || t?.player?.episodes?.count || 0,
++    rating: t?.rating?.mpaa || null,
++  };
++}
++
++// ====== Методы каталога ======
++async function searchTitles({ query = '', limit = 20, page = 1, sort = 'updated' } = {}) {
++  const params = {
++    search: query,
++    page, limit,
++    sort, // v1 понимает updated/rating/year
++  };
++  const data = await getJson('/title/search', params);
++  const list = (data?.list || data?.data || []).map(normalizeTitleV1);
++  return { list, pagination: data?.pagination || { page, limit } };
++}
++
++async function getCatalog({ limit = 24, page = 1, genres = [], year, season, order = 'updated' } = {}) {
++  const params = { limit, page, genres: genres.join(','), year, season, sort: order };
++  const data = await getJson('/title/catalog', params);
++  const list = (data?.list || data?.data || []).map(normalizeTitleV1);
++  return { list, pagination: data?.pagination || { page, limit } };
++}
++
++async function getTitleById(id) {
++  const data = await getJson('/title', { id });
++  return normalizeTitleV1(data);
++}
++
++module.exports = {
++  searchTitles,
++  getCatalog,
++  getTitleById,
++};
+--- /dev/null
++++ b/server/routes/catalog.js
+@@ -0,0 +1,89 @@
++const express = require('express');
++const router = express.Router();
++const v1 = require('../services/anilibriaV1');
++
++// GET /api/catalog
++router.get('/', async (req, res, next) => {
++  try {
++    const { page, limit, genres, year, season, order } = req.query;
++    const data = await v1.getCatalog({
++      page: Number(page) || 1,
++      limit: Math.min(Number(limit) || 24, 60),
++      genres: genres ? String(genres).split(',') : [],
++      year: year ? Number(year) : undefined,
++      season, order,
++    });
++    res.json(data);
++  } catch (e) { next(e); }
++});
++
++// GET /api/catalog/search
++router.get('/search', async (req, res, next) => {
++  try {
++    const { q, page, limit, sort } = req.query;
++    const data = await v1.searchTitles({
++      query: q || '',
++      page: Number(page) || 1,
++      limit: Math.min(Number(limit) || 24, 60),
++      sort: sort || 'updated',
++    });
++    res.json(data);
++  } catch (e) { next(e); }
++});
++
++// GET /api/catalog/title/:id
++router.get('/title/:id', async (req, res, next) => {
++  try {
++    const t = await v1.getTitleById(req.params.id);
++    res.json(t);
++  } catch (e) { next(e); }
++});
++
++module.exports = router;
+--- /dev/null
++++ b/server/routes/auth.js
+@@ -0,0 +1,156 @@
++const express = require('express');
++const axios = require('axios');
++const router = express.Router();
++const cookie = require('cookie');
++
++const V1 = process.env.ANILIBRIA_V1_BASE || 'https://anilibria.top/api/v1';
++const COOKIE_NAME = 'al_session';
++const COOKIE_OPTS = {
++  httpOnly: true,
++  sameSite: 'lax',
++  secure: process.env.NODE_ENV === 'production',
++  path: '/',
++  maxAge: 60 * 60 * 24 * 30, // 30 дней
++};
++
++// POST /api/auth/register
++router.post('/register', async (req, res, next) => {
++  try {
++    const { email, password, username } = req.body || {};
++    const { data } = await axios.post(`${V1}/accounts/users/registration`, { email, password, username }, { timeout: 15000 });
++    return res.status(200).json({ ok: true, data });
++  } catch (e) {
++    next(e);
++  }
++});
++
++// POST /api/auth/login
++router.post('/login', async (req, res, next) => {
++  try {
++    const { login, password } = req.body || {};
++    const { data } = await axios.post(`${V1}/accounts/users/login`, { login, password }, { timeout: 15000 });
++    // API возвращает токен (session/jwt). Кладём в httpOnly cookie.
++    const token = data?.token || data?.access_token || data?.session;
++    if (!token) return res.status(401).json({ ok: false, message: 'No token from upstream' });
++    res.setHeader('Set-Cookie', cookie.serialize(COOKIE_NAME, token, COOKIE_OPTS));
++    res.json({ ok: true, user: data?.user || null });
++  } catch (e) {
++    next(e);
++  }
++});
++
++// POST /api/auth/logout
++router.post('/logout', async (_req, res) => {
++  res.setHeader('Set-Cookie', cookie.serialize(COOKIE_NAME, '', { ...COOKIE_OPTS, maxAge: 0 }));
++  res.json({ ok: true });
++});
++
++// GET /api/auth/me — верифицируем токен у AniLibria и возвращаем профиль
++router.get('/me', async (req, res, next) => {
++  try {
++    const token = req.cookies?.[COOKIE_NAME];
++    if (!token) return res.status(401).json({ ok: false });
++    const { data } = await axios.get(`${V1}/accounts/users/me`, {
++      headers: { Authorization: `Bearer ${token}` },
++      timeout: 15000,
++    });
++    res.json({ ok: true, user: data });
++  } catch (e) { next(e); }
++});
++
++module.exports = router;
+--- /dev/null
++++ b/server/middleware/error.js
+@@ -0,0 +1,67 @@
++module.exports = function errorMiddleware(err, _req, res, _next) {
++  const code = err.response?.status || 500;
++  const payload = {
++    ok: false,
++    code,
++    message: err.response?.data?.message || err.message || 'Internal error',
++    details: err.response?.data || undefined,
++  };
++  if (process.env.NODE_ENV !== 'production') {
++    console.error('[API ERROR]', payload);
++  }
++  res.status(code).json(payload);
++};
+--- /dev/null
++++ b/client/src/services/api.ts
+@@ -0,0 +1,234 @@
++// Единая точка запросов с правильным baseURL и включёнными cookies
++import axios from 'axios';
++
++export const api = axios.create({
++  baseURL: import.meta?.env?.VITE_API_BASE || process.env.NEXT_PUBLIC_API_BASE || '/api',
++  withCredentials: true,
++  timeout: 15000,
++});
++
++export const CatalogApi = {
++  async list(params: Record<string, any> = {}) {
++    const { data } = await api.get('/catalog', { params });
++    return data;
++  },
++  async search(q: string, params: Record<string, any> = {}) {
++    const { data } = await api.get('/catalog/search', { params: { q, ...params } });
++    return data;
++  },
++  async title(id: string | number) {
++    const { data } = await api.get(`/catalog/title/${id}`);
++    return data;
++  },
++};
++
++export const AuthApi = {
++  async register(payload: { email: string; username: string; password: string }) {
++    const { data } = await api.post('/auth/register', payload);
++    return data;
++  },
++  async login(payload: { login: string; password: string }) {
++    const { data } = await api.post('/auth/login', payload);
++    return data;
++  },
++  async me() {
++    const { data } = await api.get('/auth/me');
++    return data;
++  },
++  async logout() {
++    const { data } = await api.post('/auth/logout');
++    return data;
++  },
++};
+--- /dev/null
++++ b/client/src/pages/Catalog.jsx
+@@ -0,0 +1,156 @@
++import { useEffect, useRef, useState } from 'react';
++import { CatalogApi } from '../services/api';
++
++export default function CatalogPage() {
++  const [items, setItems] = useState([]);
++  const [loading, setLoading] = useState(true);
++  const [error, setError] = useState(null);
++  const [query, setQuery] = useState('');
++  const abortRef = useRef(null);
++
++  async function load({ q = '', page = 1 } = {}) {
++    abortRef.current?.abort();
++    const ac = new AbortController();
++    abortRef.current = ac;
++    setLoading(true);
++    setError(null);
++    try {
++      const data = q
++        ? await CatalogApi.search(q, { page, limit: 24, sort: 'updated', signal: ac.signal })
++        : await CatalogApi.list({ page, limit: 24, order: 'updated', signal: ac.signal });
++      // защита от устаревшего ответа
++      if (ac.signal.aborted) return;
++      setItems(data?.list || []);
++    } catch (e) {
++      if (e.name !== 'CanceledError' && e.name !== 'AbortError') setError(e?.message || 'Ошибка загрузки');
++    } finally {
++      if (!abortRef.current?.signal.aborted) setLoading(false);
++    }
++  }
++
++  useEffect(() => { load({}); return () => abortRef.current?.abort(); }, []);
++
++  return (
++    <div className="px-4 py-6">
++      <div className="mb-4 flex gap-2">
++        <input
++          className="w-full rounded-xl bg-slate-800/60 px-4 py-2 outline-none ring-1 ring-slate-700 focus:ring-indigo-500"
++          placeholder="Поиск аниме…" value={query} onChange={e => setQuery(e.target.value)}
++          onKeyDown={e => (e.key === 'Enter') && load({ q: query })}
++        />
++        <button onClick={() => load({ q: query })} className="rounded-xl px-4 py-2 bg-indigo-600 hover:bg-indigo-500">Найти</button>
++      </div>
++      {loading && <div className="opacity-100 animate-pulse">Загружаем каталог…</div>}
++      {error && <div className="text-red-400">{String(error)}</div>}
++      {!loading && !error && (
++        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
++          {items.map(t => (
++            <a key={t.id} href={`/title/${t.id}`} className="group rounded-2xl overflow-hidden bg-slate-800/60 hover:bg-slate-700/60 transition">
++              <div className="aspect-[2/3] w-full bg-slate-700/50" style={{backgroundImage:`url(${t.posters?.small?.url || t.posters?.original?.url || ''})`, backgroundSize:'cover'}} />
++              <div className="p-3">
++                <div className="text-sm font-semibold line-clamp-2 group-hover:text-indigo-300">{t.names?.ru || t.names?.en}</div>
++                <div className="opacity-60 text-xs mt-1">{t.year} • {t.genres?.slice(0,3).join(', ')}</div>
++              </div>
++            </a>
++          ))}
++        </div>
++      )}
++    </div>
++  );
++}
+--- /dev/null
++++ b/client/src/pages/Login.jsx
+@@ -0,0 +1,189 @@
++import { useState } from 'react';
++import { AuthApi } from '../services/api';
++
++export default function LoginPage() {
++  const [login, setLogin] = useState('');
++  const [password, setPassword] = useState('');
++  const [err, setErr] = useState('');
++  const [ok, setOk] = useState(false);
++  const submit = async (e) => {
++    e.preventDefault();
++    setErr(''); setOk(false);
++    try {
++      const r = await AuthApi.login({ login, password });
++      if (r?.ok) setOk(true);
++    } catch (e) { setErr(e?.response?.data?.message || e?.message); }
++  };
++  return (
++    <form onSubmit={submit} className="max-w-md mx-auto px-4 py-8 space-y-3">
++      <h1 className="text-xl font-bold">Вход</h1>
++      {err && <div className="text-red-400">{err}</div>}
++      {ok && <div className="text-green-400">Готово!</div>}
++      <input className="w-full rounded-xl bg-slate-800/60 px-4 py-2" placeholder="Email/ник" value={login} onChange={e=>setLogin(e.target.value)} />
++      <input className="w-full rounded-xl bg-slate-800/60 px-4 py-2" placeholder="Пароль" type="password" value={password} onChange={e=>setPassword(e.target.value)} />
++      <button className="rounded-xl px-4 py-2 bg-indigo-600 hover:bg-indigo-500 w-full">Войти</button>
++    </form>
++  );
++}
+--- /dev/null
++++ b/client/src/pages/Register.jsx
+@@ -0,0 +1,145 @@
++import { useState } from 'react';
++import { AuthApi } from '../services/api';
++
++export default function RegisterPage() {
++  const [email, setEmail] = useState('');
++  const [username, setUsername] = useState('');
++  const [password, setPassword] = useState('');
++  const [err, setErr] = useState('');
++  const [ok, setOk] = useState(false);
++  const submit = async (e) => {
++    e.preventDefault();
++    setErr(''); setOk(false);
++    try {
++      const r = await AuthApi.register({ email, username, password });
++      if (r?.ok) setOk(true);
++    } catch (e) { setErr(e?.response?.data?.message || e?.message); }
++  };
++  return (
++    <form onSubmit={submit} className="max-w-md mx-auto px-4 py-8 space-y-3">
++      <h1 className="text-xl font-bold">Регистрация</h1>
++      {err && <div className="text-red-400">{err}</div>}
++      {ok && <div className="text-green-400">Проверьте почту (если требуется подтверждение)</div>}
++      <input className="w-full rounded-xl bg-slate-800/60 px-4 py-2" placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)} />
++      <input className="w-full rounded-xl bg-slate-800/60 px-4 py-2" placeholder="Ник" value={username} onChange={e=>setUsername(e.target.value)} />
++      <input className="w-full rounded-xl bg-slate-800/60 px-4 py-2" placeholder="Пароль" type="password" value={password} onChange={e=>setPassword(e.target.value)} />
++      <button className="rounded-xl px-4 py-2 bg-indigo-600 hover:bg-indigo-500 w-full">Создать аккаунт</button>
++    </form>
++  );
++}
+--- /dev/null
++++ b/shared/source-map.json
+@@ -0,0 +1,25 @@
++{
++  "_meta": { "version": 1, "updated": "2025-08-15" },
++  "examples": {
++    "12345": [
++      { "episode": 1, "source": "manga", "from": "1", "to": "3" },
++      { "episode": 2, "source": "manga", "from": "4", "to": "6" }
++    ]
++  }
++}
+--- /dev/null
++++ b/server/routes/sourceMap.js
+@@ -0,0 +1,45 @@
++const express = require('express');
++const fs = require('fs');
++const path = require('path');
++const router = express.Router();
++const MAP_PATH = path.join(__dirname, '..', '..', 'shared', 'source-map.json');
++
++function load() {
++  const raw = fs.readFileSync(MAP_PATH, 'utf-8');
++  return JSON.parse(raw);
++}
++
++router.get('/:titleId', (req, res) => {
++  const id = String(req.params.titleId);
++  const json = load();
++  res.json({ ok: true, items: json[id] || [] });
++});
++
++// Админ-эндпойнт: POST /api/source-map/:titleId  { items:[{episode,source,from,to}] }
++router.post('/:titleId', (req, res) => {
++  if (process.env.NODE_ENV === 'production' && !process.env.ALLOW_SOURCEMAP_WRITE) {
++    return res.status(403).json({ ok: false, message: 'Write disabled' });
++  }
++  const id = String(req.params.titleId);
++  const json = load();
++  json[id] = req.body?.items || [];
++  fs.writeFileSync(MAP_PATH, JSON.stringify(json, null, 2));
++  res.json({ ok: true });
++});
++
++module.exports = router;
+--- /dev/null
++++ b/client/src/components/title/SourceMapping.jsx
+@@ -0,0 +1,78 @@
++import { useEffect, useState } from 'react';
++import { api } from '../../services/api';
++
++export default function SourceMapping({ titleId, episode }) {
++  const [rows, setRows] = useState([]);
++  useEffect(() => {
++    let mounted = true;
++    api.get(`/source-map/${titleId}`).then(({data}) => {
++      if (!mounted) return;
++      const item = (data?.items || []).find(i => Number(i.episode) === Number(episode));
++      setRows(item ? [item] : []);
++    });
++    return () => { mounted = false; };
++  }, [titleId, episode]);
++  if (!rows.length) return null;
++  const r = rows[0];
++  return (
++    <div className="mt-3 text-xs opacity-80">
++      Где в первоисточнике: {r.source} — главы {r.from}–{r.to}
++    </div>
++  );
++}
+--- /dev/null
++++ b/client/src/styles/fixes.css
+@@ -0,0 +1,34 @@
++/* Исправление перекрывающего оверлея каталога */
++.app-overlay-fix {
++  pointer-events: auto !important;
++  opacity: 1 !important;
++}
++
++.catalog-container-fix {
++  opacity: 1 !important;
++}
++
++/* overlay — исправлено: не блокируем клики и не прячем каталог */
++.overlay { position: fixed; z-index: 20; pointer-events: none; }
++.catalog-overlay { display: none; }
+--- /dev/null
++++ b/server/index.js
+@@ -0,0 +1,45 @@
++const express = require('express');
++const cors = require('cors');
++const cookieParser = require('cookie-parser');
++const app = express();
++
++app.use(express.json());
++app.use(cookieParser());
++app.use(cors({
++  origin: process.env.CORS_ORIGIN?.split(',') || ['http://localhost:3000'],
++  credentials: true,
++}));
++
++app.get('/healthz', (_req, res) => res.json({ ok: true }));
++app.use('/api/catalog', require('./routes/catalog'));
++app.use('/api/auth', require('./routes/auth'));
++app.use('/api/source-map', require('./routes/sourceMap'));
++app.use(require('./middleware/error'));
++
++const port = process.env.PORT || 5000;
++app.listen(port, () => console.log(`server listening on :${port}`));
+--- a/client/src/index.css
++++ b/client/src/index.css
+@@ -1,3 +1,15 @@
+ @import './styles/GlobalStyles.css';
+ @import './styles/theme.css';
++@import './styles/fixes.css';
++
++/* Base styles */
++* {
++  margin: 0;
++  padding: 0;
++  box-sizing: border-box;
++}
++
++body {
++  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
++    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
++    sans-serif;
++  -webkit-font-smoothing: antialiased;
++  -moz-osx-font-smoothing: grayscale;
++}
+--- a/client/package.json
++++ b/client/package.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "anime-site-client",
+-  "version": "0.1.0",
++  "version": "1.0.0",
+   "private": true,
+   "dependencies": {
+     "@testing-library/jest-dom": "^5.16.4",
+@@ -9,6 +9,10 @@
+     "react": "^18.2.0",
+     "react-dom": "^18.2.0",
+     "react-router-dom": "^6.3.0",
++    "react-query": "^3.39.3",
++    "axios": "^1.4.0",
++    "@types/react": "^18.2.15",
++    "@types/react-dom": "^18.2.7",
+     "react-scripts": "5.0.1",
+     "web-vitals": "^2.1.4"
+   },
+@@ -18,7 +22,7 @@
+   "eslintConfig": {
+     "extends": [
+       "react-app",
+-      "react-app/jest"
++      "react-app/jest",
++      "prettier"
+     ]
+   },
+   "browserslist": {
+--- a/server/package.json
++++ b/server/package.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "anime-site-server",
+-  "version": "0.1.0",
++  "version": "1.0.0",
+   "version": "1.0.0",
+   "description": "Anime site server",
+   "main": "index.js",
+@@ -9,6 +9,10 @@
+   "scripts": {
+     "start": "node index.js",
+     "dev": "nodemon index.js",
++    "test": "jest",
++    "test:watch": "jest --watch",
++    "test:coverage": "jest --coverage",
++    "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
+     "build": "echo 'No build step required'"
+   },
+   "dependencies": {
+@@ -16,6 +20,10 @@
+     "cors": "^2.8.5",
+     "express": "^4.18.2",
+     "morgan": "^1.10.0",
++    "helmet": "^7.0.0",
++    "express-rate-limit": "^6.7.0",
++    "dotenv": "^16.3.1",
++    "winston": "^3.10.0"
+   },
+   "devDependencies": {
+     "nodemon": "^3.0.1",
++    "jest": "^29.6.1",
++    "supertest": "^6.3.3",
++    "eslint": "^8.45.0",
++    "eslint-config-prettier": "^8.8.0"
+   }
+ }
+--- a/server/.env.example
++++ b/server/.env.example
+@@ -1,3 +1,8 @@
++NODE_ENV=development
++PORT=5000
++CLIENT_URL=http://localhost:3000
++
+ # Database
+ DATABASE_URL=postgresql://user:password@localhost:5432/anime_db
++
++ # Anilibria API
+ ANILIBRIA_API_BASE=https://api.anilibria.tv/v1
+--- a/client/.env.example
++++ b/client/.env.example
+@@ -1,3 +1,8 @@
++REACT_APP_API_URL=http://localhost:5000/api
++REACT_APP_ENV=development
++
++# Anilibria API
++REACT_APP_ANILIBRIA_API_BASE=https://api.anilibria.tv/v1
++
++ # Source maps
++REACT_APP_ENABLE_SOURCE_MAPS=false
+-- 
+2.40.1

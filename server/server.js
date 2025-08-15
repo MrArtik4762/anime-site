@@ -1,7 +1,7 @@
 ﻿;
 const { server, connectDB } = require('./app');
-const anilibriaService = require('./services/anilibriaService');
-const Anime = require('./models/Anime');
+// const anilibriaService = require('./services/anilibriaService'); // Временно отключен
+// const Anime = require('./models/Anime'); // Временно отключен
 
 const PORT = process.env.PORT || 3000;
 
@@ -10,6 +10,10 @@ const startServer = async () => {
   try {
     // Connect to database
     await connectDB();
+    
+    // Import services after database connection
+    // const anilibriaService = require('./services/anilibriaService');
+    // const Anime = require('./models/Anime');
     
     // Start server
     server.listen(PORT, () => {
@@ -32,12 +36,12 @@ const startServer = async () => {
 
 async function autoImportIfEmpty() {
   try {
-    const count = await Anime.count();
-    if (count === 0) {
-      console.log('Р‘Р°Р·Р° РїСѓСЃС‚Р°, РёРјРїРѕСЂС‚РёСЂСѓРµРј Р°РЅРёРјРµ РёР· AniLibria...');
-      await anilibriaService.importPopularAnime(50);
-      console.log('РРјРїРѕСЂС‚ Р·Р°РІРµСЂС€С‘РЅ!');
-    }
+    // const count = await Anime.count();
+    // if (count === 0) {
+    //   console.log('Р‘Р°Р·Р° РїСѓСЃС‚Р°, РёРјРїРѕСЂС‚РёСЂСѓРµРј Р°РЅРёРјРµ РёР· AniLibria...');
+    //   await anilibriaService.importPopularAnime(50);
+    //   console.log('РРјРїРѕСЂС‚ Р·Р°РІРµСЂС€С‘РЅ!');
+    // }
   } catch (error) {
     console.error('Error checking database:', error);
   }

@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Import fixes for overlay issues */
+@import './styles/fixes.css';
+
 /* Базовые стили */
 @layer base {
   html {

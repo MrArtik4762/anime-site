@@ -241,7 +241,8 @@ const connectDB = async () => {
     
   } catch (error) {
     console.error('Database connection error:', error);
-    process.exit(1);
+    console.log('Continuing without database connection...');
+    // Не выходим из процесса, а просто продолжаем работу
   }
 };
 

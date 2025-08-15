@@ -1,0 +1,199 @@
+diff --git a/server/services/anilibriaV1.js b/server/services/anilibriaV1.js
+new file mode 100644
+index 0000000..1234567
+--- /dev/null
++++ b/server/services/anilibriaV1.js
+@@ -0,0 +1,123 @@
++const axios = require('axios');
++const LRU = require('lru-cache');
++
++const V1 = process.env.ANILIBRIA_V1_BASE || 'https://anilibria.top/api/v1';
++const V3 = process.env.ANILIBRIA_V3_BASE || 'https://api.anilibria.tv/v3';
++
++const cache = new LRU({
++  ttl: 1000 * 60 * 2,
++  max: 1000,
++});
++
++function cacheKey(url, params) {
++  return `${url}?${Object.entries(params || {})
++    .sort(([a],[b]) => a.localeCompare(b))
++    .map(([k,v]) => `${k}=${encodeURIComponent(v)}`).join('&')}`;
++}
++
++async function getJson(url, params = {}, { useV3 = false } = {}) {
++  const base = useV3 ? V3 : V1;
++  const key = cacheKey(base + url, params);
++  const cached = cache.get(key);
++  if (cached) return cached;
++  try {
++    const { data } = await axios.get(base + url, { params, timeout: 15000 });
++    cache.set(key, data);
++    return data;
++  } catch (e) {
++    if (!useV3) {
++      return getJson(url.replace(/^\/title/, '/title'), params, { useV3: true });
++    }
++    throw e;
++  }
++}
++
++function normalizeTitleV1(t) {
++  return {
++    id: t?.id ?? t?.data?.id,
++    code: t?.code || t?.data?.code,
++    names: {
++      ru: t?.names?.ru || t?.data?.names?.ru || t?.names?.ru_title,
++      en: t?.names?.en || t?.data?.names?.en,
++      alt: t?.names?.alternative ?? [],
++    },
++    description: t?.description || t?.data?.description,
++    genres: t?.genres || t?.data?.genres || [],
++    season: t?.season?.string || t?.data?.season?.string,
++    year: t?.season?.year || t?.data?.season?.year,
++    posters: t?.posters || t?.data?.posters || {},
++    type: t?.type || t?.data?.type,
++    status: t?.status || t?.data?.status,
++    episodes: t?.player?.episodes?.last || t?.player?.episodes?.count || 0,
++    rating: t?.rating?.mpaa || null,
++  };
++}
++
++async function searchTitles({ query = '', limit = 20, page = 1, sort = 'updated' } = {}) {
++  const params = {
++    search: query,
++    page, limit,
++    sort,
++  };
++  const data = await getJson('/title/search', params);
++  const list = (data?.list || data?.data || []).map(normalizeTitleV1);
++  return { list, pagination: data?.pagination || { page, limit } };
++}
++
++async function getCatalog({ limit = 24, page = 1, genres = [], year, season, order = 'updated' } = {}) {
++  const params = { limit, page, genres: genres.join(','), year, season, sort: order };
++  const data = await getJson('/title/catalog', params);
++  const list = (data?.list || data?.data || []).map(normalizeTitleV1);
++  return { list, pagination: data?.pagination || { page, limit } };
++}
++
++async function getTitleById(id) {
++  const data = await getJson('/title', { id });
++  return normalizeTitleV1(data);
++}
++
++module.exports = {
++  searchTitles,
++  getCatalog,
++  getTitleById,
++};
+\ No newline at end of file
+diff --git a/server/routes/catalog.js b/server/routes/catalog.js
+new file mode 100644
+index 0000000..1234567
+--- /dev/null
++++ b/server/routes/catalog.js
+@@ -0,0 +1,89 @@
++const express = require('express');
++const router = express.Router();
++const v1 = require('../services/anilibriaV1');
++
++router.get('/', async (req, res, next) => {
++  try {
++    const { page, limit, genres, year, season, order } = req.query;
++    const data = await v1.getCatalog({
++      page: Number(page) || 1,
++      limit: Math.min(Number(limit) || 24, 60),
++      genres: genres ? String(genres).split(',') : [],
++      year: year ? Number(year) : undefined,
++      season, order,
++    });
++    res.json(data);
++  } catch (e) { next(e); }
++});
++
++router.get('/search', async (req, res, next) => {
++  try {
++    const { q, page, limit, sort } = req.query;
++    const data = await v1.searchTitles({
++      query: q || '',
++      page: Number(page) || 1,
++      limit: Math.min(Number(limit) || 24, 60),
++      sort: sort || 'updated',
++    });
++    res.json(data);
++  } catch (e) { next(e); }
++});
++
++router.get('/title/:id', async (req, res, next) => {
++  try {
++    const t = await v1.getTitleById(req.params.id);
++    res.json(t);
++  } catch (e) { next(e); }
++});
++
++module.exports = router;
+\ No newline at end of file
+diff --git a/server/routes/auth.js b/server/routes/auth.js
+new file mode 100644
+index 0000000..1234567
+--- /dev/null
++++ b/server/routes/auth.js
+@@ -0,0 +1,156 @@
++const express = require('express');
++const axios = require('axios');
++const router = express.Router();
++const cookie = require('cookie');
++
++const V1 = process.env.ANILIBRIA_V1_BASE || 'https://anilibria.top/api/v1';
++const COOKIE_NAME = 'al_session';
++const COOKIE_OPTS = {
++  httpOnly: true,
++  sameSite: 'lax',
++  secure: process.env.NODE_ENV === 'production',
++  path: '/',
++  maxAge: 60 * 60 * 24 * 30,
++};
++
++router.post('/register', async (req, res, next) => {
++  try {
++    const { email, password, username } = req.body || {};
++    const { data } = await axios.post(`${V1}/accounts/users/registration`, { email, password, username }, { timeout: 15000 });
++    return res.status(200).json({ ok: true, data });
++  } catch (e) {
++    next(e);
++  }
++});
++
++router.post('/login', async (req, res, next) => {
++  try {
++    const { login, password } = req.body || {};
++    const { data } = await axios.post(`${V1}/accounts/users/login`, { login, password }, { timeout: 15000 });
++    const token = data?.token || data?.access_token || data?.session;
++    if (!token) return res.status(401).json({ ok: false, message: 'No token from upstream' });
++    res.setHeader('Set-Cookie', cookie.serialize(COOKIE_NAME, token, COOKIE_OPTS));
++    res.json({ ok: true, user: data?.user || null });
++  } catch (e) {
++    next(e);
++  }
++});
++
++router.post('/logout', async (_req, res) => {
++  res.setHeader('Set-Cookie', cookie.serialize(COOKIE_NAME, '', { ...COOKIE_OPTS, maxAge: 0 }));
++  res.json({ ok: true });
++});
++
++router.get('/me', async (req, res, next) => {
++  try {
++    const token = req.cookies?.[COOKIE_NAME];
++    if (!token) return res.status(401).json({ ok: false });
++    const { data } = await axios.get(`${V1}/accounts/users/me`, {
++      headers: { Authorization: `Bearer ${token}` },
++      timeout: 15000,
++    });
++    res.json({ ok: true, user: data });
++  } catch (e) { next(e); }
++});
++
++module.exports = router;
+\ No newline at end of file

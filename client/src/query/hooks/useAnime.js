@@ -1,6 +1,5 @@
 import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { animeService } from '../../services/animeService';
-import anilibriaV2Service from '../../services/anilibriaV2Service';
 import anilibriaService from '../../services/anilibriaService';
 import jikanService from '../../services/jikanService';
 
@@ -42,7 +41,7 @@ export const useInfiniteAnimeList = (filters = {}, options = {}) => {
 export const useSearchAnime = (query, filters = {}, options = {}) => {
   return useQuery({
     queryKey: animeKeys.search({ query, ...filters }),
-    queryFn: () => anilibriaV2Service.searchAnime(query, filters),
+    queryFn: () => anilibriaService.searchAnime(query, filters),
     enabled: !!query,
     ...options,
   });
@@ -52,7 +51,7 @@ export const useSearchAnime = (query, filters = {}, options = {}) => {
 export const useAnimeDetail = (id, options = {}) => {
   return useQuery({
     queryKey: animeKeys.detail(id),
-    queryFn: () => anilibriaV2Service.getAnimeById(id),
+    queryFn: () => anilibriaService.getAnimeById(id),
     enabled: !!id,
     ...options,
   });
@@ -62,7 +61,7 @@ export const useAnimeDetail = (id, options = {}) => {
 export const useAnimeEpisodes = (id, options = {}) => {
   return useQuery({
     queryKey: animeKeys.episodes(id),
-    queryFn: () => anilibriaV2Service.getAnimeEpisodes(id),
+    queryFn: () => anilibriaService.getAnimeEpisodes(id),
     enabled: !!id,
     ...options,
   });
@@ -72,7 +71,7 @@ export const useAnimeEpisodes = (id, options = {}) => {
 export const usePopularAnime = (filters = {}, options = {}) => {
   return useQuery({
     queryKey: animeKeys.lists({ ...filters, popular: true }),
-    queryFn: () => anilibriaV2Service.getPopularAnime(filters),
+    queryFn: () => anilibriaService.getPopularAnime(filters),
     ...options,
   });
 };
@@ -81,7 +80,7 @@ export const usePopularAnime = (filters = {}, options = {}) => {
 export const useNewEpisodes = (filters = {}, options = {}) => {
   return useQuery({
     queryKey: animeKeys.lists({ ...filters, newEpisodes: true }),
-    queryFn: () => anilibriaV2Service.getNewEpisodes(filters),
+    queryFn: () => anilibriaService.getNewEpisodes(filters),
     ...options,
   });
 };

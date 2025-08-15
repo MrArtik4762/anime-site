@@ -3,7 +3,7 @@ const WatchList = require('../models/WatchList');
 const Comment = require('../models/Comment');
 const { HTTP_STATUS, ERROR_MESSAGES } = require('../../shared/constants/constants');
 const mongoose = require('mongoose');
-const anilibriaService = require('../services/anilibriaService');
+// const anilibriaService = require('../services/anilibriaService'); // Временно отключен
 
 class AnimeController {
   // РџРѕР»СѓС‡РµРЅРёРµ СЃРїРёСЃРєР° Р°РЅРёРјРµ СЃ С„РёР»СЊС‚СЂР°С†РёРµР№ Рё РїР°РіРёРЅР°С†РёРµР№
@@ -669,7 +669,7 @@ class AnimeController {
   async importFromAnilibria(req, res) {
     try {
       const { limit = 50 } = req.query;
-      const imported = await anilibriaService.importPopularAnime(Number(limit));
+      // const imported = await anilibriaService.importPopularAnime(Number(limit));
       res.json({ success: true, imported });
     } catch (error) {
       res.status(500).json({ success: false, error: error.message });

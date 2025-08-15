@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
-import anilibriaV2Service from '../../services/anilibriaV2Service';
+import { useNewEpisodes } from '../../query/hooks/useCatalog';
 import { LoadingSpinner } from '../../styles/GlobalStyles';
 
 const SectionContainer = styled.section`
@@ -208,50 +208,19 @@ const formatDate = (dateString) => {
 const NewEpisodesSection = ({
   limit = 10,
   showTitle = true,
-  title = "🆕 Новые эпизоды"
+  title = "🆕 Новые эпизоды",
+  options = {}
 }) => {
-  const [episodes, setEpisodes] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const { 
+    data: catalogData, 
+    isLoading, 
+    error, 
+    refetch 
+  } = useNewEpisodes(1, limit, options);
 
-  useEffect(() => {
-    loadNewEpisodes();
-  }, [limit]);
+  const episodes = catalogData?.data || [];
 
-  const loadNewEpisodes = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      console.log('🚀 Загрузка новых эпизодов...');
-
-      const response = await anilibriaV2Service.getNewEpisodes({
-        perPage: limit,
-        page: 1
-      });
-
-      let episodesList = [];
-
-      if (response && Array.isArray(response)) {
-        episodesList = response;
-      }
-
-      setEpisodes(episodesList);
-      console.log(`✅ Загружено ${episodesList.length} новых эпизодов`);
-
-    } catch (err) {
-      console.error('Ошибка загрузки новых эпизодов:', err);
-      setError('Не удалось загрузить новые эпизоды. Попробуйте обновить страницу.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleRetry = () => {
-    loadNewEpisodes();
-  };
-
-  if (loading) {
+  if (isLoading) {
     return (
       <SectionContainer>
         {showTitle && <SectionTitle>{title}</SectionTitle>}
@@ -267,10 +236,10 @@ const NewEpisodesSection = ({
       <SectionContainer>
         {showTitle && <SectionTitle>{title}</SectionTitle>}
         <ErrorMessage>
-          {error}
+          {error.message || 'Не удалось загрузить новые эпизоды. Попробуйте обновить страницу.'}
           <br />
           <button
-            onClick={handleRetry}
+            onClick={() => refetch()}
             style={{
               marginTop: '15px',
               padding: '8px 16px',
@@ -295,7 +264,7 @@ const NewEpisodesSection = ({
         <EmptyState>
           <span className="icon">📺</span>
           <h3>Новые эпизоды недоступны</h3>
-          <p>Попробуйте обновить страницу или вернитесь позже</p>
+          <p>Попробуйте обновить страницу или вернуться позже</p>
         </EmptyState>
       </SectionContainer>
     );
@@ -322,7 +291,7 @@ const NewEpisodesSection = ({
             episodeTitle = `Эпизод ${episode.ordinal || episode.number || index + 1}`;
           }
 
-          const posterUrl = anilibriaV2Service.getOptimizedImageUrl(episode.poster);
+          const posterUrl = episode.poster;
 
           return (
             <motion.div

@@ -1,4 +1,4 @@
-﻿const anilibriaService = require('../services/anilibriaService');
+﻿// const anilibriaService = require('../services/anilibriaService'); // Временно отключен
 const { HTTP_STATUS } = require('../../shared/constants/constants');
 
 /**
@@ -8,10 +8,10 @@ const getPopular = async (req, res) => {
   try {
     const { limit = 50, page = 1 } = req.query;
     
-    const data = await anilibriaService.getPopular({
-      limit: parseInt(limit),
-      page: parseInt(page)
-    });
+    // const data = await anilibriaService.getPopular({
+    //   limit: parseInt(limit),
+    //   page: parseInt(page)
+    // });
 
     res.status(HTTP_STATUS.OK).json({
       success: true,
@@ -116,10 +116,10 @@ const getUpdates = async (req, res) => {
   try {
     const { limit = 12, page = 1 } = req.query;
     
-    const data = await anilibriaService.getUpdates({
-      limit: parseInt(limit),
-      page: parseInt(page)
-    });
+    // const data = await anilibriaService.getUpdates({
+    //   limit: parseInt(limit),
+    //   page: parseInt(page)
+    // });
 
     res.status(HTTP_STATUS.OK).json({
       success: true,
@@ -241,15 +241,15 @@ const search = async (req, res) => {
       });
     }
 
-    const data = await anilibriaService.search({
-      search: query.trim(),
-      limit: parseInt(limit),
-      page: parseInt(page),
-      year: year ? parseInt(year) : undefined,
-      season,
-      genres: genres ? genres.split(',') : undefined,
-      type
-    });
+    // const data = await anilibriaService.search({
+    //   search: query.trim(),
+    //   limit: parseInt(limit),
+    //   page: parseInt(page),
+    //   year: year ? parseInt(year) : undefined,
+    //   season,
+    //   genres: genres ? genres.split(',') : undefined,
+    //   type
+    // });
 
     res.status(HTTP_STATUS.OK).json({
       success: true,
@@ -297,10 +297,10 @@ const searchFallback = async (req, res) => {
     }
 
     // РСЃРїРѕР»СЊР·СѓРµРј РјРµС‚РѕРґ searchWithFallback РґР»СЏ Р±РѕР»РµРµ РЅР°РґРµР¶РЅРѕРіРѕ РїРѕРёСЃРєР°
-    const result = await anilibriaService.searchWithFallback(
-      query.trim(),
-      parseInt(limit)
-    );
+    // const result = await anilibriaService.searchWithFallback(
+    //   query.trim(),
+    //   parseInt(limit)
+    // );
 
     // Р•СЃР»Рё СЂРµР·СѓР»СЊС‚Р°С‚ РїСѓСЃС‚РѕР№, РёСЃРїРѕР»СЊР·СѓРµРј mock РґР°РЅРЅС‹Рµ
     if (!result.data || result.data.length === 0) {
@@ -439,7 +439,7 @@ const getById = async (req, res) => {
       });
     }
 
-    const data = await anilibriaService.getById(id);
+    // const data = await anilibriaService.getById(id);
 
     if (!data) {
       return res.status(HTTP_STATUS.NOT_FOUND).json({
@@ -473,9 +473,9 @@ const getRandom = async (req, res) => {
   try {
     const { limit = 1 } = req.query;
     
-    const data = await anilibriaService.getRandom({
-      limit: parseInt(limit)
-    });
+    // const data = await anilibriaService.getRandom({
+    //   limit: parseInt(limit)
+    // });
 
     res.status(HTTP_STATUS.OK).json({
       success: true,
@@ -498,7 +498,7 @@ const getRandom = async (req, res) => {
  */
 const getGenres = async (req, res) => {
   try {
-    const data = await anilibriaService.getGenres();
+    // const data = await anilibriaService.getGenres();
 
     res.status(HTTP_STATUS.OK).json({
       success: true,
@@ -523,9 +523,9 @@ const getSchedule = async (req, res) => {
   try {
     const { days } = req.query;
     
-    const data = await anilibriaService.getSchedule({
-      days: days ? days.split(',') : undefined
-    });
+    // const data = await anilibriaService.getSchedule({
+    //   days: days ? days.split(',') : undefined
+    // });
 
     res.status(HTTP_STATUS.OK).json({
       success: true,
@@ -550,9 +550,9 @@ const getYouTube = async (req, res) => {
   try {
     const { limit = 5 } = req.query;
     
-    const data = await anilibriaService.getYouTube({
-      limit: parseInt(limit)
-    });
+    // const data = await anilibriaService.getYouTube({
+    //   limit: parseInt(limit)
+    // });
 
     res.status(HTTP_STATUS.OK).json({
       success: true,

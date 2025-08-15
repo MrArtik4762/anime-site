@@ -1,0 +1,13 @@
+/* Исправление перекрывающего оверлея каталога */
+.app-overlay-fix {
+  pointer-events: auto !important;
+  opacity: 1 !important;
+}
+
+.catalog-container-fix {
+  opacity: 1 !important;
+}
+
+/* overlay — исправлено: не блокируем клики и не прячем каталог */
+.overlay { position: fixed; z-index: 20; pointer-events: none; }
+.catalog-overlay { display: none; }

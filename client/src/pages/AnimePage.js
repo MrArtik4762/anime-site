@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
-import anilibriaV2Service from '../services/anilibriaV2Service';
+import anilibriaService from '../services/anilibriaService';
 import { Container, Button, LoadingSpinner } from '../styles/GlobalStyles';
 
 const AnimeContainer = styled.div`
@@ -298,8 +298,8 @@ const AnimePage = () => {
       console.log(`🎬 Загрузка аниме ${id}...`);
 
       // Загружаем информацию об аниме
-      const animeData = await anilibriaV2Service.getAnimeById(id);
-      const convertedAnime = anilibriaV2Service.convertAnimeToFormat(animeData);
+      const animeData = await anilibriaService.getAnimeById(id);
+      const convertedAnime = anilibriaService.convertAnimeToFormat(animeData);
 
       setAnime(convertedAnime);
       console.log(`✅ Аниме загружено:`, convertedAnime.title);
@@ -321,11 +321,11 @@ const AnimePage = () => {
 
       console.log(`📺 Загрузка эпизодов для аниме ${animeId}...`);
 
-      const episodesData = await anilibriaV2Service.getAnimeEpisodes(animeId);
+      const episodesData = await anilibriaService.getAnimeEpisodes(animeId);
 
       if (Array.isArray(episodesData)) {
         const convertedEpisodes = episodesData.map(ep =>
-          anilibriaV2Service.convertEpisodeToFormat(ep)
+          anilibriaService.convertEpisodeToFormat(ep)
         );
         setEpisodes(convertedEpisodes);
         console.log(`✅ Загружено ${convertedEpisodes.length} эпизодов`);

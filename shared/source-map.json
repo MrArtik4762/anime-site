@@ -1,0 +1,9 @@
+{
+  "_meta": { "version": 1, "updated": "2025-08-15" },
+  "examples": {
+    "12345": [
+      { "episode": 1, "source": "manga", "from": "1", "to": "3" },
+      { "episode": 2, "source": "manga", "from": "4", "to": "6" }
+    ]
+  }
+}

@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
-import anilibriaV2Service from '../../services/anilibriaV2Service';
+import { usePopularAnime } from '../../query/hooks/useCatalog';
 import { LoadingSpinner } from '../../styles/GlobalStyles';
 import AnimeCard from '../anime/AnimeCard';
 
@@ -69,52 +69,19 @@ const PopularSection = ({
   limit = 10, 
   showTitle = true, 
   title = "🔥 Популярные аниме",
-  onAnimeClick
+  onAnimeClick,
+  options = {}
 }) => {
-  const [popularAnime, setPopularAnime] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const { 
+    data: catalogData, 
+    isLoading, 
+    error, 
+    refetch 
+  } = usePopularAnime(1, limit, options);
 
-  useEffect(() => {
-    loadPopularAnime();
-  }, [limit]);
+  const popularAnime = catalogData?.data || [];
 
-  const loadPopularAnime = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      console.log('🚀 Загрузка популярных аниме...');
-      
-      const response = await anilibriaV2Service.getPopularAnime({
-        perPage: limit,
-        page: 1
-      });
-
-      let animeList = [];
-      
-      if (response && Array.isArray(response)) {
-        animeList = response.map(anime =>
-          anilibriaV2Service.convertAnimeToFormat(anime)
-        );
-      }
-
-      setPopularAnime(animeList);
-      console.log(`✅ Загружено ${animeList.length} популярных аниме`);
-
-    } catch (err) {
-      console.error('Ошибка загрузки популярных аниме:', err);
-      setError('Не удалось загрузить популярные аниме. Попробуйте обновить страницу.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleRetry = () => {
-    loadPopularAnime();
-  };
-
-  if (loading) {
+  if (isLoading) {
     return (
       <SectionContainer>
         {showTitle && <SectionTitle>{title}</SectionTitle>}
@@ -130,10 +97,10 @@ const PopularSection = ({
       <SectionContainer>
         {showTitle && <SectionTitle>{title}</SectionTitle>}
         <ErrorMessage>
-          {error}
+          {error.message || 'Не удалось загрузить популярные аниме. Попробуйте обновить страницу.'}
           <br />
           <button 
-            onClick={handleRetry}
+            onClick={() => refetch()}
             style={{
               marginTop: '15px',
               padding: '8px 16px',
@@ -158,7 +125,7 @@ const PopularSection = ({
         <EmptyState>
           <span className="icon">🎭</span>
           <h3>Популярные аниме недоступны</h3>
-          <p>Попробуйте обновить страницу или вернитесь позже</p>
+          <p>Попробуйте обновить страницу или вернуться позже</p>
         </EmptyState>
       </SectionContainer>
     );

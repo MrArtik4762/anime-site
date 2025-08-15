@@ -1,0 +1,58 @@
+// Временная минимальная версия сервиса
+class AnilibriaService {
+  constructor() {
+    console.log('AnilibriaService initialized');
+  }
+
+  async getPopularAnime(params = {}) {
+    console.log('getPopularAnime called with:', params);
+    return {
+      success: true,
+      data: [],
+      pagination: { total: 0 }
+    };
+  }
+
+  async getNewAnime(params = {}) {
+    console.log('getNewAnime called with:', params);
+    return {
+      success: true,
+      data: [],
+      pagination: { total: 0 }
+    };
+  }
+
+  async getNewEpisodes(params = {}) {
+    console.log('getNewEpisodes called with:', params);
+    return {
+      success: true,
+      data: [],
+      pagination: { total: 0 }
+    };
+  }
+
+  async searchAnime(params = {}) {
+    console.log('searchAnime called with:', params);
+    return {
+      success: true,
+      data: [],
+      pagination: { total: 0 }
+    };
+  }
+
+  convertAnimeToFormat(anilibriaData) {
+    console.log('convertAnimeToFormat called with:', anilibriaData);
+    return anilibriaData || null;
+  }
+
+  /**
+   * Импорт популярных аниме (заглушка)
+   */
+  async importPopularAnime(limit = 50) {
+    console.log(`importPopularAnime called with limit: ${limit}`);
+    // Возвращаем успешный результат, чтобы не блокировать запуск сервера
+    return { success: true, imported: 0 };
+  }
+}
+
+module.exports = new AnilibriaService();

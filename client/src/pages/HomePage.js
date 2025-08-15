@@ -8,7 +8,7 @@ import PopularSection from '../components/sections/PopularSection';
 import NewEpisodesSection from '../components/sections/NewEpisodesSection';
 import NewAnimeSection from '../components/sections/NewAnimeSection';
 import AnimeCard from '../components/anime/AnimeCard';
-import anilibriaV2Service from '../services/anilibriaV2Service';
+import anilibriaService from '../services/anilibriaService';
 
 const HomeContainer = styled.div`
   min-height: 100vh;
@@ -116,7 +116,7 @@ const HomePage = () => {
 
       console.log(`🔍 Поиск аниме: "${query}"`);
       
-      const response = await anilibriaV2Service.searchAnime(query, {
+      const response = await anilibriaService.searchAnime(query, {
         perPage: 20,
         page: 1,
         ...filters
@@ -125,12 +125,12 @@ const HomePage = () => {
       let results = [];
       
       if (response?.data && Array.isArray(response.data)) {
-        results = response.data.map(anime => 
-          anilibriaV2Service.convertAnimeToFormat(anime)
+        results = response.data.map(anime =>
+          anilibriaService.convertAnimeToFormat(anime)
         );
       } else if (response && Array.isArray(response)) {
-        results = response.map(anime => 
-          anilibriaV2Service.convertAnimeToFormat(anime)
+        results = response.map(anime =>
+          anilibriaService.convertAnimeToFormat(anime)
         );
       }
 

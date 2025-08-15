@@ -1,312 +1,56 @@
 const express = require('express');
+const axios = require('axios');
 const router = express.Router();
-const authController = require('../controllers/authController');
-const { authenticate } = require('../middleware/auth');
-const { validate, authSchemas } = require('../middleware/validation');
-const { accountLockout, resetAttempts } = require('../middleware/accountLockout');
-const { require2FA } = require('../middleware/2fa');
-const { setAuthCookies, extractTokenFromCookie, refreshTokenFromCookie, clearAuthCookies } = require('../middleware/cookieAuth');
+const cookie = require('cookie');
 
-// POST /api/auth/register - Регистрация пользователя
-router.post('/register',
-  [
-    validate(authSchemas.register),
-    (req, res, next) => {
-      // Дополнительная валидация на уровне роута
-      const { email, username, password } = req.body;
-      
-      // Проверка уникальности email
-      if (email && !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
-        return res.status(400).json({
-          success: false,
-          error: {
-            message: 'Неверный формат email',
-            code: 'INVALID_EMAIL_FORMAT'
-          }
-        });
-      }
-      
-      // Проверка сложности пароля
-      if (password && password.length < 8) {
-        return res.status(400).json({
-          success: false,
-          error: {
-            message: 'Пароль должен содержать минимум 8 символов',
-            code: 'PASSWORD_TOO_SHORT',
-            minLength: 8
-          }
-        });
-      }
-      
-      next();
-    }
-  ],
-  authController.register
-);
+const V1 = process.env.ANILIBRIA_V1_BASE || 'https://anilibria.top/api/v1';
+const COOKIE_NAME = 'al_session';
+const COOKIE_OPTS = {
+  httpOnly: true,
+  sameSite: 'lax',
+  secure: process.env.NODE_ENV === 'production',
+  path: '/',
+  maxAge: 60 * 60 * 24 * 30,
+};
 
-// POST /api/auth/login - Вход в систему
-router.post('/login',
-  [
-    accountLockout,
-    validate(authSchemas.login),
-    (req, res, next) => {
-      // Дополнительная валидация на уровне роута
-      const { email, password } = req.body;
-      
-      if (!email || !password) {
-        return res.status(400).json({
-          success: false,
-          error: {
-            message: 'Email и пароль обязательны',
-            code: 'EMAIL_PASSWORD_REQUIRED'
-          }
-        });
-      }
-      
-      next();
-    }
-  ],
-  authController.login,
-  resetAttempts
-);
-
-// POST /api/auth/refresh - Обновление токена
-router.post('/refresh', [
-  (req, res, next) => {
-    // Проверяем наличие refresh токена в cookie
-    const refreshToken = req.cookies.refreshToken;
-    
-    if (!refreshToken) {
-      return res.status(401).json({
-        success: false,
-        error: {
-          message: 'Refresh токен не предоставлен',
-          code: 'NO_REFRESH_TOKEN'
-        }
-      });
-    }
-    
-    next();
+router.post('/register', async (req, res, next) => {
+  try {
+    const { email, password, username } = req.body || {};
+    const { data } = await axios.post(`${V1}/accounts/users/registration`, { email, password, username }, { timeout: 15000 });
+    return res.status(200).json({ ok: true, data });
+  } catch (e) {
+    next(e);
   }
-], authController.refreshToken);
+});
 
-// POST /api/auth/logout - Выход из системы
-router.post('/logout', [
-  authenticate,
-  (req, res, next) => {
-    // Проверяем, что пользователь аутентифицирован
-    if (!req.user || !req.user.id) {
-      return res.status(401).json({
-        success: false,
-        error: {
-          message: 'Пользователь не аутентифицирован',
-          code: 'USER_NOT_AUTHENTICATED'
-        }
-      });
-    }
-    
-    next();
+router.post('/login', async (req, res, next) => {
+  try {
+    const { login, password } = req.body || {};
+    const { data } = await axios.post(`${V1}/accounts/users/login`, { login, password }, { timeout: 15000 });
+    const token = data?.token || data?.access_token || data?.session;
+    if (!token) return res.status(401).json({ ok: false, message: 'No token from upstream' });
+    res.setHeader('Set-Cookie', cookie.serialize(COOKIE_NAME, token, COOKIE_OPTS));
+    res.json({ ok: true, user: data?.user || null });
+  } catch (e) {
+    next(e);
   }
-], authController.logout);
+});
 
-// GET /api/auth/me - Получение текущего пользователя
-router.get('/me', [
-  authenticate,
-  (req, res, next) => {
-    // Проверяем, что пользователь аутентифицирован
-    if (!req.user || !req.user.id) {
-      return res.status(401).json({
-        success: false,
-        error: {
-          message: 'Пользователь не аутентифицирован',
-          code: 'USER_NOT_AUTHENTICATED'
-        }
-      });
-    }
-    
-    next();
-  }
-], authController.getMe);
+router.post('/logout', async (_req, res) => {
+  res.setHeader('Set-Cookie', cookie.serialize(COOKIE_NAME, '', { ...COOKIE_OPTS, maxAge: 0 }));
+  res.json({ ok: true });
+});
 
-// POST /api/auth/forgot-password - Забыли пароль
-router.post('/forgot-password', [
-  validate(authSchemas.forgotPassword),
-  (req, res, next) => {
-    // Дополнительная валидация на уровне роута
-    const { email } = req.body;
-    
-    if (!email) {
-      return res.status(400).json({
-        success: false,
-        error: {
-          message: 'Email обязателен',
-          code: 'EMAIL_REQUIRED'
-        }
-      });
-    }
-    
-    next();
-  }
-], authController.forgotPassword);
-
-// POST /api/auth/reset-password - Сброс пароля
-router.post('/reset-password', [
-  validate(authSchemas.resetPassword),
-  (req, res, next) => {
-    // Дополнительная валидация на уровне роута
-    const { token, password } = req.body;
-    
-    if (!token) {
-      return res.status(400).json({
-        success: false,
-        error: {
-          message: 'Токен сброса пароля обязателен',
-          code: 'RESET_TOKEN_REQUIRED'
-        }
-      });
-    }
-    
-    if (!password) {
-      return res.status(400).json({
-        success: false,
-        error: {
-          message: 'Новый пароль обязателен',
-          code: 'PASSWORD_REQUIRED'
-        }
-      });
-    }
-    
-    // Проверка сложности пароля
-    if (password.length < 8) {
-      return res.status(400).json({
-        success: false,
-        error: {
-          message: 'Пароль должен содержать минимум 8 символов',
-          code: 'PASSWORD_TOO_SHORT',
-          minLength: 8
-        }
-      });
-    }
-    
-    next();
-  }
-], authController.resetPassword);
-
-// GET /api/auth/verify-email/:token - Верификация email
-router.get('/verify-email/:token', [
-  (req, res, next) => {
-    // Проверяем наличие токена
-    const { token } = req.params;
-    
-    if (!token) {
-      return res.status(400).json({
-        success: false,
-        error: {
-          message: 'Токен верификации обязателен',
-          code: 'VERIFICATION_TOKEN_REQUIRED'
-        }
-      });
-    }
-    
-    next();
-  }
-], authController.verifyEmail);
-
-// POST /api/auth/2fa/generate - Генерация 2FA секрета
-router.post('/2fa/generate', [
-  (req, res, next) => {
-    // Проверяем наличие email
-    const { email } = req.body;
-    
-    if (!email) {
-      return res.status(400).json({
-        success: false,
-        error: {
-          message: 'Email обязателен',
-          code: 'EMAIL_REQUIRED'
-        }
-      });
-    }
-    
-    // Проверка формата email
-    if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
-      return res.status(400).json({
-        success: false,
-        error: {
-          message: 'Неверный формат email',
-          code: 'INVALID_EMAIL_FORMAT'
-        }
-      });
-    }
-    
-    next();
-  }
-], authController.generate2FASecret);
-
-// POST /api/auth/2fa/enable - Включение 2FA
-router.post('/2fa/enable', [
-  authenticate,
-  (req, res, next) => {
-    // Проверяем, что пользователь аутентифицирован
-    if (!req.user || !req.user.id) {
-      return res.status(401).json({
-        success: false,
-        error: {
-          message: 'Пользователь не аутентифицирован',
-          code: 'USER_NOT_AUTHENTICATED'
-        }
-      });
-    }
-    
-    next();
-  }
-], authController.enable2FA);
-
-// POST /api/auth/2fa/disable - Отключение 2FA
-router.post('/2fa/disable', [
-  authenticate,
-  (req, res, next) => {
-    // Проверяем, что пользователь аутентифицирован
-    if (!req.user || !req.user.id) {
-      return res.status(401).json({
-        success: false,
-        error: {
-          message: 'Пользователь не аутентифицирован',
-          code: 'USER_NOT_AUTHENTICATED'
-        }
-      });
-    }
-    
-    next();
-  }
-], authController.disable2FA);
-
-// POST /api/auth/2fa/verify - Проверка 2FA токена
-router.post('/2fa/verify', [
-  authenticate,
-  require2FA,
-  (req, res, next) => {
-    // Проверяем, что пользователь аутентифицирован
-    if (!req.user || !req.user.id) {
-      return res.status(401).json({
-        success: false,
-        error: {
-          message: 'Пользователь не аутентифицирован',
-          code: 'USER_NOT_AUTHENTICATED'
-        }
-      });
-    }
-    
-    next();
-  }
-], authController.verify2FA);
-
-// GET /api/auth/test - Тестовый endpoint
-router.get('/test', (req, res) => {
-  res.json({
-    message: 'Auth routes working!',
-    timestamp: new Date().toISOString()
-  });
+router.get('/me', async (req, res, next) => {
+  try {
+    const token = req.cookies?.[COOKIE_NAME];
+    if (!token) return res.status(401).json({ ok: false });
+    const { data } = await axios.get(`${V1}/accounts/users/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+      timeout: 15000,
+    });
+    res.json({ ok: true, user: data });
+  } catch (e) { next(e); }
 });
 
 module.exports = router;

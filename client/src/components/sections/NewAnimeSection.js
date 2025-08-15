@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
-import anilibriaV2Service from '../../services/anilibriaV2Service';
+import { useNewAnime } from '../../query/hooks/useCatalog';
 import { LoadingSpinner } from '../../styles/GlobalStyles';
 import AnimeCard from '../anime/AnimeCard';
 
@@ -90,54 +90,17 @@ const NewAnimeSection = ({
   limit = 10, 
   showTitle = true, 
   title = "✨ Недавно добавленные аниме",
-  onAnimeClick
+  onAnimeClick,
+  options = {}
 }) => {
-  const [newAnime, setNewAnime] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const { 
+    data: catalogData, 
+    isLoading, 
+    error, 
+    refetch 
+  } = useNewAnime(1, limit, options);
 
-  useEffect(() => {
-    loadNewAnime();
-  }, [limit]);
-
-  const loadNewAnime = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      console.log('🚀 Загрузка новых аниме...');
-      
-      const response = await anilibriaV2Service.getNewAnime({
-        perPage: limit,
-        page: 1
-      });
-
-      let animeList = [];
-      
-      if (response?.data && Array.isArray(response.data)) {
-        animeList = response.data.map(anime => 
-          anilibriaV2Service.convertAnimeToFormat(anime)
-        );
-      } else if (response && Array.isArray(response)) {
-        animeList = response.map(anime => 
-          anilibriaV2Service.convertAnimeToFormat(anime)
-        );
-      }
-
-      setNewAnime(animeList);
-      console.log(`✅ Загружено ${animeList.length} новых аниме`);
-
-    } catch (err) {
-      console.error('Ошибка загрузки новых аниме:', err);
-      setError('Не удалось загрузить новые аниме. Попробуйте обновить страницу.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleRetry = () => {
-    loadNewAnime();
-  };
+  const newAnime = catalogData?.data || [];
 
   // Проверяем, является ли аниме новым (добавлено за последние 30 дней)
   const isNewAnime = (anime) => {
@@ -150,7 +113,7 @@ const NewAnimeSection = ({
     return animeDate > thirtyDaysAgo;
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <SectionContainer>
         {showTitle && <SectionTitle>{title}</SectionTitle>}
@@ -166,10 +129,10 @@ const NewAnimeSection = ({
       <SectionContainer>
         {showTitle && <SectionTitle>{title}</SectionTitle>}
         <ErrorMessage>
-          {error}
+          {error.message || 'Не удалось загрузить новые аниме. Попробуйте обновить страницу.'}
           <br />
           <button 
-            onClick={handleRetry}
+            onClick={() => refetch()}
             style={{
               marginTop: '15px',
               padding: '8px 16px',
@@ -194,7 +157,7 @@ const NewAnimeSection = ({
         <EmptyState>
           <span className="icon">🆕</span>
           <h3>Новые аниме недоступны</h3>
-          <p>Попробуйте обновить страницу или вернитесь позже</p>
+          <p>Попробуйте обновить страницу или вернуться позже</p>
         </EmptyState>
       </SectionContainer>
     );

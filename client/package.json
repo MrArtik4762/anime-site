@@ -61,7 +61,8 @@
   "eslintConfig": {
     "extends": [
       "react-app",
-      "react-app/jest"
+      "react-app/jest",
+      "prettier"
     ]
   },
   "browserslist": {
@@ -76,5 +77,5 @@
       "last 1 safari version"
     ]
   },
-  "proxy": "http://localhost:7000"
+  "proxy": "http://localhost:5000"
 }

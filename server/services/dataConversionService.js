@@ -1,5 +1,5 @@
 const UnifiedAnime = require('../models/UnifiedAnime');
-const anilibriaService = require('./anilibriaService');
+// const anilibriaService = require('./anilibriaService'); // Временно отключен
 const anilibertyService = require('./anilibertyService');
 const anilistService = require('./anilistService');
 
@@ -49,7 +49,7 @@ class DataConversionService {
    */
   static async getAndConvertAnilibria(options = {}) {
     try {
-      const rawData = await anilibriaService.getPopular(options);
+      // const rawData = await anilibriaService.getPopular(options);
       return this.convertArrayToUnifiedFormat('anilibria', rawData.list || []);
     } catch (error) {
       console.error('Ошибка при получении и конвертации данных из AniLibria:', error);
@@ -153,7 +153,7 @@ class DataConversionService {
    */
   static async searchInAnilibria(query, options = {}) {
     try {
-      const rawData = await anilibriaService.searchTitles(query, options);
+      // const rawData = await anilibriaService.searchTitles(query, options);
       return this.convertArrayToUnifiedFormat('anilibria', rawData.list || []);
     } catch (error) {
       console.error('Ошибка при поиске в AniLibria:', error);

@@ -12,10 +12,6 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-anime_site_db}
       POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256 --auth-local=scram-sha-256"
       PGDATA: /var/lib/postgresql/data/pgdata
-      
-      # Security enhancement: Force password usage in production
-      environment:
-        - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./server/db/init.sql:/docker-entrypoint-initdb.d/init.sql
@@ -78,7 +74,7 @@ services:
     ports:
       - "${CLIENT_PORT:-3000}:3000"
     depends_on:
-      - nginx
+      - server
     networks:
       - anime-network
     # Установка ограничений ресурсов для безопасности
