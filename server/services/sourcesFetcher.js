@@ -1,7 +1,7 @@
 const axios = require('axios');
 const EpisodeSource = require('../models/EpisodeSource');
 const AnilibertyService = require('./anilibertyService');
-// const AnilibriaService = require('./anilibriaService'); // Временно отключен
+const AnilibriaService = require('./anilibriaService');
 
 /**
  * Универсальный сервис для получения и сохранения источников эпизодов

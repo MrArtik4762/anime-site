@@ -211,14 +211,23 @@ const NewEpisodesSection = ({
   title = "🆕 Новые эпизоды",
   options = {}
 }) => {
-  const { 
-    data: catalogData, 
-    isLoading, 
-    error, 
-    refetch 
+  const {
+    data: catalogData,
+    isLoading,
+    error,
+    refetch
   } = useNewEpisodes(1, limit, options);
 
   const episodes = catalogData?.data || [];
+  
+  // Добавляем логирование для диагностики
+  console.log('🔍 [NewEpisodesSection] Состояние:', {
+    isLoading,
+    hasError: !!error,
+    hasData: !!catalogData,
+    dataLength: episodes.length,
+    error: error?.message || 'Нет ошибки'
+  });
 
   if (isLoading) {
     return (

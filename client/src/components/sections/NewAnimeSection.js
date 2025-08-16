@@ -93,16 +93,25 @@ const NewAnimeSection = ({
   onAnimeClick,
   options = {}
 }) => {
-  const { 
-    data: catalogData, 
-    isLoading, 
-    error, 
-    refetch 
+  const {
+    data: catalogData,
+    isLoading,
+    error,
+    refetch
   } = useNewAnime(1, limit, options);
 
   const newAnime = catalogData?.data || [];
+  
+  // Добавляем логирование для диагностики
+  console.log('🔍 [NewAnimeSection] Состояние:', {
+    isLoading,
+    hasError: !!error,
+    hasData: !!catalogData,
+    dataLength: newAnime.length,
+    error: error?.message || 'Нет ошибки'
+  });
 
-  // Проверяем, является ли аниме новым (добавлено за последние 30 дней)
+  // Проверяем, является ли аниме новым (добавлено за последние 30 дни)
   const isNewAnime = (anime) => {
     if (!anime.fresh_at && !anime.updated_at) return true; // Если нет даты, считаем новым
     

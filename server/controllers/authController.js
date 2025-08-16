@@ -187,7 +187,7 @@ class AuthController {
       }
 
       // Находим пользователя по email или username
-      const user = await User.findByEmailOrUsername(email, ['id', 'username', 'email', 'password_hash', 'role', 'avatar', 'is_email_verified', 'preferences', 'refresh_token', 'last_login', 'is_2fa_enabled', 'secret_2fa', 'backup_codes_2fa']);
+      const user = await User.findByEmailOrUsername(email, ['id', 'username', 'email', 'password_hash', 'role', 'avatar', 'is_email_verified', 'preferences', 'refresh_token', 'last_login']);
       
       if (!user) {
         return res.status(HTTP_STATUS.UNAUTHORIZED).json({
@@ -222,18 +222,18 @@ class AuthController {
         });
       }
 
-      // Проверяем, требуется ли 2FA
-      if (user.is_2fa_enabled) {
-        res.status(HTTP_STATUS.UNAUTHORIZED).json({
-          success: false,
-          error: {
-            message: 'Нужен код двухфакторной аутентификации',
-            code: '2FA_REQUIRED',
-            userId: user.id
-          }
-        });
-        return;
-      }
+      // Временно отключена проверка 2FA
+      // if (user.is_2fa_enabled) {
+      //   res.status(HTTP_STATUS.UNAUTHORIZED).json({
+      //     success: false,
+      //     error: {
+      //       message: 'Нужен код двухфакторной аутентификации',
+      //       code: '2FA_REQUIRED',
+      //       userId: user.id
+      //     }
+      //   });
+      //   return;
+      // }
 
       // Генерируем новые токены
       const { signJwt } = require('../utils/jwt');
@@ -266,7 +266,7 @@ class AuthController {
             avatar: user.avatar,
             isEmailVerified: user.is_email_verified,
             preferences: JSON.parse(user.preferences || '{}'),
-            is2faEnabled: user.is_2fa_enabled
+            is2faEnabled: false // Временно отключено, так как поля 2FA нет в БД
           },
           tokens: {
             accessToken
@@ -292,7 +292,16 @@ class AuthController {
       // Извлекаем refreshToken из cookie
       const refreshToken = req.cookies.refreshToken;
 
+      console.log('🔄 [AUTH] Попытка обновления токена:', {
+        hasRefreshToken: !!refreshToken,
+        cookiePresent: req.cookies.refreshToken !== undefined,
+        userAgent: req.get('User-Agent'),
+        ip: req.ip,
+        timestamp: new Date().toISOString()
+      });
+
       if (!refreshToken) {
+        console.log('🔄 [AUTH] Ошибка: Refresh токен не найден в cookie');
         return res.status(HTTP_STATUS.UNAUTHORIZED).json({
           success: false,
           error: {
@@ -406,7 +415,7 @@ class AuthController {
   // Получение текущего пользователя
   async getMe(req, res) {
     try {
-      const user = await User.findById(req.user.id, ['id', 'username', 'email', 'role', 'avatar', 'bio', 'preferences', 'is_email_verified', 'last_login', 'is_2fa_enabled']);
+      const user = await User.findById(req.user.id, ['id', 'username', 'email', 'role', 'avatar', 'bio', 'preferences', 'is_email_verified', 'last_login']);
 
       if (!user) {
         return res.status(HTTP_STATUS.NOT_FOUND).json({

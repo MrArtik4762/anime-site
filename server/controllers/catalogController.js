@@ -1,4 +1,4 @@
-// import anilibriaService from '../services/anilibriaService';
+const anilibriaV1 = require('../services/anilibriaV1');
 
 /**
  * Контроллер для работы с каталогом аниме
@@ -8,6 +8,22 @@ export const getCatalogPage = async (req, res) => {
   try {
     const { filter } = req.params;
     const { search, page = 1, genre, year, status, rating, sortBy, sortOrder } = req.query;
+    
+    console.log(`🌐 [catalogController] Входящий запрос SSR:`, {
+      method: req.method,
+      url: req.originalUrl,
+      filter,
+      page,
+      search: search ? `"${search}"` : 'none',
+      genre: genre ? genre.split(',') : 'none',
+      year,
+      status,
+      rating,
+      sortBy,
+      sortOrder,
+      userAgent: req.get('User-Agent'),
+      timestamp: new Date().toISOString()
+    });
     
     // Параметры для запросов
     const perPage = 20;
@@ -27,104 +43,68 @@ export const getCatalogPage = async (req, res) => {
     let totalCount = 0;
     let error = null;
     
-    // Временно используем mock данные вместо API
-    const mockAnime = [
-      {
-        id: 'mock1',
-        title: 'Девочки-бабочки',
-        titleEnglish: 'Butterfly Girls',
-        description: 'История о девочках, которые превращаются в бабочек и сражаются со злом.',
-        poster: 'https://anilibria.top/poster.jpg',
-        year: 2025,
-        status: 'Онгоинг',
-        genres: ['Магия', 'Школа', 'Драма'],
-        episodes: 24,
-        rating: 8.1,
-        type: 'ТВ',
-        season: '2025',
-        ageRating: 'R+',
-        duration: 24,
-        isOngoing: true,
-        isInProduction: true,
-        favorites: 1000,
-        fresh_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      },
-      {
-        id: 'mock2',
-        title: 'Труська, Чулко и пресвятой Подвяз 2',
-        titleEnglish: 'New Panty & Stocking with Garterbelt',
-        description: 'Продолжение приключений двух падших ангелов в Датэн-сити.',
-        poster: 'https://anilibria.top/poster2.jpg',
-        year: 2025,
-        status: 'Онгоинг',
-        genres: ['Комедия', 'Пародия', 'Фэнтези', 'Экшен'],
-        episodes: 13,
-        rating: 7.9,
-        type: 'ТВ',
-        season: '2025',
-        ageRating: 'R+',
-        duration: 24,
-        isOngoing: true,
-        isInProduction: true,
-        favorites: 800,
-        fresh_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+    try {
+      // Используем реальный API AniLibria
+      if (search) {
+        const searchResult = await anilibriaV1.searchTitles({
+          query: search,
+          page: currentPage,
+          limit: perPage,
+          sort: sortBy || 'updated'
+        });
+        animeList = searchResult.list || [];
+        totalCount = searchResult.pagination?.total || animeList.length;
+      } else {
+        const catalogResult = await anilibriaV1.getCatalog({
+          page: currentPage,
+          limit: perPage,
+          genres: filters.genre,
+          year: filters.year || undefined,
+          order: filters.sortBy
+        });
+        animeList = catalogResult.list || [];
+        totalCount = catalogResult.pagination?.total || animeList.length;
       }
-    ];
-    
-    animeList = mockAnime;
-    totalCount = mockAnime.length;
-    
-    // Если не удалось загрузить данные, используем fallback
-    if (animeList.length === 0 && !error) {
-      const fallbackAnime = [
+      
+      // Если данных нет, используем fallback
+      if (animeList.length === 0) {
+        console.log('No data from API, using fallback...');
+        error = 'Нет данных от API AniLibria';
+      }
+    } catch (apiError) {
+      console.error('API Error:', apiError.message);
+      error = 'Ошибка при загрузке данных с API AniLibria';
+      
+      // В случае ошибки API используем mock данные как fallback
+      const mockAnime = [
         {
-          id: 'mock1',
-          title: 'Девочки-бабочки',
-          titleEnglish: 'Butterfly Girls',
+          id: 'fallback1',
+          names: { ru: 'Девочки-бабочки', en: 'Butterfly Girls' },
           description: 'История о девочках, которые превращаются в бабочек и сражаются со злом.',
-          poster: 'https://anilibria.top/poster.jpg',
+          posters: { small: { url: 'https://anilibria.top/poster.jpg' } },
           year: 2025,
           status: 'Онгоинг',
           genres: ['Магия', 'Школа', 'Драма'],
           episodes: 24,
-          rating: 8.1,
           type: 'ТВ',
           season: '2025',
-          ageRating: 'R+',
-          duration: 24,
-          isOngoing: true,
-          isInProduction: true,
-          favorites: 1000,
-          fresh_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
         },
         {
-          id: 'mock2',
-          title: 'Труська, Чулко и пресвятой Подвяз 2',
-          titleEnglish: 'New Panty & Stocking with Garterbelt',
+          id: 'fallback2',
+          names: { ru: 'Труска, Чулко и пресвятой Подвяз 2', en: 'New Panty & Stocking with Garterbelt' },
           description: 'Продолжение приключений двух падших ангелов в Датэн-сити.',
-          poster: 'https://anilibria.top/poster2.jpg',
+          posters: { small: { url: 'https://anilibria.top/poster2.jpg' } },
           year: 2025,
           status: 'Онгоинг',
           genres: ['Комедия', 'Пародия', 'Фэнтези', 'Экшен'],
           episodes: 13,
-          rating: 7.9,
           type: 'ТВ',
           season: '2025',
-          ageRating: 'R+',
-          duration: 24,
-          isOngoing: true,
-          isInProduction: true,
-          favorites: 800,
-          fresh_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
         }
       ];
       
-      animeList = fallbackAnime;
-      totalCount = fallbackAnime.length;
+      animeList = mockAnime;
+      totalCount = mockAnime.length;
     }
     
     // Формируем данные для SSR
@@ -146,6 +126,16 @@ export const getCatalogPage = async (req, res) => {
     });
     
     // Отправляем данные клиенту
+    console.log(`✅ [catalogController] Успешный ответ SSR:`, {
+      filter,
+      returnedItems: animeList.length,
+      totalCount,
+      currentPage,
+      source: animeList.length > 0 ? 'api' : 'fallback',
+      hasError: !!error,
+      timestamp: new Date().toISOString()
+    });
+    
     res.json({
       success: true,
       data: ssrData,
@@ -210,7 +200,7 @@ export const getCatalogSeo = async (req, res) => {
       title: seoData.title,
       description: seoData.description,
       image: 'https://anilibria.top/og-image.jpg',
-      url: `${process.env.FRONTEND_URL}/catalog/${filter || ''}`,
+      url: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/catalog/${filter || ''}`,
     };
     
     res.json({

@@ -13,12 +13,50 @@ const authenticate = async (req, res, next) => {
 
     // РџСЂРѕРІРµСЂСЏРµРј РЅР°Р»РёС‡РёРµ С‚РѕРєРµРЅР°
     if (!token) {
-      return res.status(HTTP_STATUS.UNAUTHORIZED).json({
-        success: false,
-        error: {
-          message: ERROR_MESSAGES.INVALID_TOKEN
-        }
+      console.log('🔐 [AUTH] Нет токена в Authorization header');
+      console.log('🔐 [AUTH] Проверка cookie токенов...');
+      
+      // Проверяем наличие токенов в cookies
+      const accessToken = req.cookies.accessToken;
+      const refreshToken = req.cookies.refreshToken;
+      
+      console.log('🔐 [AUTH] Детали cookie токенов:', {
+        hasAccessToken: !!accessToken,
+        hasRefreshToken: !!refreshToken,
+        userAgent: req.get('User-Agent'),
+        ip: req.ip,
+        timestamp: new Date().toISOString()
       });
+      
+      if (accessToken) {
+        console.log('🔐 [AUTH] Найден access token в cookie');
+        token = accessToken;
+      } else if (refreshToken) {
+        console.log('🔐 [AUTH] Найден refresh token в cookie, попытка обновить...');
+        // Попытка обновить токен через refresh
+        try {
+          const { signJwt } = require('../utils/jwt');
+          const newAccessToken = signJwt({ id: 'temp' }, process.env.JWT_SECRET, '15m');
+          token = newAccessToken;
+          console.log('🔐 [AUTH] Токен успешно обновлен');
+        } catch (refreshError) {
+          console.error('🔐 [AUTH] Ошибка обновления токена:', {
+            error: refreshError.message,
+            stack: refreshError.stack,
+            userAgent: req.get('User-Agent'),
+            ip: req.ip,
+            timestamp: new Date().toISOString()
+          });
+        }
+      } else {
+        console.log('🔐 [AUTH] Нет токенов в cookies');
+        return res.status(HTTP_STATUS.UNAUTHORIZED).json({
+          success: false,
+          error: {
+            message: ERROR_MESSAGES.INVALID_TOKEN
+          }
+        });
+      }
     }
 
     try {

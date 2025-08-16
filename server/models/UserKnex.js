@@ -127,6 +127,10 @@ class User {
         createdAt: 'created_at',
         updatedAt: 'updated_at',
         deletedAt: 'deleted_at'
+        // Временно исключаем поля 2FA, так как их нет в БД
+        // is2faEnabled: 'is_2fa_enabled',
+        // secret2fa: 'secret_2fa',
+        // backupCodes2fa: 'backup_codes_2fa'
       };
 
       const fields = selectFields.length > 0 
@@ -364,10 +368,11 @@ class User {
         lastLogin: 'last_login',
         createdAt: 'created_at',
         updatedAt: 'updated_at',
-        deletedAt: 'deleted_at',
-        is2faEnabled: 'is_2fa_enabled',
-        secret2fa: 'secret_2fa',
-        backupCodes2fa: 'backup_codes_2fa'
+        deletedAt: 'deleted_at'
+        // Временно исключаем поля 2FA, так как их нет в БД
+        // is2faEnabled: 'is_2fa_enabled',
+        // secret2fa: 'secret_2fa',
+        // backupCodes2fa: 'backup_codes_2fa'
       };
 
       const fields = selectFields.length > 0

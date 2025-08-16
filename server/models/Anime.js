@@ -285,8 +285,27 @@ const animeSchema = new mongoose.Schema({
     },
     totalViews: {
       type: Number,
-      default: 0
+      default: 0,
+      min: [0, 'Общее количество просмотров не может быть отрицательным']
+    },
+    weeklyViews: {
+      type: Number,
+      default: 0,
+      min: [0, 'Еженедельное количество просмотров не может быть отрицательным']
+    },
+    monthlyViews: {
+      type: Number,
+      default: 0,
+      min: [0, 'Месячное количество просмотров не может быть отрицательным']
     }
+  },
+
+  // Индекс популярности и трендовости
+  trendingScore: {
+    type: Number,
+    default: 0,
+    min: [0, 'Индекс популярности не может быть отрицательным'],
+    index: true
   },
   
   // Кеширование и синхронизация
@@ -374,6 +393,10 @@ animeSchema.index({ type: 1 });
 animeSchema.index({ season: 1, year: 1 });
 animeSchema.index({ createdAt: -1 });
 animeSchema.index({ lastUpdated: -1 });
+animeSchema.index({ 'statistics.weeklyViews': -1 });
+animeSchema.index({ 'statistics.totalViews': -1 });
+animeSchema.index({ 'statistics.monthlyViews': -1 });
+animeSchema.index({ trendingScore: -1 });
 
 // Составные индексы для сложных запросов
 animeSchema.index({ genres: 1, year: -1, 'rating.score': -1 });
@@ -435,6 +458,72 @@ animeSchema.statics.getRecent = function(limit = 20) {
   return this.find({ isActive: true, approved: true })
     .sort({ createdAt: -1 })
     .limit(limit);
+};
+
+animeSchema.statics.getPopular = function(limit = 20) {
+  return this.find({ isActive: true, approved: true })
+    .sort({ 'statistics.weeklyViews': -1, trendingScore: -1 })
+    .limit(limit);
+};
+
+animeSchema.statics.getTrending = function(limit = 20) {
+  return this.find({ isActive: true, approved: true, trendingScore: { $gt: 0 } })
+    .sort({ trendingScore: -1 })
+    .limit(limit);
+};
+
+animeSchema.statics.getByViews = function(period = 'weekly', limit = 20) {
+  const sortField = period === 'weekly' ? 'statistics.weeklyViews' :
+                   period === 'monthly' ? 'statistics.monthlyViews' :
+                   'statistics.totalViews';
+  
+  return this.find({ isActive: true, approved: true })
+    .sort({ [sortField]: -1 })
+    .limit(limit);
+};
+
+animeSchema.statics.updateTrendingScore = async function(animeId) {
+  const anime = await this.findById(animeId);
+  if (!anime) return null;
+  
+  // Формула: (weeklyViews * 0.7) + (totalViews * 0.3) + (rating.score * 10)
+  const trendingScore = Math.round(
+    (anime.statistics.weeklyViews * 0.7) +
+    (anime.statistics.totalViews * 0.3) +
+    ((anime.rating.score || 0) * 10)
+  );
+  
+  anime.trendingScore = trendingScore;
+  anime.lastUpdated = new Date();
+  
+  await anime.save();
+  return trendingScore;
+};
+
+animeSchema.statics.batchUpdateTrendingScores = async function() {
+  const animes = await this.find({ isActive: true, approved: true });
+  let updatedCount = 0;
+  
+  for (const anime of animes) {
+    try {
+      const trendingScore = Math.round(
+        (anime.statistics.weeklyViews * 0.7) +
+        (anime.statistics.totalViews * 0.3) +
+        ((anime.rating.score || 0) * 10)
+      );
+      
+      if (anime.trendingScore !== trendingScore) {
+        anime.trendingScore = trendingScore;
+        anime.lastUpdated = new Date();
+        await anime.save();
+        updatedCount++;
+      }
+    } catch (error) {
+      console.error(`Error updating trending score for anime ${anime._id}:`, error);
+    }
+  }
+  
+  return { updatedCount, total: animes.length };
 };
 
 // Методы экземпляра

@@ -1,13 +1,13 @@
 ﻿const axios = require('axios');
 const { promisify } = require('util');
-const redis = require('../config/redis');
+const { redisWithFallback } = require('../config/redis');
 const { createError } = require('../utils/errors');
 const { metrics } = require('../utils/metrics');
 const { HTTP_STATUS, ERROR_MESSAGES } = require('../../shared/constants/constants');
 
-const CACHE_TTL = 3600; // 1 С‡Р°СЃ
-const get = promisify(redis.get).bind(redis);
-const set = promisify(redis.set).bind(redis);
+const CACHE_TTL = 3600; // 1 час
+const get = promisify(redisWithFallback.get).bind(redisWithFallback);
+const set = promisify(redisWithFallback.set).bind(redisWithFallback);
 
 const ANICLI_API_URL = process.env.ANICLI_API_URL || 'http://anicli_api:8000';
 const PYTHON_SERVICE_URL = process.env.PYTHON_SERVICE_URL || 'http://python-service:8000';

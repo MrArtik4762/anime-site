@@ -1,0 +1,97 @@
+{
+  "passed": 3,
+  "failed": 12,
+  "total": 15,
+  "tests": [
+    {
+      "name": "Health check endpoint",
+      "passed": false,
+      "details": "Ошибка: Request failed with status code 503",
+      "timestamp": "2025-08-16T11:47:01.532Z"
+    },
+    {
+      "name": "Database connection",
+      "passed": true,
+      "details": "База данных подключена успешно",
+      "timestamp": "2025-08-16T11:47:01.539Z"
+    },
+    {
+      "name": "Redis connection",
+      "passed": false,
+      "details": "Ошибка: Request failed with status code 503",
+      "timestamp": "2025-08-16T11:47:01.542Z"
+    },
+    {
+      "name": "Endpoint /api",
+      "passed": false,
+      "details": "Ошибка: Request failed with status code 500",
+      "timestamp": "2025-08-16T11:47:01.555Z"
+    },
+    {
+      "name": "Endpoint /api/auth",
+      "passed": false,
+      "details": "Ошибка: Request failed with status code 500",
+      "timestamp": "2025-08-16T11:47:01.563Z"
+    },
+    {
+      "name": "Endpoint /api/catalog",
+      "passed": false,
+      "details": "Ожидался статус 404, получен: 200",
+      "timestamp": "2025-08-16T11:47:03.074Z"
+    },
+    {
+      "name": "Endpoint /api/anime",
+      "passed": false,
+      "details": "Ошибка: timeout of 5000ms exceeded",
+      "timestamp": "2025-08-16T11:47:08.078Z"
+    },
+    {
+      "name": "User registration",
+      "passed": true,
+      "details": "Пользователь успешно зарегистрирован",
+      "timestamp": "2025-08-16T11:47:08.334Z"
+    },
+    {
+      "name": "User login",
+      "passed": true,
+      "details": "Пользователь успешно вошел в систему",
+      "timestamp": "2025-08-16T11:47:08.492Z"
+    },
+    {
+      "name": "New anime catalog",
+      "passed": false,
+      "details": "Ошибка: timeout of 10000ms exceeded",
+      "timestamp": "2025-08-16T11:47:18.496Z"
+    },
+    {
+      "name": "Popular anime",
+      "passed": false,
+      "details": "Ошибка (возможно, MongoDB): read ECONNRESET",
+      "timestamp": "2025-08-16T11:47:21.279Z"
+    },
+    {
+      "name": "Caching test",
+      "passed": false,
+      "details": "Ошибка: ",
+      "timestamp": "2025-08-16T11:47:21.285Z"
+    },
+    {
+      "name": "Background jobs test",
+      "passed": false,
+      "details": "Ошибка: ",
+      "timestamp": "2025-08-16T11:47:21.289Z"
+    },
+    {
+      "name": "Client development server",
+      "passed": false,
+      "details": "Клиентский сервер не запущен или недоступен",
+      "timestamp": "2025-08-16T11:47:21.292Z"
+    },
+    {
+      "name": "Client build",
+      "passed": false,
+      "details": "Сборка клиента не найдена",
+      "timestamp": "2025-08-16T11:47:21.293Z"
+    }
+  ]
+}

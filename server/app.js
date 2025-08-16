@@ -4,6 +4,7 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const compression = require('compression');
 const rateLimit = require('express-rate-limit');
+const cookieParser = require('cookie-parser');
 const { createServer } = require('http');
 const { Server } = require('socket.io');
 require('dotenv').config();
@@ -27,12 +28,20 @@ const searchRoutes = require('./routes/search');
 const streamRoutes = require('./routes/stream');
 const watchRoutes = require('./routes/watchRoutes');
 const sourcesRoutes = require('./routes/sources');
+const catalogRoutes = require('./routes/catalog');
 // New AniLiberty API routes
 const apiRoutes = require('./routes/api');
 
+// Import services
+const jobsService = require('./services/jobs');
+
+// Import seed script
+const seedScript = require('./scripts/seed');
+
 // Import middleware
-const errorHandler = require('./middleware/errorHandler');
+const errorHandler = require('./middleware/errorHandler').errorHandler;
 const notFound = require('./middleware/notFound');
+const { cachePopularAnime, cacheCatalog, cacheSearch } = require('./middleware/cacheMiddleware');
 
 // Import monitoring and logging
 const { logger, httpLogger, logRequest } = require('./config/logger');
@@ -76,26 +85,7 @@ app.use(helmet({
 }));
 
 // CORS configuration
-const corsOptions = {
-  origin: function (origin, callback) {
-    const allowedOrigins = [
-      process.env.CLIENT_URL || 'http://localhost:3000',
-      'http://localhost:3000',
-      'http://127.0.0.1:3000'
-    ];
-    
-    // Allow requests with no origin (mobile apps, etc.)
-    if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
-  optionsSuccessStatus: 200
-};
+const { corsOptions } = require('./middleware/cors');
 
 app.use(cors(corsOptions));
 
@@ -115,7 +105,8 @@ const limiter = rateLimit({
     if (process.env.NODE_ENV === 'development' && (
       req.path === '/health' ||
       req.path.startsWith('/api/auth') ||
-      req.path.startsWith('/api/proxy')
+      req.path.startsWith('/api/proxy') ||
+      req.path.startsWith('/api/catalog')
     )) {
       return true;
     }
@@ -138,6 +129,9 @@ if (process.env.NODE_ENV === 'development') {
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Cookie parsing middleware
+app.use(cookieParser());
 
 // Metrics middleware (must be before routes)
 app.use(metricsMiddleware);
@@ -185,10 +179,14 @@ app.get('/health/simple', async (req, res) => {
 // API routes
 // AniLiberty API routes (должны быть первыми)
 app.use('/api', apiRoutes);
+// app.use('/api/catalog', cacheCatalog, catalogRoutes); // Маршруты каталога с кэшированием
+app.use('/api/catalog', catalogRoutes); // Временно без кэширования
 app.use('/api/auth', authRoutes);
-app.use('/api/anime', animeRoutes);
+// app.use('/api/anime', cachePopularAnime, animeRoutes); // Маршруты аниме с кэшированием популярных
+app.use('/api/anime', animeRoutes); // Временно без кэширования
 app.use('/api/anime', animeApiRoutes);
-app.use('/api/anime', searchRoutes); // Маршруты поиска
+// app.use('/api/anime', cacheSearch, searchRoutes); // Маршруты поиска с кэшированием
+app.use('/api/anime', searchRoutes); // Временно без кэширования
 app.use('/api/users', userRoutes);
 app.use('/api/comments', commentRoutes);
 app.use('/api/external', externalRoutes);
@@ -239,6 +237,31 @@ const connectDB = async () => {
       }
     }
     
+    // Optional automatic seeding in development mode
+    if (process.env.NODE_ENV === 'development' && process.env.AUTO_SEED === 'true') {
+      try {
+        // Check if database is empty
+        const count = await knex('animes').count('id as count').first();
+        if (count && count.count === 0) {
+          console.log('Database is empty, starting automatic seeding...');
+          await seedScript.seed();
+          console.log('Automatic seeding completed');
+        } else {
+          console.log('Database already contains data, skipping automatic seeding');
+        }
+      } catch (seedError) {
+        console.error('Error during automatic seeding:', seedError.message);
+      }
+    }
+    
+    // Initialize background jobs service
+    try {
+      await jobsService.initialize();
+      console.log('Background jobs service initialized successfully');
+    } catch (jobsError) {
+      console.error('Error initializing background jobs service:', jobsError.message);
+    }
+    
   } catch (error) {
     console.error('Database connection error:', error);
     console.log('Continuing without database connection...');
@@ -264,6 +287,14 @@ const gracefulShutdown = async (signal) => {
     // Stop accepting new connections
     server.close(async () => {
       console.log('HTTP server closed.');
+      
+      // Stop background jobs
+      try {
+        await jobsService.stop();
+        console.log('Background jobs stopped.');
+      } catch (jobsError) {
+        console.error('Error stopping background jobs:', jobsError.message);
+      }
       
       // Close database connections
       try {

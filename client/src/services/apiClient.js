@@ -1,305 +1,168 @@
 import axios from 'axios';
+import { authService } from './authService';
 
-/**
- * Безопасный API клиент с защитой от CSRF, CORS и других угроз
- */
-class ApiClient {
-  constructor() {
-    this.client = axios.create({
-      baseURL: process.env.REACT_APP_API_URL || '/api',
-      timeout: 10000,
-      withCredentials: true, // Включаем cookies для CSRF защиты
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest',
-      },
-    });
+// Конфигурация API
+const API_CONFIG = {
+  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5000',
+  timeout: 15000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  withCredentials: true, // Включаем поддержку кук для авторизации
+};
 
-    // Перехватчик запросов
-    this.client.interceptors.request.use(
-      this.handleRequest.bind(this),
-      this.handleRequestError.bind(this)
-    );
+// Создаем основной экземпляр axios
+const apiClient = axios.create(API_CONFIG);
 
-    // Перехватчик ответов
-    this.client.interceptors.response.use(
-      this.handleResponse.bind(this),
-      this.handleResponseError.bind(this)
-    );
+// Создаем экземпляр для загрузки файлов
+const fileUploadClient = axios.create({
+  ...API_CONFIG,
+  headers: {
+    'Content-Type': 'multipart/form-data',
+  },
+  timeout: 30000, // Увеличиваем timeout для загрузки файлов
+});
+
+// Интерцептор для добавления токена авторизации
+const addAuthToken = (config) => {
+  const token = authService?.getToken();
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
+  return config;
+};
 
-  /**
-   * Обработка исходящего запроса
-   */
-  async handleRequest(config) {
-    // Добавление CSRF токена в заголовки
-    const csrfToken = this.getCookie('csrf_token');
-    if (csrfToken) {
-      config.headers['X-CSRF-Token'] = csrfToken;
-    }
+// Интерцептор для обработки ответов с автоматическим обновлением токена
+const handleResponse = async (error) => {
+  const originalRequest = error.config;
 
-    // Проверка и очистка URL параметров
-    if (config.params) {
-      config.params = this.sanitizeParams(config.params);
-    }
-
-    // Проверка и очистка данных
-    if (config.data) {
-      config.data = this.sanitizeData(config.data);
-    }
-
-    return config;
-  }
-
-  /**
-   * Обработка ошибки запроса
-   */
-  handleRequestError(error) {
-    console.error('Request error:', error);
-    return Promise.reject(error);
-  }
-
-  /**
-   * Обработка ответа
-   */
-  handleResponse(response) {
-    // Проверка CSRF токена в ответе
-    if (response.headers['x-csrf-token']) {
-      this.updateCsrfToken(response.headers['x-csrf-token']);
-    }
-
-    // Проверка на suspicious responses
-    if (this.isSuspiciousResponse(response)) {
-      console.warn('Suspicious response detected:', response);
-      // Здесь можно добавить логику для обработки подозрительных ответов
-    }
-
-    return response;
-  }
-
-  /**
-   * Обработка ошибки ответа
-   */
-  handleResponseError(error) {
-    if (error.response) {
-      // Обработка ошибок аутентификации
-      if (error.response.status === 401) {
-        this.handleUnauthorized();
-      }
-      
-      // Обработка ошибок CSRF
-      if (error.response.status === 403 && error.response.data?.error === 'INVALID_CSRF_TOKEN') {
-        this.refreshCsrfToken();
-      }
-    }
-
-    return Promise.reject(error);
-  }
-
-  /**
-   * Получение CSRF токена из cookie
-   */
-  getCookie(name) {
-    const value = `; ${document.cookie}`;
-    const parts = value.split(`; ${name}=`);
-    if (parts.length === 2) return parts.pop().split(';').shift();
-    return null;
-  }
-
-  /**
-   * Обновление CSRF токена
-   */
-  updateCsrfToken(token) {
-    if (token) {
-      document.cookie = `csrf_token=${token}; path=/; secure; HttpOnly; SameSite=Strict`;
-    }
-  }
-
-  /**
-   * Обновление CSRF токена
-   */
-  async refreshCsrfToken() {
+  // Если ошибка 401 и это не запрос на обновление токена
+  if (error.response?.status === 401 && !originalRequest._retry) {
+    originalRequest._retry = true;
+    
     try {
-      const response = await this.client.get('/auth/csrf-token');
-      if (response.data?.csrf_token) {
-        this.updateCsrfToken(response.data.csrf_token);
-      }
-    } catch (error) {
-      console.error('Failed to refresh CSRF token:', error);
+      // Пытаемся обновить токен
+      await authService.refresh();
+      // Повторяем оригинальный запрос с новым токеном
+      return apiClient(originalRequest);
+    } catch (refreshError) {
+      // Если обновление токена не удалось, перенаправляем на страницу логина
+      authService.clearToken();
+      window.location.href = '/login';
+      return Promise.reject(refreshError);
     }
   }
 
-  /**
-   * Обработка неавторизованного доступа
-   */
-  handleUnauthorized() {
-    // Здесь можно добавить логику для перенаправления на страницу входа
-    console.warn('Unauthorized access detected');
-    // window.location.href = '/login';
+  // Обработка ошибок сети
+  if (!error.response) {
+    error.message = 'Ошибка сети. Проверьте подключение к интернету.';
+  } else {
+    error.message = error.response.data?.error?.message || 
+                    error.response.data?.message || 
+                    `Произошла ошибка сервера (${error.response.status})`;
   }
 
-  /**
-   * Очистка параметров URL
-   */
-  sanitizeParams(params) {
-    const sanitized = {};
-    
-    for (const [key, value] of Object.entries(params)) {
-      if (typeof value === 'string') {
-        sanitized[key] = this.sanitizeString(value);
-      } else if (typeof value === 'number') {
-        sanitized[key] = value;
-      } else if (Array.isArray(value)) {
-        sanitized[key] = value.map(item => 
-          typeof item === 'string' ? this.sanitizeString(item) : item
-        );
-      } else if (typeof value === 'object' && value !== null) {
-        sanitized[key] = this.sanitizeParams(value);
-      }
-    }
-    
-    return sanitized;
-  }
+  return Promise.reject(error);
+};
 
-  /**
-   * Очистка данных запроса
-   */
-  sanitizeData(data) {
-    if (typeof data === 'string') {
-      return this.sanitizeString(data);
-    }
-    
-    if (typeof data === 'object' && data !== null) {
-      const sanitized = {};
-      
-      for (const [key, value] of Object.entries(data)) {
-        if (typeof value === 'string') {
-          sanitized[key] = this.sanitizeString(value);
-        } else if (typeof value === 'number') {
-          sanitized[key] = value;
-        } else if (Array.isArray(value)) {
-          sanitized[key] = value.map(item => 
-            typeof item === 'string' ? this.sanitizeString(item) : item
-          );
-        } else if (typeof value === 'object' && value !== null) {
-          sanitized[key] = this.sanitizeData(value);
-        } else {
-          sanitized[key] = value;
-        }
-      }
-      
-      return sanitized;
-    }
-    
-    return data;
-  }
+// Применяем интерцепторы
+apiClient.interceptors.request.use(addAuthToken);
+apiClient.interceptors.response.use(
+  (response) => response,
+  handleResponse
+);
 
-  /**
-   * Очистка строки
-   */
-  sanitizeString(str) {
-    if (!str || typeof str !== 'string') return str;
-    
-    // Удаление потенциально опасных символов
-    return str
-      .replace(/script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-      .replace(/javascript:/gi, '')
-      .replace(/on\w+\s*=/gi, '')
-      .replace(/<script>/gi, '');
-  }
+fileUploadClient.interceptors.request.use(addAuthToken);
+fileUploadClient.interceptors.response.use(
+  (response) => response,
+  handleResponse
+);
 
-  /**
-   * Проверка на подозрительный ответ
-   */
-  isSuspiciousResponse(response) {
-    // Проверка на подозрительные заголовки
-    const suspiciousHeaders = [
-      'xss-protection',
-      'content-security-policy',
-      'strict-transport-security'
-    ];
-    
-    for (const header of suspiciousHeaders) {
-      if (!response.headers[header]) {
-        return true;
-      }
-    }
-    
-    // Проверка на подозрительное содержимое
-    if (response.data && typeof response.data === 'string') {
-      const suspiciousPatterns = [
-        /<script/i,
-        /javascript:/i,
-        /on\w+\s*=/i
-      ];
-      
-      return suspiciousPatterns.some(pattern => pattern.test(response.data));
-    }
-    
-    return false;
-  }
+// API методы
+export const api = {
+  // Auth методы
+  auth: {
+    login: (credentials) => apiClient.post('/auth/login', credentials),
+    register: (userData) => apiClient.post('/auth/register', userData),
+    logout: () => apiClient.post('/auth/logout'),
+    refresh: () => apiClient.post('/auth/refresh'),
+    getCurrentUser: () => apiClient.get('/auth/me'),
+    forgotPassword: (email) => apiClient.post('/auth/forgot-password', { email }),
+    resetPassword: (token, password) => apiClient.post('/auth/reset-password', { token, password }),
+    verifyEmail: (token) => apiClient.post(`/auth/verify-email/${token}`),
+    generate2FASecret: (email) => apiClient.post('/auth/2fa/generate', { email }),
+    enable2FA: (token, secret, backupCodes) => apiClient.post('/auth/2fa/enable', { token, secret, backupCodes }),
+    disable2FA: (password) => apiClient.post('/auth/2fa/disable', { password }),
+    verify2FA: (token) => apiClient.post('/auth/2fa/verify', { token }),
+  },
 
-  /**
-   * GET запрос
-   */
-  async get(url, config = {}) {
-    return this.client.get(url, config);
-  }
+  // User методы
+  users: {
+    getProfile: () => apiClient.get('/users/profile'),
+    updateProfile: (userData) => apiClient.put('/users/profile', userData),
+    changePassword: (passwordData) => apiClient.put('/users/change-password', passwordData),
+    uploadAvatar: (formData) => fileUploadClient.post('/users/avatar', formData),
+    deleteAvatar: () => apiClient.delete('/users/avatar'),
+  },
 
-  /**
-   * POST запрос
-   */
-  async post(url, data = {}, config = {}) {
-    return this.client.post(url, data, config);
-  }
+  // Anime методы
+  anime: {
+    getList: (params = {}) => apiClient.get('/anime', { params }),
+    getById: (id) => apiClient.get(`/anime/${id}`),
+    search: (query, params = {}) => apiClient.get('/anime/search', { params: { ...params, q: query } }),
+    getGenres: () => apiClient.get('/anime/genres'),
+    getSeasons: () => apiClient.get('/anime/seasons'),
+    getTypes: () => apiClient.get('/anime/types'),
+    getStatuses: () => apiClient.get('/anime/statuses'),
+  },
 
-  /**
-   * PUT запрос
-   */
-  async put(url, data = {}, config = {}) {
-    return this.client.put(url, data, config);
-  }
+  // Catalog методы
+  catalog: {
+    getList: (params = {}) => apiClient.get('/catalog', { params }),
+    getById: (id) => apiClient.get(`/catalog/${id}`),
+    search: (query, params = {}) => apiClient.get('/catalog/search', { params: { ...params, q: query } }),
+    getTitles: (params = {}) => apiClient.get('/catalog/titles', { params }),
+    getFilters: () => apiClient.get('/catalog/filters'),
+  },
 
-  /**
-   * PATCH запрос
-   */
-  async patch(url, data = {}, config = {}) {
-    return this.client.patch(url, data, config);
-  }
+  // Watchlist методы
+  watchlist: {
+    getList: () => apiClient.get('/watchlist'),
+    add: (animeId) => apiClient.post('/watchlist', { animeId }),
+    remove: (animeId) => apiClient.delete(`/watchlist/${animeId}`),
+    toggle: (animeId) => apiClient.post(`/watchlist/toggle/${animeId}`),
+  },
 
-  /**
-   * DELETE запрос
-   */
-  async delete(url, config = {}) {
-    return this.client.delete(url, config);
-  }
+  // Watch progress методы
+  progress: {
+    get: (animeId) => apiClient.get(`/watch-progress/${animeId}`),
+    update: (animeId, episodeId, progress) => apiClient.put(`/watch-progress/${animeId}`, { episodeId, progress }),
+    getHistory: (params = {}) => apiClient.get('/watch-history', { params }),
+  },
 
-  /**
-   * Загрузка файла
-   */
-  async uploadFile(url, file, onProgress = null, config = {}) {
-    const formData = new FormData();
-    formData.append('file', file);
-    
-    const uploadConfig = {
-      ...config,
-      headers: {
-        'Content-Type': 'multipart/form-data',
-        ...config.headers,
-      },
-      onUploadProgress: onProgress ? (progressEvent) => {
-        const percentCompleted = Math.round(
-          (progressEvent.loaded * 100) / progressEvent.total
-        );
-        onProgress(percentCompleted);
-      } : undefined,
-    };
-    
-    return this.client.post(url, formData, uploadConfig);
-  }
-}
+  // Comments методы
+  comments: {
+    getList: (animeId) => apiClient.get(`/comments/${animeId}`),
+    add: (animeId, content) => apiClient.post(`/comments/${animeId}`, { content }),
+    edit: (commentId, content) => apiClient.put(`/comments/${commentId}`, { content }),
+    delete: (commentId) => apiClient.delete(`/comments/${commentId}`),
+  },
 
-// Создаем экземпляр API клиента
-const apiClient = new ApiClient();
+  // Video методы
+  video: {
+    getSources: (animeId, episodeId) => apiClient.get(`/video/sources/${animeId}/${episodeId}`),
+    getStreamUrl: (animeId, episodeId) => apiClient.get(`/video/stream/${animeId}/${episodeId}`),
+    getSubtitles: (animeId, episodeId) => apiClient.get(`/video/subtitles/${animeId}/${episodeId}`),
+  },
 
-export default apiClient;
+  // Health check
+  health: {
+    check: () => apiClient.get('/health'),
+    simple: () => apiClient.get('/health/simple'),
+  },
+};
+
+// Экспортируем экземпляры для прямого использования
+export { apiClient, fileUploadClient };
+
+export default api;

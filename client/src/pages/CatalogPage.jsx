@@ -147,6 +147,22 @@ const CatalogPage = ({ filter }) => {
   const isLoadingData = searchQuery ? searchLoading : catalogLoading;
   const errorData = searchQuery ? searchError : catalogError;
   
+  // Добавляем логирование для диагностики
+  console.log('🔍 [CatalogPage] Состояние:', {
+    searchQuery,
+    hasSearchData: !!searchData,
+    hasCatalogData: !!catalogData,
+    isLoadingData,
+    hasError: !!errorData,
+    dataLength: data?.data?.length || 0,
+    pagination: {
+      currentPage: data?.pagination?.currentPage,
+      totalPages: data?.pagination?.totalPages,
+      totalCount: data?.pagination?.totalCount
+    },
+    error: errorData?.message || 'Нет ошибки'
+  });
+  
   // Функция для загрузки следующей страницы
   const loadMore = async () => {
     if (hasNextPage && !isFetchingNextPage) {

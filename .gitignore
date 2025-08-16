@@ -4,9 +4,15 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# Lock files (track for reproducibility)
+package-lock.json
+yarn.lock
+
 # Production builds
 /client/build
 /server/dist
+dist/
+build/
 
 # Environment variables - exclude all .env files
 .env
@@ -14,17 +20,11 @@ yarn-error.log*
 !.env.example
 **/.env
 **/.env.*
-server/.env
-client/.env
-client/.env.development
-client/.env.local
-client/.env.development.local
-client/.env.test.local
-client/.env.production.local
 
 # Logs
 logs
 *.log
+*.log*
 
 # Runtime data
 pids
@@ -84,12 +84,26 @@ jspm_packages/
 # TernJS port file
 .tern-port
 
+# TypeScript cache
+*.tsbuildinfo
+
 # IDE files
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
+*.bak
+*.orig
+*.rej
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/launch-js.json
+.idea/*
+!.idea/dictionaries
 
 # OS generated files
 .DS_Store
@@ -99,34 +113,185 @@ jspm_packages/
 .Trashes
 ehthumbs.db
 Thumbs.db
+Desktop.ini
+
+# Database files
+*.sqlite3
+*.db
 
 # Uploads
 /server/uploads/*
 !/server/uploads/.gitkeep
 
-# Database
+# Data directories
 /data/
+**/data/
 
 # Redis dump
 dump.rdb
-# Dependency directories
-node_modules/
+*.rdb
 
-# Environment variables (covered above)
+# Temporary files
+*.tmp
+temp/
+.tmp
+*.cache
+.cache/
 
-# Build directories
-dist/
-build/
+# Test coverage reports
+coverage/
+.nyc_output/
+junit.xml
+test-results/
 
-# Editor files
-.vscode/
-.idea/
-
-# OS files
-.DS_Store
-Thumbs.db
+# Storybook build outputs
+.out
+.storybook-out
+storybook-static/
 
 # Temporary files for README update scripts
 README_TEMP.md
+
+# Environment specific files
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Vercel
+.vercel
+
+# Netlify
+.netlify
+
+# SvelteKit
+.svelte-kit
+
+# Remix
+.remix
+
+# Vite
+.vite
+
+# Bun
+.bun
+bun.lockb
+
+# Deno
+deno.json
+deno.lock
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Ruby
+*.gem
+/.config
+/coverage/
+/coverage/
+/pkg/
+/spec/reports/
+/spec/examples.txt
+/test/tmp/
+/test/tmp/**/*
+/tmp/
+/tmp/**/*
+.yardoc
+/_yardoc/
+/doc/
+/rdoc/
+/.sass-cache/
+/public/system/
+/localtmp/
+/public/assets
+/bak/
+/vendor/bundle
+/vendor/cache
+/vendor/gems
+/vendor/ruby
+
+# Node.js
+.npm
+.eslintcache
+.node_repl_history
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Thumbnails
+._*
+
+# Files that might appear in the root of a volume
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Directories potentially created on remote AFP share
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
 *.tmp
-temp/
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+
+# Linux
+*~
+
+# temporary files which can be created if a process still has a handle open of a deleted file
+.fuse_hidden*
+
+# KDE directory preferences
+.directory
+
+# Linux trash folder which might appear on any partition or disk
+.Trash-*
+
+# .nfs files are created when an open file is removed but is still being accessed
+.nfs*
+
+content>
+<line_count>190</line_count>
+</write_to_file>

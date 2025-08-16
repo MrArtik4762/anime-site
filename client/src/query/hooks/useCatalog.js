@@ -1,4 +1,7 @@
 import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
+import api from '../../services/api';
+
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
 
 // Ключи для кеширования
 export const catalogKeys = {
@@ -39,22 +42,44 @@ export const useCatalog = ({ filter, search, page = 1, filters = {} } = {}) => {
         });
         
         const queryString = params.toString();
-        const url = `/api/catalog/${filter ? `${filter}` : ''}${queryString ? `?${queryString}` : ''}`;
+        const url = `catalog/${filter ? `${filter}` : ''}${queryString ? `?${queryString}` : ''}`;
         
-        const response = await fetch(url);
+        console.log('🔍 [useCatalog] Запрос:', {
+          url,
+          filter,
+          search,
+          page,
+          filters: Object.keys(filters),
+          queryString,
+          fullUrl: `${API_BASE_URL}/api/${url}`
+        });
+        
+        const response = await api.get(url);
         
         if (!response.ok) {
+          console.error('❌ [useCatalog] HTTP ошибка:', response.status, response.statusText);
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         
         const data = await response.json();
+        console.log('✅ [useCatalog] Ответ:', {
+          hasSuccess: !!data.success,
+          hasDataList: !!data.data?.animeList,
+          dataListLength: data.data?.animeList?.length || 0,
+          dataStructure: {
+            hasPagination: !!data.data?.pagination,
+            hasTimestamp: !!data.data?.timestamp,
+            hasSource: !!data.data?.source
+          }
+        });
         
         if (!data.success) {
+          console.error('❌ [useCatalog] API ошибка:', data.error);
           throw new Error(data.error || 'Failed to load catalog data');
         }
         
         // Преобразуем данные в формат, совместимый с React Query
-        return {
+        const result = {
           data: data.data.animeList,
           pagination: {
             currentPage: data.data.currentPage,
@@ -69,6 +94,15 @@ export const useCatalog = ({ filter, search, page = 1, filters = {} } = {}) => {
           timestamp: data.data.timestamp,
           source: response.headers.get('X-Data-Source') || 'unknown',
         };
+        
+        console.log('📦 [useCatalog] Результат:', {
+          dataLength: result.data.length,
+          pagination: result.pagination,
+          hasError: !!result.error,
+          source: result.source
+        });
+        
+        return result;
       } catch (error) {
         console.error('Catalog query error:', error);
         
@@ -102,6 +136,22 @@ export const useCatalog = ({ filter, search, page = 1, filters = {} } = {}) => {
     },
     // Опции для SSR
     enabled: true, // Всегда активен
+    // Graceful fallback при ошибках
+    placeholderData: {
+      data: [],
+      pagination: {
+        currentPage: page,
+        totalPages: 1,
+        totalCount: 0,
+        perPage: filters.perPage || 20,
+      },
+      filter,
+      search,
+      filters,
+      error: null,
+      timestamp: new Date().toISOString(),
+      source: 'placeholder',
+    },
   });
 };
 
@@ -132,28 +182,53 @@ export const useInfiniteCatalog = ({ filter, search, filters = {} } = {}) => {
         });
         
         const queryString = params.toString();
-        const url = `/api/catalog/${filter ? `${filter}` : ''}${queryString ? `?${queryString}` : ''}`;
+        const url = `catalog/${filter ? `${filter}` : ''}${queryString ? `?${queryString}` : ''}`;
         
-        const response = await fetch(url);
+        console.log('🔍 [useInfiniteCatalog] Запрос:', {
+          url,
+          filter,
+          search,
+          pageParam,
+          filters: Object.keys(filters),
+          queryString,
+          fullUrl: `${API_BASE_URL}/api/${url}`
+        });
+        
+        const response = await api.get(url);
         
         if (!response.ok) {
+          console.error('❌ [useInfiniteCatalog] HTTP ошибка:', response.status, response.statusText);
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         
         const data = await response.json();
+        console.log('✅ [useInfiniteCatalog] Ответ:', {
+          hasSuccess: !!data.success,
+          hasDataItems: !!data.data?.items,
+          dataItemsLength: data.data?.items?.length || 0,
+          dataStructure: {
+            hasPage: !!data.data?.page,
+            hasPages: !!data.data?.pages,
+            hasTotal: !!data.data?.total,
+            hasLimit: !!data.data?.limit,
+            hasTimestamp: !!data.data?.timestamp,
+            hasSource: !!data.data?.source
+          }
+        });
         
         if (!data.success) {
+          console.error('❌ [useInfiniteCatalog] API ошибка:', data.error);
           throw new Error(data.error || 'Failed to load catalog data');
         }
         
         // Преобразуем данные в формат, совместимый с React Query
-        return {
-          data: data.data.animeList,
+        const result = {
+          data: data.data.items || [],
           pagination: {
-            currentPage: data.data.currentPage,
-            totalPages: Math.ceil(data.data.totalCount / (filters.perPage || 20)),
-            totalCount: data.data.totalCount,
-            perPage: filters.perPage || 20,
+            currentPage: data.data.page || data.data.currentPage || 1,
+            totalPages: data.data.pages || 1,
+            totalCount: data.data.total || 0,
+            perPage: data.data.limit || filters.perPage || 20,
           },
           filter: data.data.filter,
           search: data.data.search,
@@ -162,6 +237,15 @@ export const useInfiniteCatalog = ({ filter, search, filters = {} } = {}) => {
           timestamp: data.data.timestamp,
           source: response.headers.get('X-Data-Source') || 'unknown',
         };
+        
+        console.log('📦 [useInfiniteCatalog] Результат:', {
+          dataLength: result.data.length,
+          pagination: result.pagination,
+          hasError: !!result.error,
+          source: result.source
+        });
+        
+        return result;
       } catch (error) {
         console.error('Catalog infinite query error:', error);
         
@@ -200,6 +284,22 @@ export const useInfiniteCatalog = ({ filter, search, filters = {} } = {}) => {
     },
     // Опции для SSR
     enabled: true, // Всегда активен
+    // Graceful fallback при ошибках
+    placeholderData: {
+      data: [],
+      pagination: {
+        currentPage: 1,
+        totalPages: 1,
+        totalCount: 0,
+        perPage: filters.perPage || 20,
+      },
+      filter,
+      search,
+      filters,
+      error: null,
+      timestamp: new Date().toISOString(),
+      source: 'placeholder',
+    },
   });
 };
 
@@ -211,7 +311,7 @@ export const useCatalogSeo = (filter) => {
     queryKey: catalogKeys.seo(filter),
     queryFn: async () => {
       try {
-        const response = await fetch(`/api/catalog/${filter}/seo`);
+        const response = await api.get(`catalog/${filter}/seo`);
         
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -239,10 +339,89 @@ export const useCatalogSeo = (filter) => {
  * Хук для загрузки популярных аниме
  */
 export const usePopularAnime = (page = 1, limit = 20, options = {}) => {
-  return useCatalog({
-    filter: 'popular',
-    page,
-    filters: { perPage: limit },
+  return useQuery({
+    queryKey: ['catalog', 'popular', page, limit],
+    queryFn: async () => {
+      try {
+        const params = new URLSearchParams({
+          page: page.toString(),
+          limit: limit.toString()
+        });
+        
+        const url = `catalog/popular?${params}`;
+        console.log('🔍 [usePopularAnime] Запрос:', url);
+        console.log('🔍 [usePopularAnime] Полный URL:', `${API_BASE_URL}/api/${url}`);
+        
+        const response = await api.get(url);
+        
+        if (!response.ok) {
+          console.error('❌ [usePopularAnime] HTTP ошибка:', response.status, response.statusText);
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('✅ [usePopularAnime] Ответ:', {
+          hasSuccess: !!data.success,
+          hasDataList: !!data.data?.list,
+          dataListLength: data.data?.list?.length || 0,
+          dataStructure: {
+            hasPagination: !!data.data?.pagination,
+            hasTimestamp: !!data.data?.timestamp,
+            hasSource: !!data.data?.source
+          }
+        });
+        
+        if (!data.success) {
+          console.error('❌ [usePopularAnime] API ошибка:', data.error);
+          throw new Error(data.error || 'Failed to load popular anime');
+        }
+        
+        const result = {
+          data: data.data.items || [],
+          pagination: {
+            currentPage: data.data.page || data.data.currentPage || 1,
+            totalPages: data.data.pages || 1,
+            totalCount: data.data.total || 0,
+            perPage: data.data.limit || limit,
+          },
+          filter: 'popular',
+          timestamp: data.data.timestamp,
+          source: data.data.source,
+        };
+        
+        console.log('📦 [usePopularAnime] Результат:', {
+          dataLength: result.data.length,
+          pagination: result.pagination
+        });
+        
+        return result;
+      } catch (error) {
+        console.error('Popular anime query error:', error);
+        
+        return {
+          data: [],
+          pagination: {
+            currentPage: page,
+            totalPages: 1,
+            totalCount: 0,
+            perPage: limit,
+          },
+          filter: 'popular',
+          error: error.message,
+          timestamp: new Date().toISOString(),
+          source: 'error',
+        };
+      }
+    },
+    staleTime: 5 * 60 * 1000, // 5 минут
+    gcTime: 10 * 60 * 1000, // 10 минут
+    retry: (failureCount, error) => {
+      if (error.name === 'TypeError' || error.message.includes('HTTP error')) {
+        return false;
+      }
+      return failureCount < 3;
+    },
+    enabled: true,
     ...options
   });
 };
@@ -251,10 +430,89 @@ export const usePopularAnime = (page = 1, limit = 20, options = {}) => {
  * Хук для загрузки новых аниме
  */
 export const useNewAnime = (page = 1, limit = 20, options = {}) => {
-  return useCatalog({
-    filter: 'latest',
-    page,
-    filters: { perPage: limit },
+  return useQuery({
+    queryKey: ['catalog', 'new', page, limit],
+    queryFn: async () => {
+      try {
+        const params = new URLSearchParams({
+          page: page.toString(),
+          limit: limit.toString()
+        });
+        
+        const url = `catalog/new?${params}`;
+        console.log('🔍 [useNewAnime] Запрос:', url);
+        console.log('🔍 [useNewAnime] Полный URL:', `${API_BASE_URL}/api/${url}`);
+        
+        const response = await api.get(url);
+        
+        if (!response.ok) {
+          console.error('❌ [useNewAnime] HTTP ошибка:', response.status, response.statusText);
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('✅ [useNewAnime] Ответ:', {
+          hasSuccess: !!data.success,
+          hasDataList: !!data.data?.list,
+          dataListLength: data.data?.list?.length || 0,
+          dataStructure: {
+            hasPagination: !!data.data?.pagination,
+            hasTimestamp: !!data.data?.timestamp,
+            hasSource: !!data.data?.source
+          }
+        });
+        
+        if (!data.success) {
+          console.error('❌ [useNewAnime] API ошибка:', data.error);
+          throw new Error(data.error || 'Failed to load new anime');
+        }
+        
+        const result = {
+          data: data.data.items || [],
+          pagination: {
+            currentPage: data.data.page || page,
+            totalPages: data.data.pages || 1,
+            totalCount: data.data.total || 0,
+            perPage: data.data.limit || limit,
+          },
+          filter: 'new',
+          timestamp: data.data.timestamp,
+          source: data.data.source,
+        };
+        
+        console.log('📦 [useNewAnime] Результат:', {
+          dataLength: result.data.length,
+          pagination: result.pagination
+        });
+        
+        return result;
+      } catch (error) {
+        console.error('New anime query error:', error);
+        
+        return {
+          data: [],
+          pagination: {
+            currentPage: page,
+            totalPages: 1,
+            totalCount: 0,
+            perPage: limit,
+          },
+          filter: 'new',
+          error: error.message,
+          timestamp: new Date().toISOString(),
+          source: 'error',
+        };
+      }
+    },
+    staleTime: 5 * 60 * 1000, // 5 минут
+    gcTime: 10 * 60 * 1000, // 10 минут
+    retry: (failureCount, error) => {
+      if (error.name === 'TypeError' || error.message.includes('HTTP error')) {
+        return false;
+      }
+      return failureCount < 3;
+    },
+    enabled: true,
     ...options
   });
 };
@@ -263,10 +521,92 @@ export const useNewAnime = (page = 1, limit = 20, options = {}) => {
  * Хук для загрузки новых эпизодов
  */
 export const useNewEpisodes = (page = 1, limit = 20, options = {}) => {
-  return useCatalog({
-    filter: 'new-episodes',
-    page,
-    filters: { perPage: limit },
+  return useQuery({
+    queryKey: ['catalog', 'new-episodes', page, limit],
+    queryFn: async () => {
+      try {
+        const params = new URLSearchParams({
+          page: page.toString(),
+          limit: limit.toString()
+        });
+        
+        const url = `catalog/new-episodes?${params}`;
+        console.log('🔍 [useNewEpisodes] Запрос:', url);
+        console.log('🔍 [useNewEpisodes] Полный URL:', `${API_BASE_URL}/api/${url}`);
+        
+        const response = await api.get(url);
+        
+        if (!response.ok) {
+          console.error('❌ [useNewEpisodes] HTTP ошибка:', response.status, response.statusText);
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('✅ [useNewEpisodes] Ответ:', {
+          hasSuccess: !!data.success,
+          hasDataItems: !!data.data?.items,
+          dataItemsLength: data.data?.items?.length || 0,
+          dataStructure: {
+            hasPage: !!data.data?.page,
+            hasPages: !!data.data?.pages,
+            hasTotal: !!data.data?.total,
+            hasLimit: !!data.data?.limit,
+            hasTimestamp: !!data.data?.timestamp,
+            hasSource: !!data.data?.source
+          }
+        });
+        
+        if (!data.success) {
+          console.error('❌ [useNewEpisodes] API ошибка:', data.error);
+          throw new Error(data.error || 'Failed to load new episodes');
+        }
+        
+        const result = {
+          data: data.data.items || [],
+          pagination: {
+            currentPage: data.data.page || page,
+            totalPages: data.data.pages || 1,
+            totalCount: data.data.total || 0,
+            perPage: data.data.limit || limit,
+          },
+          filter: 'new-episodes',
+          timestamp: data.data.timestamp,
+          source: data.data.source,
+        };
+        
+        console.log('📦 [useNewEpisodes] Результат:', {
+          dataLength: result.data.length,
+          pagination: result.pagination
+        });
+        
+        return result;
+      } catch (error) {
+        console.error('New episodes query error:', error);
+        
+        return {
+          data: [],
+          pagination: {
+            currentPage: page,
+            totalPages: 1,
+            totalCount: 0,
+            perPage: limit,
+          },
+          filter: 'new-episodes',
+          error: error.message,
+          timestamp: new Date().toISOString(),
+          source: 'error',
+        };
+      }
+    },
+    staleTime: 5 * 60 * 1000, // 5 минут
+    gcTime: 10 * 60 * 1000, // 10 минут
+    retry: (failureCount, error) => {
+      if (error.name === 'TypeError' || error.message.includes('HTTP error')) {
+        return false;
+      }
+      return failureCount < 3;
+    },
+    enabled: true,
     ...options
   });
 };

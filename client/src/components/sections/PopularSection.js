@@ -72,14 +72,26 @@ const PopularSection = ({
   onAnimeClick,
   options = {}
 }) => {
-  const { 
-    data: catalogData, 
-    isLoading, 
-    error, 
-    refetch 
+  const {
+    data: catalogData,
+    isLoading,
+    error,
+    refetch
   } = usePopularAnime(1, limit, options);
 
   const popularAnime = catalogData?.data || [];
+  
+  // Исправляем формат данных для соответствия серверу
+  const correctedData = catalogData?.data || [];
+  
+  // Добавляем логирование для диагностики
+  console.log('🔍 [PopularSection] Состояние:', {
+    isLoading,
+    hasError: !!error,
+    hasData: !!catalogData,
+    dataLength: popularAnime.length,
+    error: error?.message || 'Нет ошибки'
+  });
 
   if (isLoading) {
     return (
@@ -139,7 +151,7 @@ const PopularSection = ({
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, staggerChildren: 0.1 }}
       >
-        {popularAnime.map((anime, index) => (
+        {correctedData.map((anime, index) => (
           <motion.div
             key={anime.id || index}
             initial={{ opacity: 0, y: 30 }}

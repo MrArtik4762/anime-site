@@ -1,12 +1,13 @@
 const axios = require('axios');
-const LRU = require('lru-cache');
+const NodeCache = require('node-cache');
 
 const V1 = process.env.ANILIBRIA_V1_BASE || 'https://anilibria.top/api/v1';
 const V3 = process.env.ANILIBRIA_V3_BASE || 'https://api.anilibria.tv/v3';
 
-const cache = new LRU({
-  ttl: 1000 * 60 * 2,
-  max: 1000,
+const cache = new NodeCache({
+  stdTTL: 120, // 2 минуты
+  checkperiod: 600,
+  useClones: false
 });
 
 function cacheKey(url, params) {
@@ -25,9 +26,35 @@ async function getJson(url, params = {}, { useV3 = false } = {}) {
     cache.set(key, data);
     return data;
   } catch (e) {
-    if (!useV3) {
+    console.error(`Anilibria API error (${useV3 ? 'V3' : 'V1'}):`, {
+      url: base + url,
+      params,
+      error: e.message,
+      status: e.response?.status,
+      data: e.response?.data,
+      timestamp: new Date().toISOString()
+    });
+
+    // Если ошибка 500 и используем V1, пробуем V3
+    if (!useV3 && e.response?.status === 500) {
+      console.log('Retrying with V3 API...');
       return getJson(url.replace(/^\/title/, '/title'), params, { useV3: true });
     }
+
+    // Если обе версии API вернули ошибку, возвращаем placeholder данные
+    if (useV3 || e.response?.status === 500) {
+      console.log('Returning fallback data due to API error');
+      return {
+        list: [],
+        pagination: {
+          page: params?.page || 1,
+          limit: params?.limit || 24,
+          total: 0
+        },
+        error: 'Внешний API временно недоступен. Используются placeholder данные.'
+      };
+    }
+
     throw e;
   }
 }

@@ -1,6 +1,5 @@
 const winston = require('winston');
-const { DailyRotateFile } = require('winston-daily-rotate-file');
-const { ElasticsearchTransport } = require('@elastic/elasticsearch/libTransport');
+const winstonDailyRotateFile = require('winston-daily-rotate-file');
 const { combine, timestamp, errors, json, printf, colorize } = winston.format;
 const path = require('path');
 
@@ -34,98 +33,87 @@ const logger = winston.createLogger({
       })
     ] : []),
     
+    // Временно отключаем файловые логи из-за проблем с winston-daily-rotate-file
     // Ошибки в отдельный файл
-    new DailyRotateFile({
-      filename: 'logs/error-%DATE%.log',
-      datePattern: 'YYYY-MM-DD',
-      level: 'error',
-      maxFiles: '14d',
-      maxSize: '20m'
-    }),
+    // new winstonDailyRotateFile.DailyRotateFile({
+    //   filename: 'logs/error-%DATE%.log',
+    //   datePattern: 'YYYY-MM-DD',
+    //   level: 'error',
+    //   maxFiles: '14d',
+    //   maxSize: '20m'
+    // }),
     
     // Все логи в отдельный файл
-    new DailyRotateFile({
-      filename: 'logs/combined-%DATE%.log',
-      datePattern: 'YYYY-MM-DD',
-      maxFiles: '14d',
-      maxSize: '20m'
-    })
+    // new winstonDailyRotateFile.DailyRotateFile({
+    //   filename: 'logs/combined-%DATE%.log',
+    //   datePattern: 'YYYY-MM-DD',
+    //   maxFiles: '14d',
+    //   maxSize: '20m'
+    // })
   ],
   
   // Не выводить ошибки, если нет активных транспортов
   exceptionHandlers: [
-    new winston.transports.File({ 
-      filename: 'logs/exceptions.log',
-      maxFiles: '14d',
-      maxSize: '20m'
+    new winston.transports.Console({
+      format: combine(
+        colorize(),
+        timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+        consoleFormat
+      )
     })
   ],
   
   // Не выводить необработанные промисы
   rejectionHandlers: [
-    new winston.transports.File({ 
-      filename: 'logs/rejections.log',
-      maxFiles: '14d',
-      maxSize: '20m'
+    new winston.transports.Console({
+      format: combine(
+        colorize(),
+        timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+        consoleFormat
+      )
     })
   ]
 });
 
-// Интеграция с Elasticsearch (если настроена)
-if (process.env.ELASTICSEARCH_URL) {
-  const esTransport = new ElasticsearchTransport({
-    level: 'info',
-    client: { node: process.env.ELASTICSEARCH_URL },
-    index: 'anime-site-logs',
-    indexPrefix: '%DATE%',
-    indexSuffix: 'logs',
-    transformer: (log) => {
-      return {
-        ...log,
-        '@timestamp': log.timestamp,
-        message: log.message,
-        level: log.level,
-        service: log.service,
-        requestId: log.requestId,
-        userId: log.userId,
-        meta: log.meta || {}
-      };
-    }
-  });
-  
-  logger.add(esTransport);
-}
+// Интеграция с Elasticsearch (если настроена) - временно отключена
+// if (process.env.ELASTICSEARCH_URL) {
+//   const esTransport = new ElasticsearchTransport({
+//     level: 'info',
+//     client: { node: process.env.ELASTICSEARCH_URL },
+//     index: 'anime-site-logs',
+//     indexPrefix: '%DATE%',
+//     indexSuffix: 'logs',
+//     transformer: (log) => {
+//       return {
+//         ...log,
+//         '@timestamp': log.timestamp,
+//         message: log.message,
+//         level: log.level,
+//         service: log.service,
+//         requestId: log.requestId,
+//         userId: log.userId,
+//         meta: log.meta || {}
+//       };
+//     }
+//   });
+//
+//   logger.add(esTransport);
+// }
 
 // HTTP логгер для express-winston
 const httpLogger = winston.createLogger({
   level: 'http',
   format: combine(
     timestamp(),
-    json(),
-    (info) => {
-      // Добавляем HTTP специфичные поля
-      if (info.meta && info.meta.req) {
-        return {
-          ...info,
-          method: info.meta.req.method,
-          url: info.meta.req.url,
-          userAgent: info.meta.req.headers['user-agent'],
-          ip: info.meta.req.ip,
-          statusCode: info.meta.res?.statusCode,
-          responseTime: info.meta.responseTime,
-          contentLength: info.meta.res.get('content-length')
-        };
-      }
-      return info;
-    }
+    json()
   ),
   transports: [
-    new DailyRotateFile({
-      filename: 'logs/http-%DATE%.log',
-      datePattern: 'YYYY-MM-DD',
-      maxFiles: '7d',
-      maxSize: '20m'
-    })
+    // new winstonDailyRotateFile.DailyRotateFile({
+    //   filename: 'logs/http-%DATE%.log',
+    //   datePattern: 'YYYY-MM-DD',
+    //   maxFiles: '7d',
+    //   maxSize: '20m'
+    // })
   ]
 });
 

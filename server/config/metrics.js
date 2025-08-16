@@ -1,5 +1,5 @@
 const prometheus = require('prom-client');
-const logger = require('./logger');
+const { logger } = require('./logger');
 
 /**
  * Конфигурация Prometheus для сбора метрик
@@ -13,8 +13,8 @@ class MetricsConfig {
       version: process.env.RELEASE || 'unknown'
     };
     
-    // Настройка глобальных меток
-    prometheus.setDefaultLabels(this.defaultLabels);
+    // Настройка глобальных меток (новый способ)
+    this.register.setDefaultLabels(this.defaultLabels);
     
     // Регистрация собственных метрик
     this.setupMetrics();

@@ -22,7 +22,7 @@ export const authService = {
   // Вход пользователя
   async login(credentials) {
     try {
-      const response = await api.post('/api/auth/login', credentials, {
+      const response = await api.post('/auth/login', credentials, {
         credentials: 'include',
       });
       
@@ -41,7 +41,7 @@ export const authService = {
   // Регистрация пользователя
   async register(userData) {
     try {
-      const response = await api.post('/api/auth/register', userData, {
+      const response = await api.post('/auth/register', userData, {
         credentials: 'include',
       });
       
@@ -59,9 +59,18 @@ export const authService = {
 
   // Обновление токена
   async refresh() {
+    console.log('🔄 [CLIENT] Запрос на обновление access токена...');
+    console.log('🔄 [CLIENT] Cookie presence:', document.cookie.includes('refreshToken'));
+    console.log('🔄 [CLIENT] Document cookie:', document.cookie);
+    
     try {
-      const response = await api.post('/api/auth/refresh', {}, {
+      const response = await api.post('/auth/refresh', {}, {
         credentials: 'include',
+      });
+      
+      console.log('✅ [CLIENT] Access токен успешно обновлен:', {
+        hasNewToken: !!response.data.tokens?.accessToken,
+        timestamp: new Date().toISOString()
       });
       
       // Store new token in memory
@@ -71,6 +80,13 @@ export const authService = {
       
       return response.data;
     } catch (error) {
+      console.error('❌ [CLIENT] Ошибка обновления access токена:', {
+        error: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+        timestamp: new Date().toISOString()
+      });
+      
       const errorMessage = this._handleError(error);
       throw new Error(errorMessage);
     }
@@ -79,7 +95,7 @@ export const authService = {
   // Получение текущего пользователя
   async getCurrentUser() {
     try {
-      const response = await api.get('/api/auth/me', {
+      const response = await api.get('/auth/me', {
         credentials: 'include',
       });
       return response.data;
@@ -92,7 +108,7 @@ export const authService = {
   // Обновление профиля
   async updateProfile(userData) {
     try {
-      const response = await api.put('/api/users/profile', userData, {
+      const response = await api.put('/users/profile', userData, {
         credentials: 'include',
       });
       return response.data;
@@ -105,7 +121,7 @@ export const authService = {
   // Смена пароля
   async changePassword(passwordData) {
     try {
-      const response = await api.put('/api/users/change-password', passwordData, {
+      const response = await api.put('/users/change-password', passwordData, {
         credentials: 'include',
       });
       return response.data;
@@ -118,7 +134,7 @@ export const authService = {
   // Загрузка аватара
   async uploadAvatar(formData) {
     try {
-      const response = await api.post('/api/users/avatar', formData, {
+      const response = await api.post('/users/avatar', formData, {
         credentials: 'include',
         headers: {
           'Content-Type': 'multipart/form-data',
@@ -134,7 +150,7 @@ export const authService = {
   // Восстановление пароля
   async forgotPassword(email) {
     try {
-      const response = await api.post('/api/auth/forgot-password', { email });
+      const response = await api.post('/auth/forgot-password', { email });
       return response.data;
     } catch (error) {
       const errorMessage = this._handleError(error);
@@ -145,7 +161,7 @@ export const authService = {
   // Сброс пароля
   async resetPassword(token, newPassword) {
     try {
-      const response = await api.post('/api/auth/reset-password', {
+      const response = await api.post('/auth/reset-password', {
         token,
         password: newPassword,
       });
@@ -159,7 +175,7 @@ export const authService = {
   // Выйти из аккаунта
   async logout() {
     try {
-      await api.post('/api/auth/logout', {}, {
+      await api.post('/auth/logout', {}, {
         credentials: 'include',
       });
     } catch (error) {
