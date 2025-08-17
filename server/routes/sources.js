@@ -1,6 +1,8 @@
-const express = require('express');
-const SourcesController = require('../controllers/sourcesController');
-const router = express.Router();
+import express from 'express';
+import { Router } from 'express';
+import SourcesController from '../controllers/sourcesController.js';
+
+const router = Router();
 
 /**
  * Маршруты для работы с источниками эпизодов
@@ -34,4 +36,4 @@ router.delete('/sources/cleanup', SourcesController.cleanupOldSources);
 // Получение источников эпизода с проверкой доступности и priority sorting
 router.get('/anime/:id/episode/:num/sources', SourcesController.getEpisodeSourcesWithStatus);
 
-module.exports = router;
+export default router;

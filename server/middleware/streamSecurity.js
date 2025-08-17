@@ -1,6 +1,7 @@
-const { URL } = require('url');
-const logger = require('../config/logger');
-const { HTTP_STATUS, ERROR_MESSAGES } = require('../../shared/constants/constants');
+import { URL } from 'url';
+import * as loggerModule from '../config/logger.js';
+const { logger } = loggerModule;
+import { HTTP_STATUS, ERROR_MESSAGES } from '../../shared/constants/constants.js';
 
 /**
  * Enhanced whitelist from environment variables (comma-separated)
@@ -368,7 +369,7 @@ const validateUserAgent = (req, res, next) => {
   }
 };
 
-module.exports = {
+export {
   streamSecurityMiddleware,
   rateLimitByUrl,
   validateUserAgent

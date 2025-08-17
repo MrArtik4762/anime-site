@@ -1,4 +1,4 @@
-const winston = require('winston');
+import winston from 'winston';
 const { combine, timestamp, errors, json, printf, colorize } = winston.format;
 
 // Формат для консольного вывода с цветами
@@ -142,4 +142,4 @@ const logRequest = (req, res, startTime) => {
   });
 };
 
-module.exports = { logger, httpLogger, logRequest };
+export { logger, httpLogger, logRequest };

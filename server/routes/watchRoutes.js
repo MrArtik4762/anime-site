@@ -1,8 +1,10 @@
-const express = require('express');
-const router = express.Router();
-const watchController = require('../controllers/watchController');
-const { authenticate } = require('../middleware/auth');
-const { validate, watchProgressSchemas } = require('../middleware/validation');
+import express from 'express';
+import { Router } from 'express';
+import watchController from '../controllers/watchController.js';
+import { authenticate } from '../middleware/auth.js';
+import { validate, watchProgressSchemas } from '../middleware/validation.js';
+
+const router = Router();
 
 // POST /api/watch/progress - Сохранение прогресса просмотра
 router.post('/progress',
@@ -36,4 +38,4 @@ router.post('/progress/batch',
   watchController.batchSaveProgress
 );
 
-module.exports = router;
+export default router;

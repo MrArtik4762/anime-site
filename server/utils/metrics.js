@@ -1,4 +1,4 @@
-const client = require('prom-client');
+import client from 'prom-client';
 
 // Настройка сбора метрик по умолчанию
 const register = new client.Registry();
@@ -261,19 +261,8 @@ const getMetricsJSON = async () => {
   return await register.metrics();
 };
 
-module.exports = {
-  register,
-  metricsMiddleware,
-  incrementWebSocketMessage,
-  recordDbOperation,
-  measureDbOperation,
-  recordApiCall,
-  recordBusinessMetric,
-  updateHealthCheckStatus,
-  getMetrics,
-  getMetricsJSON,
-  
-  // Экспортируем метрики для прямого использования
+// Объект с метриками для удобного доступа
+const metrics = {
   httpRequestDurationMicroseconds,
   httpRequestCounter,
   activeConnections,
@@ -293,4 +282,18 @@ module.exports = {
   episodePlays,
   searchQueries,
   healthCheckStatus
+};
+
+export {
+  register,
+  metricsMiddleware,
+  incrementWebSocketMessage,
+  recordDbOperation,
+  measureDbOperation,
+  recordApiCall,
+  recordBusinessMetric,
+  updateHealthCheckStatus,
+  getMetrics,
+  getMetricsJSON,
+  metrics
 };

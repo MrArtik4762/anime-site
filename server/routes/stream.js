@@ -10,14 +10,16 @@
  * - Rate limiting для защиты от злоупотреблений
  */
 
-const express = require('express');
-const router = express.Router();
-const streamProxyService = require('../services/streamProxy');
-const { videoLimiter } = require('../middleware/rateLimiter');
-const { validateQueryParams } = require('../middleware/paramValidator');
-const streamValidationMiddleware = require('../middleware/streamValidation');
-const streamSecurityMiddleware = require('../middleware/streamSecurity');
-const streamLoggingMiddleware = require('../middleware/streamLogging');
+import express from 'express';
+import { Router } from 'express';
+import streamProxyService from '../services/streamProxy.js';
+import { videoLimiter } from '../middleware/rateLimiter.js';
+import { validateQueryParams } from '../middleware/paramValidator.js';
+import * as streamValidationMiddleware from '../middleware/streamValidation.js';
+import * as streamSecurityMiddleware from '../middleware/streamSecurity.js';
+import * as streamLoggingMiddleware from '../middleware/streamLogging.js';
+
+const router = Router();
 
 // Middleware для валидации query параметров
 const validateStreamQuery = validateQueryParams('stream');
@@ -48,4 +50,4 @@ router.options('/stream', (req, res) => {
   res.status(204).end();
 });
 
-module.exports = router;
+export default router;

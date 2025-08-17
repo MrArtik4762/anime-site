@@ -8,9 +8,9 @@
  * - Улучшенная безопасность с whitelist и обработкой ошибок
  */
 
-const express = require('express');
-const axios = require('axios');
-const { URL } = require('url');
+import express from 'express';
+import axios from 'axios';
+import { URL } from 'url';
 
 const router = express.Router();
 
@@ -254,4 +254,4 @@ router.options('/proxy', (req, res) => {
   res.status(204).end();
 });
 
-module.exports = router;
+export default router;

@@ -1,5 +1,5 @@
-const logger = require('../config/logger');
-const { AppError, formatErrorForResponse, logError } = require('../utils/errors');
+import { logger } from '../config/logger.js';
+import { AppError, formatErrorForResponse, logError } from '../utils/errors.js';
 
 /**
  * Централизованный обработчик ошибок для Express
@@ -209,7 +209,7 @@ const hlsErrorHandler = (req, res, next) => {
   next();
 };
 
-module.exports = {
+export {
   notFoundHandler,
   validationErrorHandler,
   databaseErrorHandler,
@@ -219,6 +219,3 @@ module.exports = {
   wsErrorHandler,
   hlsErrorHandler
 };
-
-// Экспортируем errorHandler как отдельную функцию для app.js
-module.exports.errorHandler = errorHandler;

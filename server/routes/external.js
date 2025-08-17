@@ -1,4 +1,6 @@
-const express = require('express');
+import express from 'express';
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
 const router = express.Router();
 
 // GET /api/external/mal
@@ -25,4 +27,4 @@ router.get('/kitsu', (req, res) => {
   });
 });
 
-module.exports = router;
+export default router;

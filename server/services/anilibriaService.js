@@ -1,5 +1,5 @@
-const axios = require('axios');
-const Anime = require('../models/Anime');
+import axios from 'axios';
+import Anime from '../models/Anime.js';
 
 class AnilibriaService {
   constructor() {
@@ -593,4 +593,4 @@ class AnilibriaService {
   }
 }
 
-module.exports = new AnilibriaService();
+export default new AnilibriaService();

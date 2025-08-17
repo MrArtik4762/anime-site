@@ -1,0 +1,134 @@
+[
+  {
+    "id": "1",
+    "title": { "ru": "Врата Штейна", "en": "Steins;Gate" },
+    "poster": { "original": "https://example.com/posters/steinsgate.jpg", "url": "https://example.com/posters/steinsgate_thumb.jpg" },
+    "year": "2011",
+    "score": 9.1,
+    "episodes": 24,
+    "status": "released",
+    "genres": ["драма", "научная фантастика", "триллер"],
+    "release_date": "2011-04-05"
+  },
+  {
+    "id": "2", 
+    "title": { "ru": "Твое имя", "en": "Kimi no Na wa" },
+    "poster": { "original": "https://example.com/posters/yourname.jpg", "url": "https://example.com/posters/yourname_thumb.jpg" },
+    "year": "2016",
+    "score": 8.4,
+    "episodes": 1,
+    "status": "released",
+    "genres": ["драма", "романтика", "фэнтези"],
+    "release_date": "2016-08-26"
+  },
+  {
+    "id": "3",
+    "title": { "ru": "Атака Титанов", "en": "Shingeki no Kyojin" },
+    "poster": { "original": "https://example.com/posters/attackontitan.jpg", "url": "https://example.com/posters/attackontitan_thumb.jpg" },
+    "year": "2013",
+    "score": 8.9,
+    "episodes": 75,
+    "status": "released",
+    "genres": ["экшен", "фэнтези", "драма"],
+    "release_date": "2013-04-07"
+  },
+  {
+    "id": "4",
+    "title": { "ru": "Магический воин вселенной", "en": "Mahou Shoujo Madoka★Magica" },
+    "poster": { "original": "https://example.com/posters/madoka.jpg", "url": "https://example.com/posters/madoka_thumb.jpg" },
+    "year": "2011",
+    "score": 8.8,
+    "episodes": 12,
+    "status": "released",
+    "genres": ["фэнтези", "магия", "трагедия"],
+    "release_date": "2011-01-06"
+  },
+  {
+    "id": "5",
+    "title": { "ru": "Токийский гуль", "en": "Tokyo Ghoul" },
+    "poster": { "original": "https://example.com/posters/tokyoghoul.jpg", "url": "https://example.com/posters/tokyoghoul_thumb.jpg" },
+    "year": "2014",
+    "score": 8.0,
+    "episodes": 24,
+    "status": "released",
+    "genres": ["экшен", "триллер", "сверхъестественное"],
+    "release_date": "2014-07-04"
+  },
+  {
+    "id": "6",
+    "title": { "ru": "Моб Психо 100", "en": "Mob Psycho 100" },
+    "poster": { "original": "https://example.com/posters/mobpsycho.jpg", "url": "https://example.com/posters/mobpsycho_thumb.jpg" },
+    "year": "2016",
+    "score": 8.7,
+    "episodes": 37,
+    "status": "released",
+    "genres": ["экшен", "комедия", "сверхъестественное"],
+    "release_date": "2016-07-12"
+  },
+  {
+    "id": "7",
+    "title": { "ru": "Клинок, рассекающий демонов", "en": "Demon Slayer: Kimetsu no Yaiba" },
+    "poster": { "original": "https://example.com/posters/demonslayer.jpg", "url": "https://example.com/posters/demonslayer_thumb.jpg" },
+    "year": "2019",
+    "score": 8.7,
+    "episodes": 44,
+    "status": "ongoing",
+    "genres": ["экшен", "исторический", "сверхъестественное"],
+    "release_date": "2019-04-06"
+  },
+  {
+    "id": "8",
+    "title": { "ru": "Моя геройская академия", "en": "Boku no Hero Academia" },
+    "poster": { "original": "https://example.com/posters/mha.jpg", "url": "https://example.com/posters/mha_thumb.jpg" },
+    "year": "2016",
+    "score": 8.5,
+    "episodes": 113,
+    "status": "ongoing",
+    "genres": ["экшен", "сверхъестественное", "школа"],
+    "release_date": "2016-04-03"
+  },
+  {
+    "id": "9",
+    "title": { "ru": "Тетрадь дружбы Нацуми", "en": "Natsume's Book of Friends" },
+    "poster": { "original": "https://example.com/posters/natsume.jpg", "url": "https://example.com/posters/natsume_thumb.jpg" },
+    "year": "2008",
+    "score": 8.6,
+    "episodes": 100,
+    "status": "ongoing",
+    "genres": ["драма", "сверхъестественное", "романтика"],
+    "release_date": "2008-07-07"
+  },
+  {
+    "id": "10",
+    "title": { "ru": "Твоё имя", "en": "Kimi no Na wa" },
+    "poster": { "original": "https://example.com/posters/yourname2.jpg", "url": "https://example.com/posters/yourname2_thumb.jpg" },
+    "year": "2022",
+    "score": 8.3,
+    "episodes": 1,
+    "status": "released",
+    "genres": ["драма", "романтика", "фэнтези"],
+    "release_date": "2022-11-11"
+  },
+  {
+    "id": "11",
+    "title": { "ru": "Киберпанк: Бегущие по краю", "en": "Cyberpunk: Edgerunners" },
+    "poster": { "original": "https://example.com/posters/cyberpunk.jpg", "url": "https://example.com/posters/cyberpunk_thumb.jpg" },
+    "year": "2022",
+    "score": 8.7,
+    "episodes": 10,
+    "status": "released",
+    "genres": ["экшен", "драма", "научная фантастика"],
+    "release_date": "2022-09-13"
+  },
+  {
+    "id": "12",
+    "title": { "ru": "Унесенные призраками", "en": "Spirited Away" },
+    "poster": { "original": "https://example.com/posters/spiritedaway.jpg", "url": "https://example.com/posters/spiritedaway_thumb.jpg" },
+    "year": "2001",
+    "score": 9.3,
+    "episodes": 1,
+    "status": "released",
+    "genres": ["фэнтези", "приключения", "семейный"],
+    "release_date": "2001-07-20"
+  }
+]

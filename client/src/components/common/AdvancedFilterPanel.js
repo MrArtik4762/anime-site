@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import styled from 'styled-components';
+import { styled } from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '../../styles/GlobalStyles';
 

@@ -1,6 +1,6 @@
-const speakeasy = require('speakeasy');
-const QRCode = require('qrcode');
-const { HTTP_STATUS, ERROR_MESSAGES } = require('../../shared/constants/constants');
+import speakeasy from 'speakeasy';
+import QRCode from 'qrcode';
+import { HTTP_STATUS, ERROR_MESSAGES } from '../../shared/constants/constants.js';
 
 /**
  * Middleware для проверки двухфакторной аутентификации
@@ -273,7 +273,7 @@ function generateRandomCode() {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
 }
 
-module.exports = {
+export {
   require2FA,
   generate2FASecret,
   enable2FA,

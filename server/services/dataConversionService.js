@@ -1,7 +1,7 @@
 const UnifiedAnime = require('../models/UnifiedAnime');
-const anilibriaService = require('./anilibriaService');
-const anilibertyService = require('./anilibertyService');
-const anilistService = require('./anilistService');
+import anilibriaService from './anilibriaService.js';
+import anilibertyService from './anilibertyService.js';
+import anilistService from './anilistService.js';
 
 class DataConversionService {
   /**

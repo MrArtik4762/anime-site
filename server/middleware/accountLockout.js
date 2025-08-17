@@ -1,4 +1,4 @@
-const { HTTP_STATUS, ERROR_MESSAGES } = require('../../shared/constants/constants');
+import { HTTP_STATUS, ERROR_MESSAGES } from '../../shared/constants/constants.js';
 
 // In-memory store for failed login attempts (in production, use Redis)
 const failedAttempts = new Map();
@@ -107,7 +107,7 @@ const getLockoutInfo = (email) => {
   };
 };
 
-module.exports = {
+export {
   accountLockout,
   resetAttempts,
   getLockoutInfo,

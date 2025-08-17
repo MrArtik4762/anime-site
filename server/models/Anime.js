@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const animeSchema = new mongoose.Schema({
   // Внешние идентификаторы
@@ -481,4 +481,4 @@ animeSchema.methods.needsSync = function(source, hours = 24) {
   return diffHours >= hours;
 };
 
-module.exports = mongoose.model('Anime', animeSchema);
+export default mongoose.model('Anime', animeSchema);

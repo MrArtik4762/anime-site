@@ -1,7 +1,7 @@
-const knex = require('knex');
-const { db } = require('../db/knex');
-const bcrypt = require('bcryptjs');
-const crypto = require('crypto');
+import knex from 'knex';
+import { db } from '../db/knex.js';
+import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 
 class User {
   constructor(user = {}) {
@@ -437,4 +437,4 @@ class User {
   }
 }
 
-module.exports = User;
+export default User;

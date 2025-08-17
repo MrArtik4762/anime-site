@@ -10,7 +10,7 @@ const passthrough = () => ({
   toBuffer: async function() { throw new Error('Image processing disabled (sharp not available)'); }
 });
 
-module.exports = function(input) {
+export default function(input) {
   // if called like sharp(buffer) just return chainable no-op
   return passthrough();
 };

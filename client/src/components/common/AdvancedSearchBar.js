@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import styled from 'styled-components';
+import { styled } from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import debounce from 'lodash.debounce';
 import { anilibriaV2Service } from '../../services/anilibriaV2Service';

@@ -1,47 +1,63 @@
-﻿const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
-const morgan = require('morgan');
-const compression = require('compression');
-const rateLimit = require('express-rate-limit');
-const { createServer } = require('http');
-const { Server } = require('socket.io');
-require('dotenv').config();
-const { HTTP_STATUS } = require('../shared/constants/constants');
-const knexConfig = require('./knexfile');
-const knex = require('knex')(knexConfig[process.env.NODE_ENV || 'development']);
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import morgan from 'morgan';
+import compression from 'compression';
+import rateLimit from 'express-rate-limit';
+import { createServer } from 'http';
+import { Server } from 'socket.io';
+import 'dotenv/config';
+// HTTP статус коды
+const HTTP_STATUS = {
+  OK: 200,
+  CREATED: 201,
+  NO_CONTENT: 204,
+  BAD_REQUEST: 400,
+  UNAUTHORIZED: 401,
+  FORBIDDEN: 403,
+  NOT_FOUND: 404,
+  CONFLICT: 409,
+  UNPROCESSABLE_ENTITY: 422,
+  TOO_MANY_REQUESTS: 429,
+  INTERNAL_SERVER_ERROR: 500,
+  SERVICE_UNAVAILABLE: 503
+};
+import knexConfig from './knexfile.js';
+import knex from 'knex';
+
+const db = knex(knexConfig[process.env.NODE_ENV || 'development']);
 
 // Import routes
-const authRoutes = require('./routes/auth');
-const animeRoutes = require('./routes/anime');
-const animeApiRoutes = require('./routes/animeRoutes');
-const userRoutes = require('./routes/users');
-const commentRoutes = require('./routes/comments');
-const externalRoutes = require('./routes/external');
-const watchlistRoutes = require('./routes/watchlist');
-const anilibriaRoutes = require('./routes/anilibria');
-const videoRoutes = require('./routes/video');
-const episodeRoutes = require('./routes/episode');
-const proxyRoutes = require('./routes/proxy');
-const searchRoutes = require('./routes/search');
-const streamRoutes = require('./routes/stream');
-const watchRoutes = require('./routes/watchRoutes');
-const sourcesRoutes = require('./routes/sources');
+import authRoutes from './routes/auth.js';
+import animeRoutes from './routes/anime.js';
+import animeApiRoutes from './routes/animeRoutes.js';
+import userRoutes from './routes/users.js';
+import commentRoutes from './routes/comments.js';
+import externalRoutes from './routes/external.js';
+import watchlistRoutes from './routes/watchlist.js';
+import anilibriaRoutes from './routes/anilibria.js';
+import videoRoutes from './routes/video.js';
+import episodeRoutes from './routes/episode.js';
+import proxyRoutes from './routes/proxy.js';
+import searchRoutes from './routes/search.js';
+import streamRoutes from './routes/stream.js';
+import watchRoutes from './routes/watchRoutes.js';
+import sourcesRoutes from './routes/sources.js';
 // New AniLiberty API routes
-const apiRoutes = require('./routes/api');
+import apiRoutes from './routes/api.js';
 
 // Import middleware
-const errorHandler = require('./middleware/errorHandler');
-const notFound = require('./middleware/notFound');
+import { errorHandler } from './middleware/errorHandler.js';
+import notFound from './middleware/notFound.js';
 
 // Import monitoring and logging
-const { logger, httpLogger, logRequest } = require('./config/logger');
-const { metricsMiddleware } = require('./utils/metrics');
-const healthRoutes = require('./routes/health');
-const metricsRoutes = require('./routes/metrics');
+import { logger, httpLogger, logRequest } from './config/logger.js';
+import { metricsMiddleware } from './utils/metrics.js';
+import healthRoutes from './routes/health.js';
+import metricsRoutes from './routes/metrics.js';
 
 // Import socket handlers
-const socketHandler = require('./socket/socketHandler');
+import socketHandler from './socket/socketHandler.js';
 
 // Create Express app
 const app = express();
@@ -168,7 +184,7 @@ app.get('/health/simple', async (req, res) => {
   
   try {
     // Check database connection
-    await knex.raw('SELECT 1');
+    await db.raw('SELECT 1');
     health.database = 'connected';
   } catch (error) {
     health.database = 'error';
@@ -226,15 +242,15 @@ app.use((err, req, res, next) => {
 const connectDB = async () => {
   try {
     // Test database connection
-    await knex.raw('SELECT 1');
+    await db.raw('SELECT 1');
     console.log(`Database connected successfully`);
     
     // Run migrations if needed
     if (process.env.NODE_ENV === 'development') {
-      const migrations = await knex.migrate.list();
+      const migrations = await db.migrate.list();
       if (migrations.length > 0) {
         console.log('Running pending migrations...');
-        await knex.migrate.latest();
+        await db.migrate.latest();
         console.log('Migrations completed');
       }
     }
@@ -266,7 +282,7 @@ const gracefulShutdown = async (signal) => {
       
       // Close database connections
       try {
-        await knex.destroy();
+        await db.destroy();
         console.log('Database connection closed.');
       } catch (dbError) {
         console.error('Error closing database connection:', dbError.message);
@@ -305,4 +321,4 @@ process.on('uncaughtException', (err) => {
   gracefulShutdown('UncaughtException');
 });
 
-module.exports = { app, server, connectDB };
+export { app, server, connectDB };

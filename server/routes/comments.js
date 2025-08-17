@@ -1,4 +1,6 @@
-const express = require('express');
+import express from 'express';
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
 const router = express.Router();
 
 // GET /api/comments/:animeId
@@ -15,4 +17,4 @@ router.post('/', (req, res) => {
   res.json({ message: 'Create comment endpoint' });
 });
 
-module.exports = router;
+export default router;

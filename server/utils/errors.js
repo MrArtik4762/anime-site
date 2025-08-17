@@ -156,7 +156,7 @@ const formatErrorForResponse = (error) => {
  * Логирование ошибки с дополнительной контекстной информацией
  */
 const logError = (error, req, res) => {
-  const { logger } = require('../config/logger');
+  const logger = require('../config/logger');
   
   const errorContext = {
     error: {
@@ -185,7 +185,19 @@ const logError = (error, req, res) => {
   }
 };
 
-module.exports = {
+/**
+ * Устаревшая функция для создания ошибок - оставлена для совместимости
+ * @deprecated Используйте вместо этого конкретные классы ошибок
+ */
+const createError = (message, statusCode = 500, details = {}) => {
+  const error = new AppError(message, statusCode);
+  if (details && Object.keys(details).length > 0) {
+    error.details = details;
+  }
+  return error;
+};
+
+export {
   AppError,
   ValidationError,
   AuthenticationError,
@@ -202,5 +214,6 @@ module.exports = {
   ExternalApiError,
   asyncHandler,
   formatErrorForResponse,
-  logError
+  logError,
+  createError
 };

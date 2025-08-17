@@ -1,5 +1,5 @@
-const { paramSchemas, querySchemas } = require('../middleware/validation');
-const { HTTP_STATUS, ERROR_MESSAGES } = require('../../shared/constants/constants');
+import { paramSchemas, querySchemas } from '../middleware/validation.js';
+import { HTTP_STATUS, ERROR_MESSAGES } from '../../shared/constants/constants.js';
 
 /**
  * Middleware для валидации параметров URL
@@ -241,7 +241,7 @@ function parseSize(size) {
   return parseInt(match[1]) * units[match[2]];
 }
 
-module.exports = {
+export {
   validateUrlParams,
   validateQueryParams,
   preventSqlInjection,

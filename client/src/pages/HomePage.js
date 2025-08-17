@@ -1,14 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { Container } from '../styles/GlobalStyles';
 import SearchBox from '../components/common/SearchBox';
 import FilterPanel from '../components/common/FilterPanel';
-import PopularSection from '../components/sections/PopularSection';
-import NewEpisodesSection from '../components/sections/NewEpisodesSection';
+import { PopularBlock, NewEpisodesBlock } from '../components/HomeBlocks';
 import NewAnimeSection from '../components/sections/NewAnimeSection';
 import AnimeCard from '../components/anime/AnimeCard';
 import anilibriaV2Service from '../services/anilibriaV2Service';
+import { AppErrorBoundary } from '../components/common/AppErrorBoundary';
+import { Loading } from '../components/common/Loading';
+import logger from '../services/logger';
 
 const HomeContainer = styled.div`
   min-height: 100vh;
@@ -160,95 +162,98 @@ const HomePage = () => {
   };
 
   return (
-    <HomeContainer>
-      <HeroSection>
+    <AppErrorBoundary>
+      <HomeContainer>
+        <HeroSection>
+          <Container>
+            <HeroTitle>🎌 Добро пожаловать в мир аниме</HeroTitle>
+            <HeroSubtitle>
+              Откройте для себя тысячи аниме сериалов и фильмов.
+              Смотрите, оценивайте и делитесь впечатлениями с сообществом.
+            </HeroSubtitle>
+            <SearchBox onSearch={handleSearch} placeholder="Поиск аниме..." />
+          </Container>
+        </HeroSection>
+
         <Container>
-          <HeroTitle>🎌 Добро пожаловать в мир аниме</HeroTitle>
-          <HeroSubtitle>
-            Откройте для себя тысячи аниме сериалов и фильмов.
-            Смотрите, оценивайте и делитесь впечатлениями с сообществом.
-          </HeroSubtitle>
-          <SearchBox onSearch={handleSearch} placeholder="Поиск аниме..." />
+          {searchQuery && (
+            <Section>
+              <SectionTitle>
+                Результаты поиска "{searchQuery}"
+              </SectionTitle>
+
+              <FilterSection>
+                <FilterPanel filters={filters} onFilterChange={handleFilterChange} />
+              </FilterSection>
+
+              {searchLoading && (
+                <LoadingContainer>
+                  <Loading size="large" />
+                </LoadingContainer>
+              )}
+
+              {searchError && (
+                <ErrorMessage>
+                  {searchError}
+                  <br />
+                  <button
+                    onClick={() => handleSearch(searchQuery)}
+                    style={{
+                      marginTop: '15px',
+                      padding: '8px 16px',
+                      background: 'transparent',
+                      border: '1px solid currentColor',
+                      borderRadius: '6px',
+                      color: 'inherit',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Повторить поиск
+                  </button>
+                </ErrorMessage>
+              )}
+
+              {searchResults.length > 0 && !searchLoading && (
+                <SearchGrid>
+                  {searchResults.map((anime, index) => (
+                    <AnimeCard
+                      key={anime.id || index}
+                      anime={anime}
+                      onClick={() => handleAnimeClick(anime)}
+                    />
+                  ))}
+                </SearchGrid>
+              )}
+
+              {searchResults.length === 0 && !searchLoading && !searchError && (
+                <ErrorMessage>
+                  По вашему запросу ничего не найдено. Попробуйте изменить параметры поиска.
+                </ErrorMessage>
+              )}
+            </Section>
+          )}
+
+          {!searchQuery && (
+            <>
+              <Suspense fallback={<LoadingContainer><Loading size="large" /></LoadingContainer>}>
+                <PopularBlock />
+              </Suspense>
+              
+              <Suspense fallback={<LoadingContainer><Loading size="large" /></LoadingContainer>}>
+                <NewEpisodesBlock />
+              </Suspense>
+              
+              <Suspense fallback={<LoadingContainer><Loading size="large" /></LoadingContainer>}>
+                <NewAnimeSection
+                  limit={12}
+                  onAnimeClick={handleAnimeClick}
+                />
+              </Suspense>
+            </>
+          )}
         </Container>
-      </HeroSection>
-
-      <Container>
-        {searchQuery && (
-          <Section>
-            <SectionTitle>
-              Результаты поиска "{searchQuery}"
-            </SectionTitle>
-
-            <FilterSection>
-              <FilterPanel filters={filters} onFilterChange={handleFilterChange} />
-            </FilterSection>
-
-            {searchLoading && (
-              <LoadingContainer>
-                <div>Поиск...</div>
-              </LoadingContainer>
-            )}
-
-            {searchError && (
-              <ErrorMessage>
-                {searchError}
-                <br />
-                <button 
-                  onClick={() => handleSearch(searchQuery)}
-                  style={{
-                    marginTop: '15px',
-                    padding: '8px 16px',
-                    background: 'transparent',
-                    border: '1px solid currentColor',
-                    borderRadius: '6px',
-                    color: 'inherit',
-                    cursor: 'pointer'
-                  }}
-                >
-                  Повторить поиск
-                </button>
-              </ErrorMessage>
-            )}
-
-            {searchResults.length > 0 && !searchLoading && (
-              <SearchGrid>
-                {searchResults.map((anime, index) => (
-                  <AnimeCard 
-                    key={anime.id || index} 
-                    anime={anime} 
-                    onClick={() => handleAnimeClick(anime)}
-                  />
-                ))}
-              </SearchGrid>
-            )}
-
-            {searchResults.length === 0 && !searchLoading && !searchError && (
-              <ErrorMessage>
-                По вашему запросу ничего не найдено. Попробуйте изменить параметры поиска.
-              </ErrorMessage>
-            )}
-          </Section>
-        )}
-
-        {!searchQuery && (
-          <>
-            <PopularSection 
-              limit={12}
-              onAnimeClick={handleAnimeClick}
-            />
-            
-            <NewEpisodesSection 
-              limit={10}
-            />
-            
-            <NewAnimeSection 
-              limit={12}
-              onAnimeClick={handleAnimeClick}
-            />
-          </>
-        )}
-      </Container>
-    </HomeContainer>
+      </HomeContainer>
+    </AppErrorBoundary>
   );
 };
 

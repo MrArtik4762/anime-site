@@ -1,8 +1,8 @@
-const WatchProgress = require('../models/WatchProgress');
-const Anime = require('../models/Anime');
-const { HTTP_STATUS, ERROR_MESSAGES } = require('../../shared/constants/constants');
-const { validationResult } = require('express-validator');
-const mongoose = require('mongoose');
+import WatchProgress from '../models/WatchProgress.js';
+import Anime from '../models/Anime.js';
+import { HTTP_STATUS, ERROR_MESSAGES } from '../../shared/constants/constants.js';
+import { validationResult } from 'express-validator';
+import mongoose from 'mongoose';
 
 class WatchController {
   // POST /api/watch/progress - Сохранение прогресса просмотра
@@ -594,4 +594,4 @@ class WatchController {
   }
 }
 
-module.exports = new WatchController();
+export default new WatchController();

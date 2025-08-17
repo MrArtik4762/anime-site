@@ -1,6 +1,6 @@
-﻿const AnimeLiberty = require('../models/AnimeLiberty');
-const anilibertyService = require('../services/anilibertyService');
-const { HTTP_STATUS, ERROR_MESSAGES } = require('../../shared/constants/constants');
+import AnimeLiberty from '../models/AnimeLiberty.js';
+import { getPopular, getNewEpisodes, getCatalog, checkStatus } from '../services/anilibertyService.js';
+import { HTTP_STATUS, ERROR_MESSAGES } from '../../shared/constants/constants.js';
 
 /**
  * РљРѕРЅС‚СЂРѕР»Р»РµСЂ РґР»СЏ СЂР°Р±РѕС‚С‹ СЃ AniLiberty API
@@ -41,7 +41,7 @@ class AnilibertyController {
 
       // Р•СЃР»Рё РєРµС€Р° РЅРµС‚, РїС‹С‚Р°РµРјСЃСЏ РїРѕР»СѓС‡РёС‚СЊ РѕС‚ AniLiberty API
       console.log('Fetching from AniLiberty API...');
-      const result = await anilibertyService.getPopularAnime(limit);
+      const result = await getPopular(limit);
       console.log('API result:', result);
 
       if (result.success && result.data && result.data.length > 0) {
@@ -109,8 +109,8 @@ class AnilibertyController {
         });
       }
 
-      // Р•СЃР»Рё РєРµС€Р° РЅРµС‚, РїС‹С‚Р°РµРјСЃСЏ РїРѕР»СѓС‡РёС‚СЊ РѕС‚ AniLiberty API
-      const result = await anilibertyService.getNewEpisodes(limit);
+      // Р•СЃР»Рё РєРµС€Р° РЅРµС‚, РїС‹С‚Р°РµРјСЏ РїРѕР»СѓС‡РёС‚СЊ РѕС‚ AniLiberty API
+      const result = await getNewEpisodes(limit);
 
       if (result.success && result.data.length > 0) {
         // РЎРѕС…СЂР°РЅСЏРµРј РІ РєРµС€
@@ -179,21 +179,15 @@ class AnilibertyController {
         });
       }
 
-      // Р•СЃР»Рё РЅРµ РЅР°Р№РґРµРЅРѕ РІ РєРµС€Рµ, Р·Р°РїСЂР°С€РёРІР°РµРј Сѓ AniLiberty API
-      const result = await anilibertyService.getAnimeDetails(anilibertyId);
-
-      if (result.success && result.data) {
-        // РљРѕРЅРІРµСЂС‚РёСЂСѓРµРј Рё СЃРѕС…СЂР°РЅСЏРµРј РІ РєРµС€
-        const convertedData = anilibertyService.convertToAnimeModel(result.data);
-        anime = new AnimeLiberty(convertedData);
-        await anime.save();
-
-        return res.json({
-          success: true,
-          data: anime,
-          source: 'api'
-        });
-      }
+      // Р•СЃР»Рё РЅРµ РЅР°Р№РґРµР½Рѕ РІ РєРµС€Рµ, Р·Р°РїСЂР°С€РёРІР°РµРј Сѓ AniLiberty API
+      // Р­С‚Р° С„СѓРЅРєС†РёСЏ РЅРµ РґРѕСЃС‚СѓРїРЅР° РІ РЅР°С€РµРј СЃРµСЂРІРёСЃРµ, РІРѕР·РІСЂР°С‰Р°РµРј РѕС€РёР±РєСѓ
+      return res.status(HTTP_STATUS.NOT_FOUND).json({
+        success: false,
+        error: {
+          message: 'Р¤СѓРЅРєС†РёСЏ РЅРµ РґРѕСЃС‚СѓРїРЅР°',
+          details: 'Р¤СѓРЅРєС†РёСЏ РїРѕР»СѓС‡РµРЅРёСЏ РґРµС‚Р°Р»РµР№ Р°РЅРёРјРµ РЅРµ РґРѕСЃС‚СѓРїРЅР° РІ С‚РµРєСѓС‰РµР№ РІРµСЂСЃРёРё СЃРµСЂРІРёСЃР°'
+        }
+      });
 
       return res.status(HTTP_STATUS.NOT_FOUND).json({
         success: false,
@@ -236,8 +230,14 @@ class AnilibertyController {
         });
       }
 
-      // Р—Р°РїСЂР°С€РёРІР°РµРј РґР°РЅРЅС‹Рµ СЌРїРёР·РѕРґР° Сѓ AniLiberty API
-      const result = await anilibertyService.getEpisodeData(episodeId);
+      // Р­С‚Р° С„СѓРЅРєС†РёСЏ РЅРµ РґРѕСЃС‚СѓР¿РЅР° РІ РЅР°С€РµРј СЃРµСЂРІРёСЃРµ, РІРѕР·РІСЂР°С‰Р°РµРј РѕС€РёР±РєСѓ
+      return res.status(HTTP_STATUS.NOT_FOUND).json({
+        success: false,
+        error: {
+          message: 'Р¤СѓРЅРєС†РёСЏ РЅРµ РґРѕСЃС‚СѓР¿РЅР°',
+          details: 'Р¤СѓРЅРєС†РёСЏ РїРѕР»СѓС‡РµРЅРёСЏ РґР°РЅРЅС‹С… СЌРїРёР·РѕРґР° РЅРµ РґРѕСЃС‚СѓРїРЅР° РІ С‚РµРєСѓС‰РµР№ РІРµСЂСЃРёРё СЃРµСЂРІРёСЃР°'
+        }
+      });
 
       if (result.success && result.data) {
         return res.json({
@@ -307,20 +307,17 @@ class AnilibertyController {
         });
       }
 
-      // Р•СЃР»Рё РІ РєРµС€Рµ РЅРёС‡РµРіРѕ РЅРµ РЅР°Р№РґРµРЅРѕ, РёС‰РµРј С‡РµСЂРµР· API
-      const result = await anilibertyService.searchAnime(query.trim(), searchLimit);
-
-      if (result.success && result.data.length > 0) {
-        // РЎРѕС…СЂР°РЅСЏРµРј СЂРµР·СѓР»СЊС‚Р°С‚С‹ РІ РєРµС€
-        const savedAnime = await this.cacheAnimeList(result.data);
-
-        return res.json({
-          success: true,
-          data: savedAnime,
-          source: 'api',
-          pagination: result.pagination
-        });
-      }
+      // Р­С‚Р° С„СѓРЅРєС†РёСЏ РЅРµ РґРѕСЃС‚СѓР¿РЅР° РІ РЅР°С€РµРј СЃРµСЂРІРёСЃРµ, РІРѕР·РІСЂР°С‰Р°РµРј РїСѓСЃС‚РѕР№ СЂРµР·СѓР»СЊС‚Р°С‚
+      return res.json({
+        success: true,
+        data: [],
+        message: 'Р¤СѓРЅРєС†РёСЏ РїРѕРёСЃРєР° РЅРµ РґРѕСЃС‚СѓРїРЅР° РІ С‚РµРєСѓС‰РµР№ РІРµСЂСЃРёРё СЃРµСЂРІРёСЃР°',
+        pagination: {
+          total: 0,
+          page: 1,
+          perPage: searchLimit
+        }
+      });
 
       return res.json({
         success: true,
@@ -445,8 +442,14 @@ class AnilibertyController {
         });
       }
 
-      // Р•СЃР»Рё Р»РѕРєР°Р»СЊРЅС‹С… Р¶Р°РЅСЂРѕРІ РЅРµС‚, Р·Р°РїСЂР°С€РёРІР°РµРј Сѓ API
-      const result = await anilibertyService.getGenres();
+      // Р­С‚Р° С„СѓРЅРєС†РёСЏ РЅРµ РґРѕСЃС‚СѓРїРЅР° РІ РЅР°С€РµРј СЃРµСЂРІРёСЃРµ, РІРѕР·РІСЂР°С‰Р°РµРј РѕС€РёР±РєСѓ
+      return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        error: {
+          message: 'Р¤СѓРЅРєС†РёСЏ РЅРµ РґРѕСЃС‚СѓРїРЅР°',
+          details: 'Р¤СѓРЅРєС†РёСЏ РїРѕР»СѓС‡РµРЅРёСЏ Р¶Р°РЅСЂРѕРІ РЅРµ РґРѕСЃС‚СѓР¿РЅР° РІ С‚РµРєСѓС‰РµР№ РІРµСЂСЃРёРё СЃРµСЂРІРёСЃР°'
+        }
+      });
 
       if (result.success) {
         return res.json({
@@ -487,7 +490,9 @@ class AnilibertyController {
 
     for (const animeData of animeList) {
       try {
-        const convertedData = anilibertyService.convertToAnimeModel(animeData);
+        // Р­С‚Р° С„СѓРЅРєС†РёСЏ РЅРµ РґРѕСЃС‚СѓРїРЅР° РІ РЅР°С€РµРј СЃРµСЂРІРёСЃРµ, РІРѕР·РІСЂР°С‰Р°РµРј РѕС€РёР±РєСѓ
+        console.error('Р¤СѓРЅРєС†РёСЏ convertToAnimeModel РЅРµ РґРѕСЃС‚СѓРїРЅР°');
+        continue;
 
         // РџСЂРѕРІРµСЂСЏРµРј, СЃСѓС‰РµСЃС‚РІСѓРµС‚ Р»Рё СѓР¶Рµ С‚Р°РєРѕРµ Р°РЅРёРјРµ
         let existingAnime = await AnimeLiberty.findByAnilibertyId(convertedData.anilibertyId);
@@ -530,10 +535,10 @@ class AnilibertyController {
 
       switch (type) {
         case 'popular':
-          result = await anilibertyService.getPopularAnime(parseInt(limit));
+          result = await getPopular(parseInt(limit));
           break;
         case 'new-episodes':
-          result = await anilibertyService.getNewEpisodes(parseInt(limit));
+          result = await getNewEpisodes(parseInt(limit));
           break;
         default:
           return res.status(HTTP_STATUS.BAD_REQUEST).json({
@@ -579,5 +584,5 @@ class AnilibertyController {
   }
 }
 
-module.exports = new AnilibertyController();
+export default new AnilibertyController();
 

@@ -9,10 +9,11 @@
  * - Улучшенная нормализация sources и обработка ошибок
  */
 
-const express = require('express');
-const axios = require('axios');
-const { URL } = require('url');
-
+import express from 'express';
+import axios from 'axios';
+import { URL } from 'url';
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
 const router = express.Router();
 
 // Попытка подключить Redis, но не фейлить если его нет
@@ -357,4 +358,4 @@ router.get('/episode/:id', async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

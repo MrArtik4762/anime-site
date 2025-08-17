@@ -1,6 +1,6 @@
-﻿const jwt = require('jsonwebtoken');
-const User = require('../models/UserKnex');
-const { HTTP_STATUS, ERROR_MESSAGES } = require('../../shared/constants/constants');
+import jwt from 'jsonwebtoken';
+import User from '../models/UserKnex.js';
+import { HTTP_STATUS, ERROR_MESSAGES } from '../../shared/constants/constants.js';
 // Middleware РґР»СЏ РїСЂРѕРІРµСЂРєРё JWT С‚РѕРєРµРЅР°
 const authenticate = async (req, res, next) => {
   try {
@@ -254,7 +254,7 @@ const generateRefreshToken = (userId) => {
   );
 };
 
-module.exports = {
+export {
   authenticate,
   authorize,
   optionalAuth,

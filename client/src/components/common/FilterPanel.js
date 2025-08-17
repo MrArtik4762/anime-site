@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import styled from 'styled-components';
+import { styled } from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import { animeService } from '../../services/animeService';
 import { Button } from '../../styles/GlobalStyles';

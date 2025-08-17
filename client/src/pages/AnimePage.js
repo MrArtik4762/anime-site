@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import anilibriaV2Service from '../services/anilibriaV2Service';
 import { Container, Button, LoadingSpinner } from '../styles/GlobalStyles';
+import { AppErrorBoundary } from '../components/common/AppErrorBoundary';
+import logger from '../services/logger';
 
 const AnimeContainer = styled.div`
   min-height: 100vh;
@@ -346,13 +348,15 @@ const AnimePage = () => {
 
   if (loading) {
     return (
-      <AnimeContainer>
+      <AppErrorBoundary>
+        <AnimeContainer>
         <Container>
           <LoadingContainer>
             <LoadingSpinner size="48px" />
           </LoadingContainer>
         </Container>
-      </AnimeContainer>
+        </AnimeContainer>
+      </AppErrorBoundary>
     );
   }
 

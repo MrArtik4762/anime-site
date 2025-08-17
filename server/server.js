@@ -1,9 +1,8 @@
-﻿;
-const { server, connectDB } = require('./app');
-const anilibriaService = require('./services/anilibriaService');
-const Anime = require('./models/Anime');
+import { server, connectDB } from './app.js';
+import anilibriaService from './services/anilibriaService.js';
+import Anime from './models/Anime.js';
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
 
 // Connect to database and start server
 const startServer = async () => {

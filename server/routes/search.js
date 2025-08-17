@@ -1,8 +1,10 @@
-const express = require('express');
-const router = express.Router();
-const searchController = require('../controllers/searchController');
+import express from 'express';
+import { Router } from 'express';
+import searchController from '../controllers/searchController.js';
+
+const router = Router();
 
 // GET /api/anime/search?q=&limit=6 - Поиск с автодополнением
 router.get('/anime/search', searchController.searchAnime);
 
-module.exports = router;
+export default router;

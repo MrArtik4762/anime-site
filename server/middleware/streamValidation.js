@@ -1,5 +1,5 @@
-const { querySchemas } = require('./validation');
-const { HTTP_STATUS, ERROR_MESSAGES } = require('../../shared/constants/constants');
+import { querySchemas } from './validation.js';
+import { HTTP_STATUS, ERROR_MESSAGES } from '../../shared/constants/constants.js';
 
 /**
  * Middleware для валидации query параметров стриминга
@@ -214,7 +214,7 @@ function parseSize(size) {
   return parseInt(match[1]) * units[match[2]];
 }
 
-module.exports = {
+export {
   validateStreamQuery,
   validateStreamUrl,
   validateRangeHeader,

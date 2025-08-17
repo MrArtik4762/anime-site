@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const watchProgressSchema = new mongoose.Schema({
   // Ссылка на аниме
@@ -430,4 +430,4 @@ watchProgressSchema.methods.formatPosition = function() {
   return this.formatTime(this.position);
 };
 
-module.exports = mongoose.model('WatchProgress', watchProgressSchema);
+export default mongoose.model('WatchProgress', watchProgressSchema);

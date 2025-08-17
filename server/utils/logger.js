@@ -1,4 +1,4 @@
-const winston = require('winston');
+import winston from 'winston';
 const { DailyRotateFile } = require('winston-daily-rotate-file');
 const { ElasticsearchTransport } = require('@elastic/elasticsearch/libTransport');
 const { combine, timestamp, errors, json, printf, colorize } = winston.format;
@@ -198,7 +198,7 @@ const logBusinessEvent = (event, data, context = {}) => {
   });
 };
 
-module.exports = {
+export {
   logger,
   httpLogger,
   requestLoggerMiddleware,

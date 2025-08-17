@@ -14,4 +14,4 @@ const redis = {
   }
 };
 
-module.exports = redis;
+export default redis;

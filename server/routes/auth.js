@@ -1,14 +1,16 @@
-const express = require('express');
-const router = express.Router();
-const authController = require('../controllers/authController');
-const { authenticate } = require('../middleware/auth');
-const { validate, authSchemas } = require('../middleware/validation');
-const { accountLockout, resetAttempts } = require('../middleware/accountLockout');
-const { require2FA } = require('../middleware/2fa');
-const { setAuthCookies, extractTokenFromCookie, refreshTokenFromCookie, clearAuthCookies } = require('../middleware/cookieAuth');
+import express from 'express';
+import router from 'express-promise-router';
+import authController from '../controllers/authController.js';
+import { authenticate } from '../middleware/auth.js';
+import { validate, authSchemas } from '../middleware/validation.js';
+import { accountLockout, resetAttempts } from '../middleware/accountLockout.js';
+import { require2FA } from '../middleware/2fa.js';
+import { setAuthCookies, extractTokenFromCookie, refreshTokenFromCookie, clearAuthCookies } from '../middleware/cookieAuth.js';
+
+const authRouter = router();
 
 // POST /api/auth/register - Регистрация пользователя
-router.post('/register',
+authRouter.post('/register',
   [
     validate(authSchemas.register),
     (req, res, next) => {
@@ -45,7 +47,7 @@ router.post('/register',
 );
 
 // POST /api/auth/login - Вход в систему
-router.post('/login',
+authRouter.post('/login',
   [
     accountLockout,
     validate(authSchemas.login),
@@ -71,7 +73,7 @@ router.post('/login',
 );
 
 // POST /api/auth/refresh - Обновление токена
-router.post('/refresh', [
+authRouter.post('/refresh', [
   (req, res, next) => {
     // Проверяем наличие refresh токена в cookie
     const refreshToken = req.cookies.refreshToken;
@@ -91,7 +93,7 @@ router.post('/refresh', [
 ], authController.refreshToken);
 
 // POST /api/auth/logout - Выход из системы
-router.post('/logout', [
+authRouter.post('/logout', [
   authenticate,
   (req, res, next) => {
     // Проверяем, что пользователь аутентифицирован
@@ -110,7 +112,7 @@ router.post('/logout', [
 ], authController.logout);
 
 // GET /api/auth/me - Получение текущего пользователя
-router.get('/me', [
+authRouter.get('/me', [
   authenticate,
   (req, res, next) => {
     // Проверяем, что пользователь аутентифицирован
@@ -129,7 +131,7 @@ router.get('/me', [
 ], authController.getMe);
 
 // POST /api/auth/forgot-password - Забыли пароль
-router.post('/forgot-password', [
+authRouter.post('/forgot-password', [
   validate(authSchemas.forgotPassword),
   (req, res, next) => {
     // Дополнительная валидация на уровне роута
@@ -150,7 +152,7 @@ router.post('/forgot-password', [
 ], authController.forgotPassword);
 
 // POST /api/auth/reset-password - Сброс пароля
-router.post('/reset-password', [
+authRouter.post('/reset-password', [
   validate(authSchemas.resetPassword),
   (req, res, next) => {
     // Дополнительная валидация на уровне роута
@@ -193,7 +195,7 @@ router.post('/reset-password', [
 ], authController.resetPassword);
 
 // GET /api/auth/verify-email/:token - Верификация email
-router.get('/verify-email/:token', [
+authRouter.get('/verify-email/:token', [
   (req, res, next) => {
     // Проверяем наличие токена
     const { token } = req.params;
@@ -213,7 +215,7 @@ router.get('/verify-email/:token', [
 ], authController.verifyEmail);
 
 // POST /api/auth/2fa/generate - Генерация 2FA секрета
-router.post('/2fa/generate', [
+authRouter.post('/2fa/generate', [
   (req, res, next) => {
     // Проверяем наличие email
     const { email } = req.body;
@@ -244,7 +246,7 @@ router.post('/2fa/generate', [
 ], authController.generate2FASecret);
 
 // POST /api/auth/2fa/enable - Включение 2FA
-router.post('/2fa/enable', [
+authRouter.post('/2fa/enable', [
   authenticate,
   (req, res, next) => {
     // Проверяем, что пользователь аутентифицирован
@@ -263,7 +265,7 @@ router.post('/2fa/enable', [
 ], authController.enable2FA);
 
 // POST /api/auth/2fa/disable - Отключение 2FA
-router.post('/2fa/disable', [
+authRouter.post('/2fa/disable', [
   authenticate,
   (req, res, next) => {
     // Проверяем, что пользователь аутентифицирован
@@ -282,7 +284,7 @@ router.post('/2fa/disable', [
 ], authController.disable2FA);
 
 // POST /api/auth/2fa/verify - Проверка 2FA токена
-router.post('/2fa/verify', [
+authRouter.post('/2fa/verify', [
   authenticate,
   require2FA,
   (req, res, next) => {
@@ -302,11 +304,11 @@ router.post('/2fa/verify', [
 ], authController.verify2FA);
 
 // GET /api/auth/test - Тестовый endpoint
-router.get('/test', (req, res) => {
+authRouter.get('/test', (req, res) => {
   res.json({
     message: 'Auth routes working!',
     timestamp: new Date().toISOString()
   });
 });
 
-module.exports = router;
+export default authRouter;

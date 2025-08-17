@@ -1,5 +1,6 @@
-const logger = require('../config/logger');
-const { HTTP_STATUS, ERROR_MESSAGES } = require('../../shared/constants/constants');
+import * as loggerModule from '../config/logger.js';
+const { logger } = loggerModule;
+import { HTTP_STATUS, ERROR_MESSAGES } from '../../shared/constants/constants.js';
 
 /**
  * Middleware для логирования запросов стриминга
@@ -302,7 +303,7 @@ const samplingMiddleware = (req, res, next) => {
   next();
 };
 
-module.exports = {
+export {
   streamLoggingMiddleware,
   streamMetricsMiddleware,
   detailedLoggingMiddleware,

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { lightTheme, getTheme } from '../../styles/theme';
 import { ThemeProvider as StyledThemeProvider } from 'styled-components';
 import { useAutoThemeSwitch } from '../../utils/autoThemeSwitch';
@@ -6,49 +6,131 @@ import { useAutoThemeSwitch } from '../../utils/autoThemeSwitch';
 // Создаем контекст темы
 const ThemeContext = createContext();
 
+const DEFAULT_THEME = 'light';
+
 // Провайдер темы
 export const ThemeProvider = ({ children }) => {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [theme, setTheme] = useState(lightTheme); // Инициализируем с светлой темой
   const [isInitialized, setIsInitialized] = useState(false);
   const [autoThemeEnabled, setAutoThemeEnabled] = useState(false);
+  const [themeError, setThemeError] = useState(null);
+  const [isInitializing, setIsInitializing] = useState(true);
+  const isMounted = useRef(true);
+
+  // Безопасное получение значения из localStorage
+  const getLocalStorageValue = (key, defaultValue) => {
+    try {
+      if (typeof window === 'undefined') return defaultValue;
+      
+      const value = localStorage.getItem(key);
+      if (value === null) return defaultValue;
+      
+      // Проверяем корректность JSON
+      if (key === 'theme') {
+        return ['light', 'dark'].includes(value) ? value : defaultValue;
+      }
+      
+      if (key === 'autoThemeEnabled') {
+        return value === 'true';
+      }
+      
+      return defaultValue;
+    } catch (error) {
+      console.error(`Error accessing localStorage for key ${key}:`, error);
+      return defaultValue;
+    }
+  };
 
   // Инициализация темы при загрузке (только на клиенте)
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedTheme = localStorage.getItem('theme');
-      const savedAutoTheme = localStorage.getItem('autoThemeEnabled') === 'true';
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (!isMounted.current) return;
+
+    const initializeTheme = async () => {
+      setIsInitializing(true);
+      setThemeError(null);
       
-      // Проверяем системные предпочтения, если нет сохраненных настроек
-      if (savedTheme) {
-        setIsDarkMode(savedTheme === 'dark');
-      } else {
-        setIsDarkMode(prefersDark);
+      try {
+        if (typeof window !== 'undefined') {
+          // Проверяем доступность localStorage
+          const testKey = '__test__';
+          try {
+            localStorage.setItem(testKey, 'test');
+            localStorage.removeItem(testKey);
+          } catch (error) {
+            throw new Error('localStorage недоступен');
+          }
+
+          const savedTheme = getLocalStorageValue('theme', DEFAULT_THEME);
+          const savedAutoTheme = getLocalStorageValue('autoThemeEnabled', false);
+          const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          
+          // Проверяем системные предпочтения, если нет сохраненных настроек
+          if (savedTheme === DEFAULT_THEME) {
+            setIsDarkMode(prefersDark);
+          } else {
+            setIsDarkMode(savedTheme === 'dark');
+          }
+          
+          setAutoThemeEnabled(savedAutoTheme);
+        }
+        
+        setIsInitialized(true);
+        
+        // Уведомляем координатор об успешной инициализации
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('theme-initialized', {
+            detail: { success: true, theme: isDarkMode ? 'dark' : 'light' }
+          }));
+        }
+      } catch (error) {
+        console.error('Theme initialization failed:', error);
+        setThemeError('Не удалось загрузить настройки темы. Используется тема по умолчанию.');
+        // При ошибке используем светлую тему
+        setIsDarkMode(false);
+        setAutoThemeEnabled(false);
+        setIsInitialized(true);
+        
+        // Уведомляем координатор об ошибке
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('initialization-error', {
+            detail: { error: new Error('Theme initialization failed'), type: 'theme' }
+          }));
+        }
+      } finally {
+        setIsInitializing(false);
       }
-      
-      setAutoThemeEnabled(savedAutoTheme);
-      setIsInitialized(true);
-    }
+    };
+
+    initializeTheme();
+
+    return () => {
+      isMounted.current = false;
+    };
   }, []);
 
   // Обновление темы при изменении isDarkMode
   useEffect(() => {
-    if (isInitialized && typeof window !== 'undefined') {
-      const newTheme = getTheme(isDarkMode);
-      setTheme(newTheme);
-      
-      // Сохраняем предпочтение пользователя
-      localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
-      
-      // Применяем класс к body для CSS-селекторов
-      if (isDarkMode) {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
+    if (isInitialized && !isInitializing && typeof window !== 'undefined') {
+      try {
+        const newTheme = getTheme(isDarkMode);
+        setTheme(newTheme);
+        
+        // Сохраняем предпочтение пользователя
+        localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
+        
+        // Применяем класс к body для CSS-селекторов
+        if (isDarkMode) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      } catch (error) {
+        console.error('Error updating theme:', error);
+        setThemeError('Ошибка применения темы. Попробуйте обновить страницу.');
       }
     }
-  }, [isDarkMode, isInitialized]);
+  }, [isDarkMode, isInitialized, isInitializing]);
 
   // Переключение темы
   const toggleTheme = useCallback(() => {
@@ -108,6 +190,9 @@ export const ThemeProvider = ({ children }) => {
     elevation: theme.elevation,
     transitions: theme.transitions,
     isInitialized,
+    isInitializing,
+    themeError,
+    retryTheme: () => window.location.reload(),
   };
 
   return (

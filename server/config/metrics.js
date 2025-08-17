@@ -1,5 +1,5 @@
-const prometheus = require('prom-client');
-const logger = require('./logger');
+import prometheus from 'prom-client';
+import { logger } from './logger.js';
 
 /**
  * Конфигурация Prometheus для сбора метрик
@@ -381,4 +381,4 @@ class MetricsConfig {
 const metricsConfig = new MetricsConfig();
 
 // Экспортируем класс и экземпляр
-module.exports = { MetricsConfig, metricsConfig };
+export { MetricsConfig, metricsConfig };

@@ -1,7 +1,8 @@
-const express = require('express');
-const router = express.Router();
-const anilibriaController = require('../controllers/anilibriaController');
-const auth = require('../middleware/auth');
+import { Router } from 'express';
+import * as anilibriaController from '../controllers/anilibriaController.js';
+import * as auth from '../middleware/auth.js';
+
+const router = Router();
 
 // Получить популярные аниме
 router.get('/popular', anilibriaController.getPopular);
@@ -30,4 +31,4 @@ router.get('/youtube', anilibriaController.getYouTube);
 // Получить аниме по ID
 router.get('/:id', anilibriaController.getById);
 
-module.exports = router;
+export default router;

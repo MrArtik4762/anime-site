@@ -1,5 +1,6 @@
-const jwt = require('jsonwebtoken');
-const { HTTP_STATUS, ERROR_MESSAGES } = require('../../shared/constants/constants');
+import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
+import { HTTP_STATUS, ERROR_MESSAGES } from '../../shared/constants/constants.js';
 
 /**
  * Middleware для установки JWT токенов в HttpOnly cookies
@@ -166,7 +167,7 @@ const verifyCSRFToken = (req, res, next) => {
  */
 const generateCSRFToken = (req, res, next) => {
   try {
-    const csrfToken = require('crypto').randomBytes(64).toString('hex');
+    const csrfToken = crypto.randomBytes(64).toString('hex');
     
     // Сохраняем токен в сессии
     req.session.csrfToken = csrfToken;
@@ -210,7 +211,7 @@ const setSecureSession = (req, res, next) => {
   }
 };
 
-module.exports = {
+export {
   setAuthCookies,
   extractTokenFromCookie,
   refreshTokenFromCookie,

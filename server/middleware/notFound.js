@@ -1,4 +1,4 @@
-const { HTTP_STATUS } = require('../../shared/constants/constants');
+import { HTTP_STATUS } from '../../shared/constants/constants.js';
 
 const notFound = (req, res, next) => {
   const error = new Error(`Маршрут ${req.originalUrl} не найден`);
@@ -6,4 +6,4 @@ const notFound = (req, res, next) => {
   next(error);
 };
 
-module.exports = notFound;
+export default notFound;

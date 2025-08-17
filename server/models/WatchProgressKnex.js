@@ -1,4 +1,4 @@
-const knex = require('../db/knex');
+import { db } from '../db/knex.js';
 
 class WatchProgressKnex {
   // Создание или обновление прогресса просмотра
@@ -242,4 +242,4 @@ class WatchProgressKnex {
   }
 }
 
-module.exports = WatchProgressKnex;
+export default WatchProgressKnex;

@@ -1,8 +1,10 @@
-const express = require('express');
-const router = express.Router();
-const watchListController = require('../controllers/watchListController');
-const { authenticate } = require('../middleware/auth');
-const { validate, validateParams, watchListSchemas, paramSchemas } = require('../middleware/validation');
+import express from 'express';
+import { Router } from 'express';
+import watchListController from '../controllers/watchListController.js';
+import { authenticate } from '../middleware/auth.js';
+import { validate, validateParams, watchListSchemas, paramSchemas } from '../middleware/validation.js';
+
+const router = Router();
 
 // GET /api/watchlist - Получение списка просмотра пользователя
 router.get('/', authenticate, watchListController.getWatchList);
@@ -57,4 +59,4 @@ router.post('/bulk-update',
 // GET /api/watchlist/export - Экспорт списка просмотра
 router.get('/export', authenticate, watchListController.exportWatchList);
 
-module.exports = router;
+export default router;

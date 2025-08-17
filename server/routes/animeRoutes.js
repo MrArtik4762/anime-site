@@ -1,10 +1,11 @@
-const express = require('express');
-const router = express.Router();
-const axios = require('axios');
-const { getVideoHandler } = require('../controllers/videoController');
+import { Router } from 'express';
+import axios from 'axios';
+import videoController from '../controllers/videoController.js';
+
+const router = Router();
 
 // Маршрут для получения видео
-router.get('/video', getVideoHandler);
+router.get('/video', videoController.getVideoHandler.bind(videoController));
 
 // Маршрут для получения доступных качеств - временно отключен
 router.get('/qualities', async (req, res) => {
@@ -31,4 +32,4 @@ router.get('/qualities', async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

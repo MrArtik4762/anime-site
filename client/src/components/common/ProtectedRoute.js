@@ -1,7 +1,7 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { LoadingSpinner } from '../../styles/GlobalStyles';
-import styled from 'styled-components';
+import { styled } from 'styled-components';
 import { authService } from '../../services/authService';
 
 const LoadingContainer = styled.div`

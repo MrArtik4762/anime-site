@@ -143,4 +143,4 @@ class SearchController {
   }
 }
 
-module.exports = new SearchController();
+export default new SearchController();

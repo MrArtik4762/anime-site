@@ -214,9 +214,9 @@ describe('Sources Error Handling Tests', () => {
     
     test('should handle invalid response from provider', async () => {
       // Мокаем сервисы для возврата некорректных данных
-      const originalAnilibertyService = require('../services/anilibertyService');
-      jest.mock('../services/anilibertyService');
-      const mockedService = require('../services/anilibertyService');
+      import originalAnilibertyService from '../services/anilibertyService.js';
+      jest.mock('../services/anilibertyService.js');
+      const mockedService = await import('../services/anilibertyService.js');
       
       mockedService.getEpisodeSources.mockResolvedValue({
         success: true,

@@ -1,5 +1,5 @@
-﻿const rateLimit = require('express-rate-limit');
-const { HTTP_STATUS, ERROR_MESSAGES } = require('../../shared/constants/constants');
+import rateLimit from 'express-rate-limit';
+import { HTTP_STATUS, ERROR_MESSAGES } from '../../shared/constants/constants.js';
 
 /**
  * Временная правка: убран onLimitReached для тишины логов до обновления express-rate-limit v7.
@@ -223,7 +223,7 @@ const rateLimitLogger = (req, res, next) => {
   next();
 };
 
-module.exports = {
+export {
   videoLimiter,
   generalLimiter,
   authLimiter,

@@ -1,7 +1,9 @@
-const express = require('express');
-const router = express.Router();
-const anilibertyController = require('../controllers/anilibertyController');
-const { authenticate, optionalAuth } = require('../middleware/auth');
+import { Router } from 'express';
+import anilibertyController from '../controllers/anilibertyController.js';
+import { authenticate, optionalAuth } from '../middleware/auth.js';
+import { checkStatus } from '../services/anilibertyService.js';
+
+const router = Router();
 
 /**
  * Поиск аниме (должен быть перед :id маршрутом)
@@ -51,8 +53,7 @@ router.post('/anime/sync', authenticate, anilibertyController.syncWithAPI);
  */
 router.get('/status', async (req, res) => {
   try {
-    const anilibertyService = require('../services/anilibertyService');
-    const result = await anilibertyService.checkStatus();
+    const result = await checkStatus();
     
     res.json({
       success: true,
@@ -73,4 +74,4 @@ router.get('/status', async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

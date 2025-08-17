@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const episodeSourceSchema = new mongoose.Schema({
   // Номер эпизода
@@ -250,4 +250,4 @@ episodeSourceSchema.methods.getSafeObject = function() {
   return obj;
 };
 
-module.exports = mongoose.model('EpisodeSource', episodeSourceSchema);
+export default mongoose.model('EpisodeSource', episodeSourceSchema);

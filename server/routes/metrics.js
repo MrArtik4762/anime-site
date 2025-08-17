@@ -1,7 +1,9 @@
-const express = require('express');
+import express from 'express';
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
 const router = express.Router();
-const { metricsConfig } = require('../config/metrics');
-const logger = require('../config/logger');
+import { metricsConfig } from '../config/metrics.js';
+import { logger } from '../config/logger.js';
 
 /**
  * Роуты для сбора метрик Prometheus
@@ -320,4 +322,4 @@ router.get('/restricted', async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

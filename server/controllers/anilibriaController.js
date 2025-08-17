@@ -1,5 +1,5 @@
-﻿const anilibriaService = require('../services/anilibriaService');
-const { HTTP_STATUS } = require('../../shared/constants/constants');
+import anilibriaService from '../services/anilibriaService.js';
+import { HTTP_STATUS } from '../../shared/constants/constants.js';
 
 /**
  * РџРѕР»СѓС‡РёС‚СЊ РїРѕРїСѓР»СЏСЂРЅС‹Рµ Р°РЅРёРјРµ РёР· AniLibria
@@ -570,7 +570,7 @@ const getYouTube = async (req, res) => {
   }
 };
 
-module.exports = {
+export {
   getPopular,
   getUpdates,
   search,

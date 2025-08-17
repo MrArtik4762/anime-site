@@ -1,4 +1,4 @@
-const { db } = require('../db/knex');
+import { db } from '../db/knex.js';
 
 class WatchListKnex {
   // Создание новой записи в списке просмотра
@@ -257,4 +257,4 @@ class WatchListKnex {
   }
 }
 
-module.exports = WatchListKnex;
+export default WatchListKnex;

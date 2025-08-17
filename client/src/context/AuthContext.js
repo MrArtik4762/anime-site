@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useEffect } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useRef } from 'react';
 import { authService } from '../services/authService';
 
 const AuthContext = createContext();
@@ -8,12 +8,17 @@ const initialState = {
   isAuthenticated: false,
   isLoading: true,
   error: null,
+  isInitialized: false,
+  networkError: false,
+  retryCount: 0,
+  maxRetries: 3,
+  retryDelay: 1000, // 1 секунда
 };
 
 const authReducer = (state, action) => {
   switch (action.type) {
     case 'AUTH_START':
-      return { ...state, isLoading: true, error: null };
+      return { ...state, isLoading: true, error: null, networkError: false };
     case 'AUTH_SUCCESS':
       return {
         ...state,
@@ -21,6 +26,9 @@ const authReducer = (state, action) => {
         isAuthenticated: true,
         isLoading: false,
         error: null,
+        networkError: false,
+        retryCount: 0,
+        isInitialized: true,
       };
     case 'AUTH_FAILURE':
       return {
@@ -29,6 +37,8 @@ const authReducer = (state, action) => {
         isAuthenticated: false,
         isLoading: false,
         error: action.payload,
+        networkError: action.type === 'NETWORK_ERROR',
+        retryCount: action.retryCount || state.retryCount,
       };
     case 'LOGOUT':
       return {
@@ -37,11 +47,27 @@ const authReducer = (state, action) => {
         isAuthenticated: false,
         isLoading: false,
         error: null,
+        networkError: false,
+        retryCount: 0,
       };
     case 'UPDATE_USER':
       return {
         ...state,
         user: { ...state.user, ...action.payload },
+      };
+    case 'INITIALIZATION_COMPLETE':
+      return {
+        ...state,
+        isInitialized: true,
+        isLoading: false,
+      };
+    case 'NETWORK_ERROR':
+      return {
+        ...state,
+        networkError: true,
+        isLoading: false,
+        error: action.payload,
+        retryCount: action.retryCount || state.retryCount + 1,
       };
     default:
       return state;
@@ -50,10 +76,38 @@ const authReducer = (state, action) => {
 
 export const AuthProvider = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
+  const isMounted = useRef(true);
+  const retryTimeoutRef = useRef(null);
 
-  // Автоматическое восстановление сессии при старте приложения
-  useEffect(() => {
-    const initializeAuth = async () => {
+  // Проверка доступности сети
+  const checkNetworkConnectivity = () => {
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+      return false;
+    }
+    return true;
+  };
+
+  // Экспоненциальная задержка для retry
+  const getRetryDelay = (retryCount) => {
+    return Math.min(initialState.retryDelay * Math.pow(2, retryCount), 10000); // Максимум 10 секунд
+  };
+
+  // Retry логика для инициализации аутентификации
+  const retryAuthInitialization = async (retryCount = 0) => {
+    if (!isMounted.current) return;
+
+    const delay = getRetryDelay(retryCount);
+    
+    retryTimeoutRef.current = setTimeout(async () => {
+      if (!checkNetworkConnectivity()) {
+        dispatch({
+          type: 'NETWORK_ERROR',
+          payload: 'Отсутствует подключение к сети. Проверьте интернет-соединение.',
+          retryCount: retryCount + 1
+        });
+        return;
+      }
+
       dispatch({ type: 'AUTH_START' });
       
       try {
@@ -64,7 +118,7 @@ export const AuthProvider = ({ children }) => {
         const response = await authService.getCurrentUser();
         dispatch({ type: 'AUTH_SUCCESS', payload: response.user });
       } catch (error) {
-        console.error('Session restoration failed:', {
+        console.error(`Auth retry attempt ${retryCount + 1} failed:`, {
           error: error.message,
           status: error.response?.status,
           data: error.response?.data,
@@ -83,14 +137,70 @@ export const AuthProvider = ({ children }) => {
           errorMessage = 'Ошибка сети. Проверьте подключение к интернету.';
         }
         
-        dispatch({
-          type: 'AUTH_FAILURE',
-          payload: errorMessage
-        });
+        const newRetryCount = retryCount + 1;
+        
+        // Если достигли максимального количества попыток, показываем ошибку
+        if (newRetryCount >= initialState.maxRetries) {
+          dispatch({
+            type: 'AUTH_FAILURE',
+            payload: `Не удалось установить соединение. ${errorMessage}`,
+            retryCount: newRetryCount
+          });
+          
+          // Уведомляем координатор об ошибке
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('initialization-error', {
+              detail: { error: new Error(errorMessage), type: 'auth' }
+            }));
+          }
+        } else {
+          // Иначе пробуем снова
+          retryAuthInitialization(newRetryCount);
+        }
       }
-    };
+    }, delay);
+  };
 
-    initializeAuth();
+  // Graceful fallback для отсутствия сети
+  const handleNetworkOffline = () => {
+    dispatch({
+      type: 'NETWORK_ERROR',
+      payload: 'Приложение работает в офлайн-режиме. Некоторые функции могут быть ограничены.'
+    });
+  };
+
+  const handleNetworkOnline = () => {
+    if (state.networkError && !state.isAuthenticated) {
+      // При восстановлении сети пробуем инициализировать снова
+      retryAuthInitialization();
+    }
+  };
+
+  // Автоматическое восстановление сессии при старте приложения
+  useEffect(() => {
+    // Проверяем доступность сети перед инициализацией
+    if (!checkNetworkConnectivity()) {
+      dispatch({
+        type: 'NETWORK_ERROR',
+        payload: 'Отсутствует подключение к сети. Проверьте интернет-соединение.'
+      });
+      return;
+    }
+
+    retryAuthInitialization();
+
+    // Обработчики событий сети
+    window.addEventListener('offline', handleNetworkOffline);
+    window.addEventListener('online', handleNetworkOnline);
+
+    return () => {
+      isMounted.current = false;
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+      }
+      window.removeEventListener('offline', handleNetworkOffline);
+      window.removeEventListener('online', handleNetworkOnline);
+    };
   }, []);
 
   const login = async (credentials) => {
@@ -183,6 +293,8 @@ export const AuthProvider = ({ children }) => {
     register,
     logout,
     updateUser,
+    retryAuth: () => retryAuthInitialization(state.retryCount),
+    isNetworkAvailable: checkNetworkConnectivity(),
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

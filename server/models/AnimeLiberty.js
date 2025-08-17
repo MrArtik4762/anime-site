@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const animeSchema = new mongoose.Schema({
   // AniLiberty идентификатор
@@ -277,4 +277,4 @@ animeSchema.methods.addOrUpdateEpisode = function(episodeData) {
   this.videos.sort((a, b) => a.episode - b.episode);
 };
 
-module.exports = mongoose.model('AnimeLiberty', animeSchema);
+export default mongoose.model('AnimeLiberty', animeSchema);

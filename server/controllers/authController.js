@@ -1,13 +1,14 @@
-﻿const User = require('../models/UserKnex');
-const { generateToken, generateRefreshToken } = require('../middleware/auth');
-const { accountLockout, resetAttempts } = require('../middleware/accountLockout');
-const { require2FA } = require('../middleware/2fa');
-const { setAuthCookies } = require('../middleware/cookieAuth');
-const { HTTP_STATUS, ERROR_MESSAGES, LIMITS } = require('../../shared/constants/constants');
-const bcrypt = require('bcryptjs');
-const crypto = require('crypto');
-const speakeasy = require('speakeasy');
-const QRCode = require('qrcode');
+import User from '../models/UserKnex.js';
+import { generateToken, generateRefreshToken } from '../middleware/auth.js';
+import { accountLockout, resetAttempts, getLockoutInfo } from '../middleware/accountLockout.js';
+import { require2FA } from '../middleware/2fa.js';
+import { setAuthCookies, extractTokenFromCookie, refreshTokenFromCookie, clearAuthCookies } from '../middleware/cookieAuth.js';
+import { HTTP_STATUS, ERROR_MESSAGES, LIMITS } from '../../shared/constants/constants.js';
+import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
+import speakeasy from 'speakeasy';
+import QRCode from 'qrcode';
+import { signJwt } from '../utils/jwt.js';
 
 class AuthController {
   // Регистрация нового пользователя
@@ -121,7 +122,6 @@ class AuthController {
       const user = await User.create(userData);
 
       // Генерируем JWT токены
-      const { signJwt } = require('../utils/jwt');
       const accessToken = signJwt({ id: user.id }, process.env.JWT_SECRET, '15m');
       const refreshToken = signJwt({ id: user.id, type: 'refresh' }, process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET, '30d');
 
@@ -172,7 +172,6 @@ class AuthController {
       console.log('🔐 LOGIN DEBUG - Password provided:', !!password);
 
       // Проверяем блокировку аккаунта
-      const { getLockoutInfo } = require('../middleware/accountLockout');
       const lockoutInfo = getLockoutInfo(email);
       
       if (lockoutInfo.isLocked) {
@@ -236,7 +235,6 @@ class AuthController {
       }
 
       // Генерируем новые токены
-      const { signJwt } = require('../utils/jwt');
       const accessToken = signJwt({ id: user.id }, process.env.JWT_SECRET, '15m');
       const refreshToken = signJwt({ id: user.id, type: 'refresh' }, process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET, '30d');
 
@@ -326,7 +324,6 @@ class AuthController {
       }
 
       // Генерируем новые токены
-      const { signJwt } = require('../utils/jwt');
       const newAccessToken = signJwt({ id: user.id }, process.env.JWT_SECRET, '15m');
       const newRefreshToken = signJwt({ id: user.id, type: 'refresh' }, process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET, '30d');
 
@@ -598,7 +595,6 @@ class AuthController {
       });
 
       // Генерируем новые токены с использованием новой JWT утилиты
-      const { signJwt } = require('../utils/jwt');
       const accessToken = signJwt({ id: user.id }, process.env.JWT_SECRET, '15m');
       const refreshToken = signJwt({ id: user.id, type: 'refresh' }, process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET, '30d');
 
@@ -986,4 +982,4 @@ class AuthController {
   }
 }
 
-module.exports = new AuthController();
+export default new AuthController();

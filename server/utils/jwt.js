@@ -1,7 +1,7 @@
-const jwt = require('jsonwebtoken');
+import jwt from 'jsonwebtoken';
 
 function signJwt(payload, secret, expiresIn) {
   return jwt.sign(payload, secret, { expiresIn });
 }
 
-module.exports = { signJwt };
+export { signJwt };

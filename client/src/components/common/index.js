@@ -148,3 +148,17 @@ export {
   MemoryOptimizer,
   PerformanceMonitor
 } from './MobilePerformance';
+
+// Экспорт компонентов для инициализации приложения
+export {
+  default as AppLoadingIndicator,
+} from './AppLoadingIndicator';
+
+export {
+  default as AppErrorBoundary,
+  withErrorBoundary,
+} from './AppErrorBoundary';
+
+export {
+  default as AppInitializationCoordinator,
+} from './AppInitializationCoordinator';

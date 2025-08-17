@@ -1,14 +1,16 @@
-const express = require('express');
-const router = express.Router();
-const { userController, avatarUpload } = require('../controllers/userController');
-const { authenticate, checkSelfOrAdmin } = require('../middleware/auth');
-const { validate, validateParams, userSchemas, paramSchemas } = require('../middleware/validation');
+import express from 'express';
+import { Router } from 'express';
+import { userController, avatarUpload } from '../controllers/userController.js';
+import { authenticate, checkSelfOrAdmin } from '../middleware/auth.js';
+import { validate, validateParams, userSchemas, paramSchemas } from '../middleware/validation.js';
+
+const router = Router();
 
 // GET /api/users/profile - Получение собственного профиля
 router.get('/profile', authenticate, userController.getProfile);
 
 // PUT /api/users/profile - Обновление профиля
-router.put('/profile', 
+router.put('/profile',
   authenticate,
   validate(userSchemas.updateProfile),
   userController.updateProfile
@@ -50,10 +52,10 @@ router.delete('/account',
 
 // GET /api/users/watchlist - Список просмотра (будет перенесен в отдельный роут)
 router.get('/watchlist', authenticate, (req, res) => {
-  res.json({ 
+  res.json({
     message: 'Этот endpoint перенесен в /api/watchlist',
     redirect: '/api/watchlist'
   });
 });
 
-module.exports = router;
+export default router;

@@ -1,7 +1,7 @@
-const axios = require('axios');
-const EpisodeSource = require('../models/EpisodeSource');
-const AnilibertyService = require('./anilibertyService');
-const AnilibriaService = require('./anilibriaService');
+import axios from 'axios';
+import EpisodeSource from '../models/EpisodeSource.js';
+import AnilibertyService from './anilibertyService.js';
+import AnilibriaService from './anilibriaService.js';
 
 /**
  * Универсальный сервис для получения и сохранения источников эпизодов
@@ -758,4 +758,4 @@ class SourcesFetcher {
   }
 }
 
-module.exports = new SourcesFetcher();
+export default new SourcesFetcher();

@@ -1,6 +1,6 @@
-require('dotenv').config();
+import 'dotenv/config';
 
-module.exports = {
+export default {
   // Режим разработки или продакшн
   development: {
     client: process.env.DB_CLIENT || 'sqlite3',

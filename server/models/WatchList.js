@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const watchListSchema = new mongoose.Schema({
   userId: {
@@ -319,4 +319,4 @@ watchListSchema.methods.removeTag = function(tag) {
   return this.save();
 };
 
-module.exports = mongoose.model('WatchList', watchListSchema);
+export default mongoose.model('WatchList', watchListSchema);

@@ -1,8 +1,10 @@
-const express = require('express');
+import express from 'express';
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
 const router = express.Router();
-const logger = require('../config/logger');
-const { AppError } = require('../utils/errors');
-const { metricsConfig } = require('../config/metrics');
+import { logger } from '../config/logger.js';
+import { AppError } from '../utils/errors.js';
+import { metricsConfig } from '../config/metrics.js';
 
 /**
  * Health Check роуты для мониторинга состояния приложения
@@ -434,4 +436,4 @@ router.get('/dependencies', (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

@@ -1,8 +1,8 @@
-const axios = require('axios');
-const { URL } = require('url');
-const redis = require('../config/redis');
-const logger = require('../config/logger');
-const { HTTP_STATUS, ERROR_MESSAGES } = require('../../shared/constants/constants');
+import axios from 'axios';
+import { URL } from 'url';
+import redis from '../config/redis.js';
+import { logger } from '../config/logger.js';
+import { HTTP_STATUS, ERROR_MESSAGES } from '../../shared/constants/constants.js';
 
 /**
  * Сервис для проксирования стриминга Epic D2
@@ -341,6 +341,6 @@ class StreamProxyService {
 const streamProxyService = new StreamProxyService();
 
 // Экспортируем метод проксирования
-module.exports = {
+export default {
   proxyStream: streamProxyService.proxyStream.bind(streamProxyService)
 };

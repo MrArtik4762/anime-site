@@ -1,6 +1,6 @@
-const knex = require('knex');
-const knexConfig = require('../knexfile');
-const { NODE_ENV } = process.env;
+import knex from 'knex';
+import knexConfig from '../knexfile.js';
+const { NODE_ENV = 'development' } = process.env;
 
 // Определяем текущую среду
 const environment = NODE_ENV || 'development';
@@ -110,7 +110,7 @@ db.on('error', (error) => {
   console.error('❌ Ошибка базы данных:', error);
 });
 
-module.exports = {
+export {
   db,
   checkConnection,
   closeConnection,

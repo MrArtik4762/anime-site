@@ -1,8 +1,10 @@
-const express = require('express');
-const router = express.Router();
-const { authenticate, optionalAuth } = require('../middleware/auth');
-const { videoLimiter } = require('../middleware/rateLimiter');
-const videoController = require('../controllers/videoController');
+import express from 'express';
+import { Router } from 'express';
+import { authenticate, optionalAuth } from '../middleware/auth.js';
+import { videoLimiter } from '../middleware/rateLimiter.js';
+import videoController from '../controllers/videoController.js';
+
+const router = Router();
 
 // Получение видео потока
 router.get('/video',
@@ -35,4 +37,4 @@ router.get('/video/check',
   videoController.checkVideoAvailability
 );
 
-module.exports = router;
+export default router;

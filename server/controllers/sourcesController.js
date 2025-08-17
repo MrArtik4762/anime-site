@@ -1,8 +1,8 @@
-const axios = require('axios');
-const SourcesFetcher = require('../services/sourcesFetcher');
-const EpisodeSource = require('../models/EpisodeSource');
-const Anime = require('../models/Anime');
-const logger = require('../utils/logger');
+import axios from 'axios';
+import SourcesFetcher from '../services/sourcesFetcher.js';
+import EpisodeSource from '../models/EpisodeSource.js';
+import Anime from '../models/Anime.js';
+import { logger } from '../utils/logger.js';
 
 // Простой кэш в памяти для результатов API
 const sourcesCache = new Map();
@@ -637,4 +637,4 @@ class SourcesController {
   }
 }
 
-module.exports = SourcesController;
+export default SourcesController;
